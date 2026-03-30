@@ -2,7 +2,7 @@
   "name": "Workout Log",
   "short_name": "Workout",
   "description": "Tieni traccia dei tuoi allenamenti in palestra",
-  "start_url": "start_url": "./",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#f7f6f3",
   "theme_color": "#f7f6f3",
