@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Workout Log">
+<meta name="theme-color" content="#f7f6f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111110" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<title>Workout Log</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --surface: #ffffff; --surface2: #f0efe9;
+    --border: rgba(0,0,0,0.10); --border2: rgba(0,0,0,0.18);
+    --text: #1a1a18; --text2: #6b6a65; --text3: #a09f99;
+    --green: #1D9E75; --green-bg: #eaf3de;
+    --red: #c0392b; --amber: #BA7517; --amber-bg: #faeeda;
+    --orange: #D85A30; --blue: #185FA5;
+    --radius: 10px; --radius-sm: 7px;
+    --mono: 'SF Mono', 'Fira Mono', 'Menlo', monospace;
+    --sans: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111110; --surface: #1c1c1a; --surface2: #252522;
+      --border: rgba(255,255,255,0.09); --border2: rgba(255,255,255,0.16);
+      --text: #f0efe9; --text2: #8e8d87; --text3: #5a5955;
+      --green: #5DCAA5; --green-bg: #04342c;
+      --red: #e47070; --amber: #EF9F27; --amber-bg: #412402;
+      --orange: #F0997B; --blue: #85B7EB;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html { background: var(--bg); }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; min-height: -webkit-fill-available; }
+  .app { max-width: 480px; margin: 0 auto; padding: 0 0 120px; }
+
+  .header { padding: 56px 20px 0; display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; }
+  .header-title { font-size: 28px; font-weight: 600; letter-spacing: -0.5px; }
+  .header-sub { font-size: 13px; color: var(--text3); margin-top: 2px; }
+  .file-status { font-size: 11px; color: var(--text3); text-align: right; line-height: 1.4; max-width: 140px; }
+  .file-status.has-file { color: var(--green); }
+
+  .tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 20px; position: sticky; top: 0; background: var(--bg); z-index: 10; }
+  .tab-btn { flex: 1; padding: 12px 0; background: none; border: none; font-family: var(--sans); font-size: 14px; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s; }
+  .tab-btn.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
+
+  .file-toolbar { display: flex; gap: 8px; padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .file-btn { flex: 1; padding: 9px 8px; font-family: var(--sans); font-size: 12px; font-weight: 500; border: 1px solid var(--border2); border-radius: var(--radius-sm); background: var(--surface); color: var(--text2); cursor: pointer; transition: background 0.12s, color 0.12s; text-align: center; }
+  .file-btn:hover { background: var(--surface2); color: var(--text); }
+  .file-btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .file-btn.primary:hover { opacity: 0.85; }
+  .file-btn .icon { display: block; font-size: 15px; margin-bottom: 2px; }
+
+  .tab-content { padding: 20px; }
+  .date-label { font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text3); }
+  .date-picker { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--text); background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 6px 10px; outline: none; cursor: pointer; transition: border-color 0.15s; color-scheme: light dark; }
+  .date-picker:focus { border-color: var(--text); }
+
+  /* ── Quick-add ── */
+  .quick-add { display: flex; gap: 6px; align-items: center; margin-bottom: 10px; }
+  .qa-abbr { font-family: var(--mono); font-size: 14px; font-weight: 600; width: 58px; padding: 9px 6px; border: 1px solid var(--border2); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); outline: none; text-transform: uppercase; text-align: center; flex-shrink: 0; }
+  .qa-abbr:focus { border-color: var(--text); }
+  .qa-abbr::placeholder { color: var(--text3); font-weight: 400; font-size: 12px; text-transform: none; }
+  .qa-num { font-family: var(--mono); font-size: 14px; padding: 9px 4px; border: 1px solid var(--border2); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); outline: none; text-align: center; min-width: 0; }
+  .qa-num:focus { border-color: var(--text); }
+  .qa-sets { width: 36px; }
+  .qa-reps { width: 40px; }
+  .qa-weight { flex: 1; }
+  .qa-sep { color: var(--text3); font-size: 13px; flex-shrink: 0; font-family: var(--mono); }
+  .qa-btn { padding: 9px 16px; font-family: var(--sans); font-size: 18px; font-weight: 500; border: none; border-radius: var(--radius-sm); background: var(--text); color: var(--bg); cursor: pointer; flex-shrink: 0; line-height: 1; }
+  .qa-btn:active { opacity: 0.7; }
+
+  textarea { width: 100%; min-height: 120px; padding: 14px; font-family: var(--mono); font-size: 15px; line-height: 2.1; border: 1px solid var(--border2); border-radius: var(--radius); background: var(--surface); color: var(--text); resize: vertical; outline: none; transition: border-color 0.15s; }
+  textarea:focus { border-color: var(--text); }
+  textarea::placeholder { color: var(--text3); }
+
+  .preview-label { font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text3); margin: 14px 0 7px; }
+
+  .ex-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 9px 12px; background: var(--surface2); border-radius: var(--radius-sm); margin-bottom: 5px; gap: 8px; }
+  .ex-left { display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0; }
+  .ex-abbr { font-family: var(--mono); font-weight: 600; font-size: 13px; min-width: 40px; padding-top: 1px; flex-shrink: 0; }
+  .ex-segs { font-size: 13px; color: var(--text2); line-height: 1.7; flex: 1; }
+  .ex-seg-w { color: var(--text); font-weight: 500; }
+  .ex-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; }
+  .ex-peak { font-family: var(--mono); font-weight: 600; font-size: 13px; }
+  .ex-peak-label { font-size: 9px; color: var(--text3); letter-spacing: 0.04em; text-transform: uppercase; }
+  .ex-vol { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+  .ex-1rm { font-size: 10px; color: var(--text3); font-family: var(--mono); }
+  .multi-badge { display: inline-block; font-size: 9px; letter-spacing: 0.05em; padding: 1px 5px; border-radius: 3px; font-weight: 600; text-transform: uppercase; margin-left: 5px; vertical-align: middle; }
+  .badge-drop { background: var(--amber-bg); color: var(--amber); }
+  .badge-mix { background: var(--surface2); color: var(--text3); border: 1px solid var(--border2); }
+
+  .save-btn { width: 100%; margin-top: 14px; padding: 14px; font-family: var(--sans); font-size: 15px; font-weight: 600; border: none; border-radius: var(--radius); cursor: pointer; transition: background 0.2s, color 0.2s; background: var(--text); color: var(--bg); }
+  .save-btn:disabled { background: var(--surface2); color: var(--text3); cursor: default; }
+  .save-btn.saved { background: var(--green-bg); color: var(--green); }
+  .save-btn.danger { background: var(--red); color: #fff; }
+  .save-success { padding: 18px 0 6px; text-align: center; font-size: 15px; font-weight: 600; color: var(--green); }
+
+  .hint { font-size: 12px; color: var(--text3); margin-top: 10px; line-height: 1.9; }
+  .hint code { font-family: var(--mono); font-size: 11px; background: var(--surface2); padding: 1px 5px; border-radius: 3px; }
+  .hint-comment { color: var(--text3); opacity: 0.7; }
+
+  .session-block { margin-bottom: 24px; }
+  .session-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .session-count { font-size: 11px; color: var(--text3); }
+
+  .empty { padding: 40px 20px; text-align: center; color: var(--text3); font-size: 14px; line-height: 1.6; }
+  .empty strong { display: block; font-size: 16px; color: var(--text2); margin-bottom: 6px; }
+
+  .storico-search { width: 100%; padding: 9px 12px; font-family: var(--sans); font-size: 14px; border: 1px solid var(--border2); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); outline: none; margin-bottom: 16px; transition: border-color 0.15s; }
+  .storico-search:focus { border-color: var(--text); }
+  .storico-search::placeholder { color: var(--text3); }
+
+  /* ── Heatmap ── */
+  .heatmap { margin-bottom: 20px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .heatmap-inner { display: flex; gap: 2px; width: fit-content; padding-bottom: 2px; }
+  .heatmap-week { display: flex; flex-direction: column; gap: 2px; }
+  .heatmap-month-lbl { height: 13px; font-size: 8px; font-family: var(--mono); color: var(--text3); letter-spacing: 0.04em; white-space: nowrap; line-height: 13px; }
+  .heatmap-cell { width: 11px; height: 11px; border-radius: 2px; background: var(--surface2); flex-shrink: 0; }
+  .heatmap-cell.active { background: var(--green); }
+  .heatmap-cell.future { background: transparent; pointer-events: none; }
+
+  .trend-controls { display: flex; gap: 8px; margin-bottom: 14px; }
+  select { flex: 1; padding: 10px; font-family: var(--mono); font-size: 14px; font-weight: 600; border: 1px solid var(--border2); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); cursor: pointer; outline: none; }
+  select.metric-sel { flex: 0.9; font-family: var(--sans); font-size: 13px; font-weight: 400; }
+
+  .stagnation-banner { background: var(--amber-bg); border: 1px solid var(--amber); border-radius: var(--radius-sm); padding: 10px 13px; margin-bottom: 13px; font-size: 12px; color: var(--amber); line-height: 1.4; }
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 18px; }
+  .stat-card { background: var(--surface2); border-radius: var(--radius-sm); padding: 11px 10px; }
+  .stat-label { font-size: 10px; color: var(--text3); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 4px; }
+  .stat-val { font-family: var(--mono); font-size: 16px; font-weight: 600; }
+  .stat-sub { font-size: 10px; margin-top: 2px; }
+  .green { color: var(--green); } .red { color: var(--red); }
+
+  /* ── SVG Chart ── */
+  .chart-wrap { position: relative; width: 100%; min-height: 180px; margin-bottom: 8px; }
+  .chart-wrap svg { display: block; width: 100%; overflow: visible; }
+  .chart-tooltip {
+    position: absolute; background: var(--text); color: var(--bg);
+    padding: 5px 11px; border-radius: 8px; font-size: 12px;
+    font-family: var(--mono); white-space: nowrap; pointer-events: none;
+    z-index: 20; transform: translateX(-50%);
+    transition: opacity 0.1s;
+  }
+
+  .glossario-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .glossario-row:last-child { border-bottom: none; }
+  .gl-abbr { font-family: var(--mono); font-weight: 600; font-size: 14px; min-width: 52px; }
+  .gl-input { flex: 1; padding: 7px 10px; font-family: var(--sans); font-size: 14px; border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; color: var(--text); outline: none; transition: border-color 0.15s, background 0.15s; }
+  .gl-input:focus { border-color: var(--border2); background: var(--surface); }
+  .gl-input::placeholder { color: var(--text3); font-style: italic; }
+  .gl-new { display: flex; gap: 8px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .gl-new input { flex: 1; padding: 10px 12px; font-family: var(--mono); font-size: 14px; border: 1px solid var(--border2); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); outline: none; }
+  .gl-new input:focus { border-color: var(--text); }
+  .gl-add-btn { padding: 10px 16px; font-family: var(--sans); font-size: 13px; font-weight: 600; border: none; border-radius: var(--radius-sm); background: var(--text); color: var(--bg); cursor: pointer; white-space: nowrap; }
+  .gl-note { font-size: 12px; color: var(--text3); margin-top: 12px; line-height: 1.5; }
+  .ex-abbr-wrap { display: flex; flex-direction: column; min-width: 40px; flex-shrink: 0; padding-top: 1px; }
+  .ex-abbr-name { font-size: 9px; color: var(--text3); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50px; }
+
+  .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--text); color: var(--bg); padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 500; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; white-space: nowrap; z-index: 100; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .app { padding-bottom: calc(120px + env(safe-area-inset-bottom)); }
+  }
+
+  .ex-comment { padding: 2px 12px 5px 62px; font-size: 12px; color: var(--text3); font-style: italic; line-height: 1.5; }
+  .bw-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--surface2); border-radius: var(--radius-sm); margin-bottom: 5px; }
+  .bw-abbr { font-family: var(--mono); font-weight: 600; font-size: 13px; color: var(--blue); min-width: 40px; }
+  .bw-val { font-family: var(--mono); font-weight: 600; font-size: 13px; }
+  .bw-label { font-size: 10px; color: var(--text3); letter-spacing: 0.04em; text-transform: uppercase; }
+  .pr-badge { display: inline-block; font-size: 9px; letter-spacing: 0.04em; padding: 1px 5px; border-radius: 3px; font-weight: 700; text-transform: uppercase; background: var(--green-bg); color: var(--green); }
+  .invalid-warning { margin-top: 10px; padding: 10px 13px; background: var(--amber-bg); border: 1px solid var(--amber); border-radius: var(--radius-sm); font-size: 12px; color: var(--amber); line-height: 1.8; }
+  .invalid-warning strong { display: block; margin-bottom: 2px; }
+  .invalid-warning code { font-family: var(--mono); font-size: 11px; }
+  .session-edit-btn { font-size: 11px; color: var(--text3); background: none; border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 3px 9px; cursor: pointer; font-family: var(--sans); transition: color 0.12s, border-color 0.12s; }
+  .session-edit-btn:hover { color: var(--text); border-color: var(--text); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div>
+      <div class="header-title">Workout Log</div>
+      <div class="header-sub" id="headerSub">nessun file</div>
+    </div>
+    <div class="file-status" id="fileStatusBadge"></div>
+  </div>
+
+  <div class="file-toolbar">
+    <button class="file-btn" id="btnNewFile"><span class="icon">+</span>Nuovo</button>
+    <button class="file-btn" id="btnOpenFile"><span class="icon">&#8599;</span>Importa</button>
+    <button class="file-btn" id="btnDownloadFile"><span class="icon">&#8657;</span>Esporta</button>
+    <button class="file-btn primary" id="btnSaveFs"><span class="icon">&#10003;</span>Salva</button>
+  </div>
+
+  <div class="tabs" id="tabContainer">
+    <button class="tab-btn active" data-tab="log">Registra</button>
+    <button class="tab-btn" data-tab="storico">Storico</button>
+    <button class="tab-btn" data-tab="trend">Trend</button>
+    <button class="tab-btn" data-tab="glossario">Legenda</button>
+  </div>
+
+  <div id="tab-log" class="tab-content">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="date-label">Data sessione</div>
+      <input type="date" id="logDateInput" class="date-picker">
+    </div>
+    <div class="quick-add">
+      <input class="qa-abbr" id="qaAbbr" maxlength="6" placeholder="ES" autocorrect="off" autocapitalize="characters" spellcheck="false">
+      <input class="qa-num qa-sets" id="qaSets" type="number" min="1" max="20" placeholder="3">
+      <span class="qa-sep">×</span>
+      <input class="qa-num qa-reps" id="qaReps" type="number" min="1" max="99" placeholder="10">
+      <span class="qa-sep">@</span>
+      <input class="qa-num qa-weight" id="qaWeight" type="number" min="0" step="2.5" placeholder="kg">
+      <button class="qa-btn" id="btnQaAdd">+</button>
+    </div>
+    <textarea id="logInput" placeholder="BP 3x10 @60&#10;SQ 4x8 @100&#10;OHP 3x10 @40&#10;DL 3x5 @120"></textarea>
+    <div id="invalidWarnings" class="invalid-warning" style="display:none"></div>
+    <div class="hint">
+      <div><code>BP 3x10 @60</code> <span class="hint-comment">— formato base</span></div>
+      <div><code>BP 10@60</code> <span class="hint-comment">— equivalente a 1x10@60</span></div>
+      <div><code>BP 2x10@60 + 1x8@55</code> <span class="hint-comment">— peso calato</span></div>
+      <div><code>BP 1x10@60 + 1x8@50 + 1x6@40</code> <span class="hint-comment">— drop set</span></div>
+      <div><code>BW 78.5</code> <span class="hint-comment">— peso corporeo</span></div>
+      <div><code>// nota</code> <span class="hint-comment">— commento libero</span></div>
+    </div>
+    <div id="preview"></div>
+    <button class="save-btn" id="btnSaveDay" disabled>Salva allenamento</button>
+  </div>
+
+  <div id="tab-storico" class="tab-content" style="display:none">
+    <div id="heatmapWrap"></div>
+    <input id="storicoSearch" class="storico-search" type="text" placeholder="Cerca esercizio o data…" autocomplete="off" autocorrect="off" spellcheck="false">
+    <div id="storicoContent"></div>
+  </div>
+
+  <div id="tab-trend" class="tab-content" style="display:none">
+    <div class="trend-controls">
+      <select id="exSelect"></select>
+      <select class="metric-sel" id="metricSelect">
+        <option value="peak">Peso picco</option>
+        <option value="volume">Volume</option>
+        <option value="e1rm">1RM stimato</option>
+      </select>
+    </div>
+    <div id="stagnationBanner" class="stagnation-banner" style="display:none"></div>
+    <div id="statsGrid" class="stats-grid"></div>
+    <div class="chart-wrap" id="chartWrap"></div>
+    <div id="trendEmpty" class="empty"></div>
+  </div>
+
+  <div id="tab-glossario" class="tab-content" style="display:none">
+    <div id="glossarioContent"></div>
+    <div class="gl-new">
+      <input id="glNewAbbr" maxlength="6" placeholder="ES">
+      <input id="glNewName" placeholder="Nome esteso" style="font-family:var(--sans)">
+      <button class="gl-add-btn" id="btnAddGlossary">Aggiungi</button>
+    </div>
+    <div class="gl-note">Le abbreviazioni appaiono automaticamente quando registri allenamenti.</div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── 1. IndexedDB ──────────────────────────────────────────────────────────────
+const DB = (() => {
+  let _db = null;
+  async function open() {
+    if (_db) return _db;
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open('workout_log_v1', 1);
+      req.onupgradeneeded = e => { e.target.result.createObjectStore('kv'); };
+      req.onsuccess = e => { _db = e.target.result; resolve(_db); };
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function get(key) {
+    const db = await open();
+    return new Promise((resolve, reject) => {
+      const req = db.transaction('kv', 'readonly').objectStore('kv').get(key);
+      req.onsuccess = () => resolve(req.result ?? null);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function set(key, value) {
+    const db = await open();
+    return new Promise((resolve, reject) => {
+      const req = db.transaction('kv', 'readwrite').objectStore('kv').put(value, key);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  }
+  return { get, set };
+})();
+
+// ── 2. Stato ──────────────────────────────────────────────────────────────────
+const CONFIG = { SESSIONS: 'sessions_v1', GLOSSARY: 'glossary_v1' };
+
+const State = {
+  sessions: [],
+  glossary: {},
+  fileHandle: null,
+  fileName: null,
+  currentTab: 'log'
+};
+
+// ── 3. Parser ─────────────────────────────────────────────────────────────────
+function escapeHTML(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>'"]/g,
+    t => ({ '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;' }[t]));
+}
+
+function parseWorkoutLine(line) {
+  line = line.trim();
+  if (!line || line.startsWith('#') || line.startsWith('//')) return null;
+  if (/^BW\s+/i.test(line)) return null;
+  line = line.replace(/\s*\/\/.*$/, '').trim();
+  if (!line) return null;
+
+  const abbrMatch = line.match(/^([A-Za-z]{1,6})\s+(.+)$/);
+  if (!abbrMatch) return null;
+  const abbr = abbrMatch[1].toUpperCase();
+  let rest = abbrMatch[2].trim();
+
+  let globalWeight = null;
+  const trailingW = rest.match(/^(.*?)\s*@\s*(\d+(?:[.,]\d+)?)\s*k?g?\s*$/i);
+  if (trailingW && !trailingW[1].includes('@')) {
+    rest = trailingW[1].trim();
+    globalWeight = parseFloat(trailingW[2].replace(',', '.'));
+  }
+
+  const segments = rest.split(/\s*\+\s*/).map(p => {
+    p = p.trim();
+    const m = p.match(/^(\d+)[xX×](\d+)(?:\s*@\s*(\d+(?:[.,]\d+)?)\s*k?g?)?$/i);
+    if (m) {
+      return { count: +m[1], reps: +m[2], weight: m[3] ? parseFloat(m[3].replace(',','.')) : globalWeight };
+    }
+    const m2 = p.match(/^(\d+)$/);
+    if (m2) return { count: 1, reps: +m2[1], weight: globalWeight };
+    const m3 = p.match(/^(\d+)\s*@\s*(\d+(?:[.,]\d+)?)\s*k?g?$/i);
+    if (m3) return { count: 1, reps: +m3[1], weight: parseFloat(m3[2].replace(',','.')) };
+    return null;
+  }).filter(Boolean);
+
+  if (!segments.length) return null;
+
+  const weights = segments.map(s => s.weight || 0).filter(w => w > 0);
+  const peakWeight = weights.length ? Math.max(...weights) : null;
+  const volume = segments.reduce((a, s) => a + (s.weight||0)*s.count*s.reps, 0);
+  const uniqueW = [...new Set(segments.map(s => s.weight))];
+  const isMultiWeight = uniqueW.length > 1;
+  const estimated1RM = segments.reduce((best, s) => {
+    if (!s.weight || s.reps < 2) return best;
+    const e = Math.round(s.weight * (1 + s.reps/30));
+    return e > best ? e : best;
+  }, 0) || null;
+
+  let pattern = null;
+  if (isMultiWeight) {
+    const ws = segments.map(s => s.weight||0);
+    const pi = ws.indexOf(Math.max(...ws));
+    if (ws.every((w,i) => i===0||w<=ws[i-1])) pattern = 'drop';
+    else if (pi>0 && pi<ws.length-1) pattern = 'diamond';
+    else pattern = 'mix';
+  }
+
+  return { abbr, segments, peakWeight, volume: Math.round(volume)||null, estimated1RM, isMultiWeight, pattern };
+}
+
+function parseAllLines(text) {
+  return text.split('\n').map(rawLine => {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) return null;
+    if (line.startsWith('//')) return { type:'comment', text:line.slice(2).trim() };
+    const bwMatch = line.match(/^BW\s+(\d+(?:[.,]\d+)?)\s*k?g?\s*$/i);
+    if (bwMatch) return { type:'bw', weight:parseFloat(bwMatch[1].replace(',','.')) };
+    const inlineMatch = line.match(/^(.*?)\s*\/\/(.*)$/);
+    const cleanLine = inlineMatch ? inlineMatch[1].trim() : line;
+    const inlineComment = inlineMatch ? inlineMatch[2].trim() : null;
+    const ex = parseWorkoutLine(cleanLine);
+    if (ex) {
+      if (inlineComment) ex.comment = inlineComment;
+      return { type:'exercise', ...ex };
+    }
+    return { type:'invalid', text:line };
+  }).filter(Boolean);
+}
+
+function buildRunningPRs(sessions) {
+  const sorted = [...sessions].sort((a,b) => a.date.localeCompare(b.date));
+  const map = new Map();
+  const running = {};
+  for (const s of sorted) {
+    map.set(s.date, {...running});
+    for (const ex of s.exercises) {
+      if (ex.peakWeight && ex.peakWeight > (running[ex.abbr]||0)) running[ex.abbr] = ex.peakWeight;
+    }
+  }
+  return map;
+}
+
+function segsToHtml(segments) {
+  const uniqueW = new Set(segments.map(s => s.weight));
+  if (uniqueW.size === 1) {
+    const setsStr = segments.map(s => s.count+'×'+s.reps).join(' + ');
+    const w = segments[0].weight;
+    return setsStr + (w ? ' <span class="ex-seg-w">· '+escapeHTML(w)+' kg</span>' : '');
+  }
+  return segments.map(s =>
+    s.count+'×'+s.reps+(s.weight ? ' <span class="ex-seg-w">@'+escapeHTML(s.weight)+'</span>' : '')
+  ).join(' <span style="color:var(--text3)">+</span> ')
+  + ' <span style="color:var(--text3);font-size:11px">kg</span>';
+}
+
+function patternBadge(pattern) {
+  const map = { drop:['drop','badge-drop'], diamond:['diamante','badge-drop'], mix:['misto','badge-mix'] };
+  const [label,cls] = map[pattern] || [];
+  return label ? `<span class="multi-badge ${cls}">${label}</span>` : '';
+}
+
+function exRowHtml(ex, compact, isPR) {
+  const safeAbbr = escapeHTML(ex.abbr);
+  const safeName = State.glossary[ex.abbr] ? escapeHTML(State.glossary[ex.abbr]) : '';
+  const show1RM = ex.estimated1RM && ex.peakWeight && ex.estimated1RM > ex.peakWeight;
+  return `<div class="ex-row">
+    <div class="ex-left">
+      <span class="ex-abbr-wrap">
+        <span class="ex-abbr">${safeAbbr}</span>
+        ${safeName ? '<span class="ex-abbr-name">'+safeName+'</span>' : ''}
+      </span>
+      <span class="ex-segs">${segsToHtml(ex.segments)}${patternBadge(ex.pattern)}</span>
+    </div>
+    <div class="ex-right">
+      ${ex.peakWeight ? '<span class="ex-peak">'+escapeHTML(ex.peakWeight)+' kg</span>' : ''}
+      ${isPR ? '<span class="pr-badge">PR ★</span>' : ''}
+      ${show1RM ? '<span class="ex-1rm">~'+ex.estimated1RM+' 1RM</span>' : ''}
+      ${!compact && ex.isMultiWeight ? '<span class="ex-peak-label">picco</span>' : ''}
+      ${!compact && ex.isMultiWeight && ex.volume ? '<span class="ex-vol">'+escapeHTML(ex.volume)+' kg·r</span>' : ''}
+    </div>
+  </div>`;
+}
+
+// ── 4. File .txt (import/export) ──────────────────────────────────────────────
+function sessionsToTxt(sessions, glossary) {
+  const glLines = Object.entries(glossary).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,v])=>'## '+k+' = '+v);
+  const glBlock = glLines.length ? glLines.join('\n')+'\n\n' : '';
+  const sesBlock = sessions.slice().sort((a,b)=>b.date.localeCompare(a.date))
+    .map(s=>'# '+s.date+'\n'+s.raw.trim()).join('\n\n')+'\n';
+  return glBlock + sesBlock;
+}
+
+function txtToSessions(txt) {
+  const newGlossary = {};
+  txt.split('\n').forEach(line => {
+    const m = line.match(/^##\s*([A-Z]{1,6})\s*=\s*(.+)$/);
+    if (m) newGlossary[m[1].trim()] = m[2].trim();
+  });
+  const newSessions = [];
+  const blocks = txt.split(/\n(?=# \d{4}-\d{2}-\d{2})/);
+  for (const block of blocks) {
+    const lines = block.trim().split('\n');
+    const dm = lines[0].match(/^#\s*(\d{4}-\d{2}-\d{2})/);
+    if (!dm) continue;
+    const raw = lines.slice(1).join('\n').trim();
+    const parsedLines = parseAllLines(raw);
+    const exercises = parsedLines.filter(l=>l.type==='exercise');
+    const bwLine = parsedLines.find(l=>l.type==='bw');
+    const bodyWeight = bwLine ? bwLine.weight : null;
+    if (exercises.length || bodyWeight) newSessions.push({ date:dm[1], raw, exercises, bodyWeight, lines:parsedLines });
+  }
+  return { sessions: newSessions.sort((a,b)=>b.date.localeCompare(a.date)), glossary: newGlossary };
+}
+
+// ── 5. SVG Chart ──────────────────────────────────────────────────────────────
+function colorForAbbr(abbr) {
+  const PRESET = {
+    BP:{line:'#D85A30',fill:'rgba(216,90,48,0.10)'},
+    SQ:{line:'#1D9E75',fill:'rgba(29,158,117,0.10)'},
+    OHP:{line:'#378ADD',fill:'rgba(55,138,221,0.10)'},
+    DL:{line:'#BA7517',fill:'rgba(186,117,23,0.10)'},
+  };
+  if (PRESET[abbr]) return PRESET[abbr];
+  const h = [...abbr].reduce((a,c)=>a+c.charCodeAt(0)*31,0)%360;
+  return { line:`hsl(${h},55%,48%)`, fill:`hsla(${h},55%,48%,0.10)` };
+}
+
+function renderSVGChart(container, pts, color, tooltipUnit) {
+  container.innerHTML = '';
+  if (pts.length < 2) return;
+
+  const W = container.clientWidth || 320;
+  const H = 180;
+  const P = { top:16, right:14, bottom:30, left:46 };
+  const pw = W - P.left - P.right;
+  const ph = H - P.top - P.bottom;
+
+  const vals = pts.map(p => p.value);
+  const minV = Math.min(...vals);
+  const maxV = Math.max(...vals);
+  const spread = maxV - minV || 1;
+
+  const xs = i => P.left + (i / (pts.length-1)) * pw;
+  const ys = v => P.top + ph - ((v - minV) / spread) * ph;
+
+  // Nice Y ticks
+  const rawStep = spread / 4;
+  const mag = Math.pow(10, Math.floor(Math.log10(rawStep || 1)));
+  const niceTick = [1,2,2.5,5,10].map(f=>f*mag).find(f=>f>=rawStep) || rawStep;
+  const tickMin = Math.floor(minV/niceTick)*niceTick;
+  const yTicks = [];
+  for (let t=tickMin; t<=maxV+niceTick*0.01; t+=niceTick) yTicks.push(+t.toFixed(10));
+
+  const maxXLabels = Math.floor(pw / 60);
+  const xStep = Math.max(1, Math.ceil(pts.length / maxXLabels));
+
+  const coords = pts.map((p,i) => [xs(i), ys(p.value)]);
+  const linePath = coords.map((c,i) => (i===0?'M':'L')+c[0].toFixed(1)+','+c[1].toFixed(1)).join(' ');
+  const areaPath = linePath
+    + ` L${coords[coords.length-1][0].toFixed(1)},${(P.top+ph).toFixed(1)}`
+    + ` L${coords[0][0].toFixed(1)},${(P.top+ph).toFixed(1)} Z`;
+
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.style.cssText = 'width:100%;display:block;overflow:visible';
+
+  // Y gridlines + labels
+  yTicks.forEach(v => {
+    if (v < minV - spread*0.1 || v > maxV + spread*0.1) return;
+    const y = ys(v).toFixed(1);
+    const gl = document.createElementNS(NS, 'line');
+    gl.setAttribute('x1', P.left); gl.setAttribute('x2', P.left+pw);
+    gl.setAttribute('y1', y); gl.setAttribute('y2', y);
+    gl.setAttribute('stroke', 'rgba(128,128,128,0.12)');
+    gl.setAttribute('stroke-dasharray', '3 4');
+    svg.appendChild(gl);
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('x', P.left-6); t.setAttribute('y', +y+4);
+    t.setAttribute('text-anchor', 'end');
+    t.setAttribute('font-size', '10');
+    t.setAttribute('fill', 'var(--text3)');
+    t.setAttribute('font-family', 'var(--mono)');
+    t.textContent = v%1===0 ? v : v.toFixed(1);
+    svg.appendChild(t);
+  });
+
+  // X labels
+  pts.forEach((p,i) => {
+    if (i%xStep!==0 && i!==pts.length-1) return;
+    const x = xs(i).toFixed(1);
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('x', x); t.setAttribute('y', H-5);
+    t.setAttribute('text-anchor', i===pts.length-1?'end':i===0?'start':'middle');
+    t.setAttribute('font-size', '10');
+    t.setAttribute('fill', 'var(--text3)');
+    t.textContent = fmtDateChart(p.date);
+    svg.appendChild(t);
+  });
+
+  // Area fill
+  const area = document.createElementNS(NS, 'path');
+  area.setAttribute('d', areaPath);
+  area.setAttribute('fill', color.fill);
+  svg.appendChild(area);
+
+  // Line
+  const line = document.createElementNS(NS, 'path');
+  line.setAttribute('d', linePath);
+  line.setAttribute('fill', 'none');
+  line.setAttribute('stroke', color.line);
+  line.setAttribute('stroke-width', '2.5');
+  line.setAttribute('stroke-linejoin', 'round');
+  line.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(line);
+
+  // Tooltip
+  const tip = document.createElement('div');
+  tip.className = 'chart-tooltip';
+  tip.style.display = 'none';
+  container.style.position = 'relative';
+
+  pts.forEach((p,i) => {
+    const cx = xs(i); const cy = ys(p.value);
+    const dot = document.createElementNS(NS, 'circle');
+    dot.setAttribute('cx', cx.toFixed(1)); dot.setAttribute('cy', cy.toFixed(1));
+    dot.setAttribute('r', '4.5');
+    dot.setAttribute('fill', color.line);
+    dot.setAttribute('stroke', 'var(--surface)');
+    dot.setAttribute('stroke-width', '2');
+    svg.appendChild(dot);
+
+    const hit = document.createElementNS(NS, 'circle');
+    hit.setAttribute('cx', cx.toFixed(1)); hit.setAttribute('cy', cy.toFixed(1));
+    hit.setAttribute('r', '20'); hit.setAttribute('fill', 'transparent');
+
+    const showTip = () => {
+      tip.textContent = fmtDateChart(p.date) + ' · ' + p.value + tooltipUnit;
+      tip.style.display = '';
+      const cw = container.clientWidth;
+      const left = Math.max(60, Math.min(cx * (cw/W), cw-60));
+      const top = cy * ((container.clientHeight||H)/H) - 38;
+      tip.style.left = left+'px'; tip.style.top = top+'px';
+    };
+    const hideTip = () => { tip.style.display='none'; };
+    hit.addEventListener('mouseenter', showTip);
+    hit.addEventListener('mouseleave', hideTip);
+    hit.addEventListener('touchstart', e=>{ e.preventDefault(); showTip(); }, {passive:false});
+    hit.addEventListener('touchend', ()=>setTimeout(hideTip, 1500));
+    svg.appendChild(hit);
+  });
+
+  container.appendChild(svg);
+  container.appendChild(tip);
+}
+
+// ── 6. File operations ────────────────────────────────────────────────────────
+async function handleOpenFile() {
+  if ('showOpenFilePicker' in window) {
+    try {
+      const [h] = await window.showOpenFilePicker({types:[{description:'Workout Log',accept:{'text/plain':['.txt']}}]});
+      State.fileHandle = h;
+      const file = await h.getFile();
+      State.fileName = file.name;
+      const parsed = txtToSessions(await file.text());
+      State.glossary = parsed.glossary;
+      updateSessions(parsed.sessions);
+      refreshAllViews();
+      showToast('Importato: '+file.name);
+    } catch(e) { if(e.name!=='AbortError') showToast('Errore apertura file'); }
+  } else {
+    const inp = document.createElement('input');
+    inp.type='file'; inp.accept='.txt';
+    inp.onchange = async () => {
+      const f = inp.files[0]; if(!f) return;
+      State.fileName = f.name;
+      const parsed = txtToSessions(await f.text());
+      State.glossary = parsed.glossary;
+      updateSessions(parsed.sessions);
+      refreshAllViews();
+      showToast('Importato: '+f.name);
+    };
+    inp.click();
+  }
+}
+
+async function handleSaveToFs() {
+  if (!State.fileHandle) {
+    if ('showSaveFilePicker' in window) {
+      try {
+        State.fileHandle = await window.showSaveFilePicker({
+          suggestedName: State.fileName||'workout_log.txt',
+          types:[{description:'Workout Log',accept:{'text/plain':['.txt']}}]
+        });
+        State.fileName = (await State.fileHandle.getFile()).name;
+        renderFileStatus();
+      } catch(e) { if(e.name!=='AbortError') showToast('Errore salvataggio'); return; }
+    } else { handleDownloadFile(); return; }
+  }
+  try {
+    const w = await State.fileHandle.createWritable();
+    await w.write(sessionsToTxt(State.sessions, State.glossary));
+    await w.close();
+    showToast('Salvato ✓');
+  } catch(e) { showToast('Errore salvataggio'); }
+}
+
+async function handleDownloadFile() {
+  const content = sessionsToTxt(State.sessions, State.glossary);
+  const fileName = State.fileName||'workout_log.txt';
+  const file = new File([content], fileName, {type:'text/plain'});
+  if (navigator.canShare && navigator.canShare({files:[file]})) {
+    try { await navigator.share({files:[file],title:'Workout Log'}); return; }
+    catch(e) { if(e.name==='AbortError') return; }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content],{type:'text/plain'}));
+  a.download = fileName; a.click();
+  showToast('Esportato ✓');
+}
+
+function handleNewFile() {
+  if (State.sessions.length && !confirm('Nuovo file? I dati non salvati andranno persi.')) return;
+  State.fileHandle = null; State.fileName = null;
+  updateSessions([]);
+  document.getElementById('logDateInput').value = todayStr();
+  handleLogDateChange();
+  refreshAllViews();
+}
+
+// ── 7. Storage (IndexedDB) ────────────────────────────────────────────────────
+function updateSessions(newSessions) {
+  State.sessions = newSessions;
+  persistData();
+  if (State.fileHandle) handleSaveToFs();
+  renderFileStatus();
+}
+
+async function persistData() {
+  const toSave = State.sessions.map(({date,raw,exercises,bodyWeight})=>({date,raw,exercises,bodyWeight}));
+  try { await DB.set(CONFIG.SESSIONS, toSave); } catch(e) {}
+}
+
+async function persistGlossary() {
+  try { await DB.set(CONFIG.GLOSSARY, State.glossary); } catch(e) {}
+  if (State.fileHandle) handleSaveToFs();
+}
+
+// ── 8. UI ─────────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 2200);
+}
+
+function todayStr() { return new Date().toISOString().slice(0,10); }
+function fmtDateShort(d) { return new Date(d+'T12:00:00').toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short',year:'numeric'}); }
+function fmtDateChart(d) { return new Date(d+'T12:00:00').toLocaleDateString('it-IT',{day:'numeric',month:'short'}); }
+
+function renderFileStatus() {
+  const sub = document.getElementById('headerSub');
+  const badge = document.getElementById('fileStatusBadge');
+  if (State.fileName) {
+    sub.textContent = State.fileName; sub.style.color = 'var(--green)';
+    badge.textContent = State.sessions.length+' sessioni'; badge.className = 'file-status has-file';
+  } else {
+    sub.textContent = State.sessions.length ? State.sessions.length+' sessioni in memoria' : 'nessun file';
+    sub.style.color = ''; badge.textContent = ''; badge.className = 'file-status';
+  }
+}
+
+function refreshAllViews() {
+  initLogTab();
+  if (State.currentTab==='storico') renderStorico();
+  if (State.currentTab==='trend') renderTrend();
+  if (State.currentTab==='glossario') renderGlossario();
+}
+
+function handleTabSwitch(tab) {
+  State.currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  ['log','storico','trend','glossario'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display = (t===tab)?'':'none';
+  });
+  if (tab==='storico') renderStorico();
+  if (tab==='trend') renderTrend();
+  if (tab==='glossario') renderGlossario();
+}
+
+function initLogTab() {
+  const di = document.getElementById('logDateInput');
+  if (!di.value) di.value = todayStr();
+  handleLogDateChange();
+}
+
+function handleLogDateChange() {
+  const date = document.getElementById('logDateInput').value||todayStr();
+  const session = State.sessions.find(s=>s.date===date);
+  document.getElementById('logInput').value = session ? session.raw : '';
+  renderLogPreview();
+}
+
+function handleEditSession(date) {
+  handleTabSwitch('log');
+  document.getElementById('logDateInput').value = date;
+  handleLogDateChange();
+}
+
+function handleQuickAdd() {
+  const abbr = document.getElementById('qaAbbr').value.trim().toUpperCase();
+  const sets = parseInt(document.getElementById('qaSets').value)||1;
+  const reps = document.getElementById('qaReps').value.trim();
+  const weight = document.getElementById('qaWeight').value.trim();
+  if (!abbr || !reps) { document.getElementById(abbr?'qaReps':'qaAbbr').focus(); return; }
+  const setsReps = sets>1 ? sets+'x'+reps : reps;
+  const segment = weight ? `${setsReps}@${weight}` : setsReps;
+
+  const ta = document.getElementById('logInput');
+  const lines = ta.value ? ta.value.split('\n') : [];
+  const lastLine = lines[lines.length - 1] || '';
+  // Se l'ultima riga appartiene allo stesso esercizio, aggiungi il segmento
+  const lastAbbr = lastLine.match(/^([A-Za-z]{1,6})[\s@x]/i)?.[1]?.toUpperCase();
+  if (lines.length > 0 && lastAbbr === abbr) {
+    lines[lines.length - 1] = lastLine + ' + ' + segment;
+  } else {
+    lines.push(abbr + ' ' + segment);
+  }
+
+  ta.value = lines.join('\n');
+  renderLogPreview();
+  document.getElementById('qaReps').value = '';
+  document.getElementById('qaWeight').value = '';
+  document.getElementById('qaReps').focus();
+}
+
+function renderLogPreview() {
+  const targetDate = document.getElementById('logDateInput').value||todayStr();
+  const rawText = document.getElementById('logInput').value;
+  const allLines = parseAllLines(rawText);
+  const exercises = allLines.filter(l=>l.type==='exercise');
+  const invalidLines = allLines.filter(l=>l.type==='invalid');
+  const bwLines = allLines.filter(l=>l.type==='bw');
+
+  const btn = document.getElementById('btnSaveDay');
+  const existingSession = State.sessions.find(s=>s.date===targetDate);
+  const isEmpty = exercises.length===0 && bwLines.length===0;
+
+  btn.classList.remove('saved');
+  if (isEmpty && existingSession) {
+    btn.disabled=false; btn.textContent='Elimina allenamento'; btn.classList.add('danger');
+  } else {
+    btn.disabled=isEmpty;
+    btn.textContent=existingSession?'Aggiorna allenamento':'Salva allenamento';
+    btn.classList.remove('danger');
+  }
+
+  const warnEl = document.getElementById('invalidWarnings');
+  if (invalidLines.length) {
+    warnEl.innerHTML = '<strong>Righe non riconosciute:</strong>'+invalidLines.map(l=>`<br><code>${escapeHTML(l.text)}</code>`).join('');
+    warnEl.style.display='';
+  } else { warnEl.style.display='none'; }
+
+  const el = document.getElementById('preview');
+  const visibleLines = allLines.filter(l=>l.type!=='invalid');
+  if (!visibleLines.length) { el.innerHTML=''; return; }
+
+  const prMap = buildRunningPRs(State.sessions);
+  const historicalPRs = prMap.get(targetDate)||{};
+
+  let html='';
+  if (exercises.length) {
+    const bwNote = bwLines.length ? ' &middot; BW '+bwLines[0].weight+' kg' : '';
+    html+=`<div class="preview-label">${exercises.length} esercizi${bwNote}</div>`;
+  }
+  visibleLines.forEach(item => {
+    if (item.type==='exercise') {
+      const isPR = item.peakWeight!=null && (historicalPRs[item.abbr]==null||item.peakWeight>historicalPRs[item.abbr]);
+      html+=exRowHtml(item,false,isPR);
+      if (item.comment) html+=`<div class="ex-comment">// ${escapeHTML(item.comment)}</div>`;
+    } else if (item.type==='comment') {
+      html+=`<div class="ex-comment">// ${escapeHTML(item.text)}</div>`;
+    } else if (item.type==='bw') {
+      html+=`<div class="bw-row"><span class="bw-abbr">BW</span><span class="bw-val">${item.weight} kg</span><span class="bw-label">peso corporeo</span></div>`;
+    }
+  });
+  el.innerHTML=html;
+}
+
+function handleSaveDay() {
+  const targetDate = document.getElementById('logDateInput').value||todayStr();
+  const raw = document.getElementById('logInput').value.trim();
+  const allLines = parseAllLines(raw);
+  const exercises = allLines.filter(l=>l.type==='exercise');
+  const bwLine = allLines.find(l=>l.type==='bw');
+  const bodyWeight = bwLine ? bwLine.weight : null;
+  const isEmpty = exercises.length===0 && !bodyWeight;
+
+  if (isEmpty) {
+    if (!confirm('Eliminare l\'allenamento del '+fmtDateShort(targetDate)+'?')) return;
+    updateSessions(State.sessions.filter(s=>s.date!==targetDate));
+  } else {
+    updateSessions([
+      ...State.sessions.filter(s=>s.date!==targetDate),
+      {date:targetDate,raw,exercises,bodyWeight,lines:allLines}
+    ].sort((a,b)=>b.date.localeCompare(a.date)));
+  }
+
+  const btn = document.getElementById('btnSaveDay');
+  btn.textContent=isEmpty?'✓ Eliminato':'✓ Salvato';
+  btn.classList.add('saved'); btn.disabled=true;
+  if (isEmpty) btn.classList.remove('danger');
+
+  document.getElementById('logInput').value='';
+  document.getElementById('preview').innerHTML = isEmpty
+    ? '<div class="save-success">Allenamento eliminato</div>'
+    : '<div class="save-success">✓ Allenamento salvato</div>';
+
+  setTimeout(()=>{ btn.disabled=false; btn.classList.remove('saved'); renderLogPreview(); }, 2000);
+}
+
+// ── Heatmap ───────────────────────────────────────────────────────────────────
+function renderHeatmap() {
+  const el = document.getElementById('heatmapWrap');
+  if (!el) return;
+  const WEEKS=18;
+  const today=new Date(); today.setHours(12,0,0,0);
+  const dow=(today.getDay()+6)%7;
+  const start=new Date(today); start.setDate(today.getDate()-dow-(WEEKS-1)*7);
+  const trainingDates=new Set(State.sessions.map(s=>s.date));
+  let lastMonth=-1;
+  const weeks=[];
+  for (let w=0;w<WEEKS;w++){
+    let monthLabel=''; const days=[];
+    for (let d=0;d<7;d++){
+      const date=new Date(start); date.setDate(start.getDate()+w*7+d);
+      const dateStr=date.toISOString().slice(0,10);
+      const isFuture=date>today;
+      const hasSession=trainingDates.has(dateStr);
+      if (d===0 && date.getMonth()!==lastMonth){ monthLabel=date.toLocaleDateString('it-IT',{month:'short'}); lastMonth=date.getMonth(); }
+      days.push({dateStr,hasSession,isFuture});
+    }
+    weeks.push({days,monthLabel});
+  }
+  el.innerHTML=`<div class="heatmap"><div class="heatmap-inner">${weeks.map(w=>`
+    <div class="heatmap-week">
+      <div class="heatmap-month-lbl">${escapeHTML(w.monthLabel)}</div>
+      ${w.days.map(d=>`<div class="heatmap-cell ${d.isFuture?'future':d.hasSession?'active':''}" title="${d.dateStr}"></div>`).join('')}
+    </div>`).join('')}</div></div>`;
+}
+
+// ── Storico ───────────────────────────────────────────────────────────────────
+function renderStorico() {
+  renderHeatmap();
+  const el=document.getElementById('storicoContent');
+  const q=(document.getElementById('storicoSearch')?.value||'').trim().toUpperCase();
+  const filtered=q ? State.sessions.filter(s=>s.exercises.some(e=>e.abbr.includes(q))||s.date.replace(/-/g,'').includes(q.replace(/[-\/]/g,''))) : State.sessions;
+
+  if (!State.sessions.length) { el.innerHTML='<div class="empty"><strong>Nessuna sessione</strong>Importa un file .txt o registra il tuo primo allenamento.</div>'; return; }
+  if (!filtered.length) { el.innerHTML='<div class="empty"><strong>Nessun risultato</strong>Nessuna sessione corrisponde alla ricerca.</div>'; return; }
+
+  const prMap=buildRunningPRs(State.sessions);
+  el.innerHTML=filtered.map(s=>{
+    const lines=s.lines||parseAllLines(s.raw);
+    const exLines=lines.filter(l=>l.type==='exercise');
+    const historicalPRs=prMap.get(s.date)||{};
+    let body='';
+    lines.forEach(item=>{
+      if (item.type==='exercise'){
+        const isPR=item.peakWeight!=null&&(historicalPRs[item.abbr]==null||item.peakWeight>historicalPRs[item.abbr]);
+        body+=exRowHtml(item,true,isPR);
+        if(item.comment) body+=`<div class="ex-comment">// ${escapeHTML(item.comment)}</div>`;
+      } else if(item.type==='comment'){
+        body+=`<div class="ex-comment">// ${escapeHTML(item.text)}</div>`;
+      } else if(item.type==='bw'){
+        body+=`<div class="bw-row"><span class="bw-abbr">BW</span><span class="bw-val">${item.weight} kg</span><span class="bw-label">peso corporeo</span></div>`;
+      }
+    });
+    return `<div class="session-block">
+      <div class="session-header">
+        <div class="date-label">${escapeHTML(fmtDateShort(s.date))}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="session-count">${exLines.length} es.</div>
+          <button class="session-edit-btn" data-action="edit" data-date="${s.date}">Modifica</button>
+        </div>
+      </div>${body}</div>`;
+  }).join('');
+}
+
+// ── Trend ─────────────────────────────────────────────────────────────────────
+function renderTrend() {
+  const allAbbrs=[...new Set(State.sessions.flatMap(s=>s.exercises.map(e=>e.abbr)))].sort();
+  const hasBW=State.sessions.some(s=>s.bodyWeight);
+  if (hasBW) allAbbrs.unshift('BW');
+
+  const sel=document.getElementById('exSelect');
+  const metricSel=document.getElementById('metricSelect');
+  const prev=sel.value;
+  sel.innerHTML=allAbbrs.length ? allAbbrs.map(a=>`<option value="${escapeHTML(a)}"${a===prev?' selected':''}>${escapeHTML(a)}</option>`).join('') : '<option>—</option>';
+
+  const abbr=sel.value;
+  const empty=document.getElementById('trendEmpty');
+  const chartWrap=document.getElementById('chartWrap');
+
+  if (!allAbbrs.length){
+    empty.innerHTML='<strong>Nessun dato</strong>Importa un file .txt o inizia a registrare.';
+    empty.style.display=''; chartWrap.style.display='none';
+    document.getElementById('statsGrid').innerHTML='';
+    document.getElementById('stagnationBanner').style.display='none';
+    return;
+  }
+
+  if (abbr==='BW'){
+    metricSel.style.display='none'; document.getElementById('stagnationBanner').style.display='none';
+    const pts=State.sessions.filter(s=>s.bodyWeight).map(s=>({date:s.date,value:s.bodyWeight})).sort((a,b)=>a.date.localeCompare(b.date));
+    if (pts.length<2){
+      empty.innerHTML=pts.length===1?'<strong>Serve almeno una seconda rilevazione</strong>per mostrare il grafico BW.':'<strong>Nessun dato BW</strong>Aggiungi <code style="font-family:var(--mono)">BW 78.5</code> al log.';
+      empty.style.display=''; chartWrap.style.display='none'; return;
+    }
+    const minBW=Math.min(...pts.map(p=>p.value)), maxBW=Math.max(...pts.map(p=>p.value));
+    const delta=+(pts[pts.length-1].value-pts[0].value).toFixed(1);
+    document.getElementById('statsGrid').innerHTML=[
+      {label:'rilevazioni',val:pts.length,cls:''},
+      {label:'range',val:minBW+'–'+maxBW+' kg',cls:''},
+      {label:'variazione',val:(delta>0?'+':'')+delta+' kg',cls:delta<0?'green':delta>0?'red':''}
+    ].map(({label,val,cls})=>`<div class="stat-card"><div class="stat-label">${label}</div><div class="stat-val ${cls}">${val}</div></div>`).join('');
+    empty.style.display='none'; chartWrap.style.display='';
+    renderSVGChart(chartWrap, pts, {line:'#185FA5',fill:'rgba(24,95,165,0.10)'}, ' kg');
+    return;
+  }
+
+  metricSel.style.display='';
+  const metric=metricSel.value;
+  const pts=State.sessions
+    .filter(s=>s.exercises.some(e=>e.abbr===abbr))
+    .map(s=>{ const ex=s.exercises.find(e=>e.abbr===abbr); return {date:s.date,value:metric==='peak'?(ex.peakWeight||0):metric==='volume'?(ex.volume||0):(ex.estimated1RM||0)}; })
+    .sort((a,b)=>a.date.localeCompare(b.date))
+    .filter(p=>p.value>0);
+
+  let sc=0;
+  for (let i=pts.length-1;i>=1;i--){ if(pts[i].value===pts[i-1].value)sc++; else break; }
+  const last3=pts.slice(-3);
+  const volTrendDown=last3.length===3&&last3[2].value<last3[0].value;
+  const banner=document.getElementById('stagnationBanner');
+  if (sc>=2){ banner.textContent='⚠ Valore identico per '+(sc+1)+' sessioni consecutive — stagnazione.'; banner.style.display=''; }
+  else if (volTrendDown&&metric==='volume'){ banner.textContent='⚠ Volume in calo nelle ultime 3 sessioni.'; banner.style.display=''; }
+  else banner.style.display='none';
+
+  const allEx=State.sessions.filter(s=>s.exercises.some(e=>e.abbr===abbr)).map(s=>s.exercises.find(e=>e.abbr===abbr));
+  const maxP=allEx.length?Math.max(...allEx.map(e=>e.peakWeight||0)):0;
+  const maxE1RM=allEx.length?Math.max(...allEx.map(e=>e.estimated1RM||0)):0;
+  const delta=pts.length>=2?+(pts[pts.length-1].value-pts[0].value).toFixed(1):0;
+  const pct=pts.length&&pts[0].value?Math.round((delta/pts[0].value)*100):0;
+
+  const statsCards=[
+    {label:'sessioni',val:allEx.length,cls:''},
+    {label:'picco max',val:maxP+' kg',cls:''},
+    {label:delta>=0?'progresso':'variazione',val:(delta>0?'+':'')+delta+(metric==='volume'?' kg·r':' kg'),sub:pts.length>=2?(pct>0?'+':'')+pct+'%':'',cls:delta>0?'green':delta<0?'red':''},
+  ];
+  if (maxE1RM>0) statsCards.push({label:'1RM stimato',val:'~'+maxE1RM+' kg',cls:''});
+
+  document.getElementById('statsGrid').innerHTML=statsCards.map(({label,val,sub,cls})=>`
+    <div class="stat-card"><div class="stat-label">${label}</div><div class="stat-val ${cls}">${val}</div>${sub?'<div class="stat-sub '+cls+'">'+sub+'</div>':''}</div>`).join('');
+
+  if (pts.length<2){
+    empty.innerHTML=pts.length===1?'<strong>Serve almeno una seconda sessione</strong>per mostrare il grafico.':'<strong>Nessuna sessione</strong>con questo esercizio.';
+    empty.style.display=''; chartWrap.style.display='none'; return;
+  }
+  empty.style.display='none'; chartWrap.style.display='';
+  const tooltipUnit=metric==='volume'?' kg·r':' kg';
+  renderSVGChart(chartWrap, pts, colorForAbbr(abbr), tooltipUnit);
+}
+
+// ── Glossario ─────────────────────────────────────────────────────────────────
+function renderGlossario() {
+  const known=new Set([...Object.keys(State.glossary),...State.sessions.flatMap(s=>s.exercises.map(e=>e.abbr))]);
+  const sorted=[...known].sort();
+  const el=document.getElementById('glossarioContent');
+  if (!sorted.length){ el.innerHTML='<div class="empty" style="padding:20px 0 0"><strong>Nessuna abbreviazione</strong>Appaiono automaticamente quando registri allenamenti.</div>'; return; }
+  el.innerHTML=sorted.map(abbr=>`<div class="glossario-row"><span class="gl-abbr">${escapeHTML(abbr)}</span><input class="gl-input" type="text" placeholder="nome esteso..." data-abbr="${escapeHTML(abbr)}" value="${escapeHTML(State.glossary[abbr]||'')}"></div>`).join('');
+  document.querySelectorAll('.gl-input').forEach(input=>{
+    input.addEventListener('change', handleGlossaryInputUpdate);
+    input.addEventListener('blur', handleGlossaryInputUpdate);
+  });
+}
+
+function handleGlossaryInputUpdate(e) {
+  const abbr=e.target.dataset.abbr, name=e.target.value.trim();
+  if (name) State.glossary[abbr]=name; else delete State.glossary[abbr];
+  persistGlossary();
+}
+
+function handleAddGlossaryEntry() {
+  const abbrEl=document.getElementById('glNewAbbr'), nameEl=document.getElementById('glNewName');
+  const abbr=abbrEl.value.trim().toUpperCase(), name=nameEl.value.trim();
+  if (!abbr){ abbrEl.focus(); return; }
+  if (name) State.glossary[abbr]=name; else State.glossary[abbr]=State.glossary[abbr]||'';
+  abbrEl.value=''; nameEl.value='';
+  persistGlossary(); renderGlossario();
+  setTimeout(()=>{ const m=[...document.querySelectorAll('.gl-input')].find(i=>i.dataset.abbr===abbr); if(m)m.focus(); },50);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+function attachGlobalListeners() {
+  document.getElementById('btnNewFile').addEventListener('click', handleNewFile);
+  document.getElementById('btnOpenFile').addEventListener('click', handleOpenFile);
+  document.getElementById('btnDownloadFile').addEventListener('click', handleDownloadFile);
+  document.getElementById('btnSaveFs').addEventListener('click', handleSaveToFs);
+  document.getElementById('tabContainer').addEventListener('click', e=>{ if(e.target.classList.contains('tab-btn')) handleTabSwitch(e.target.dataset.tab); });
+  document.getElementById('logDateInput').addEventListener('change', handleLogDateChange);
+  document.getElementById('logInput').addEventListener('input', renderLogPreview);
+  document.getElementById('btnSaveDay').addEventListener('click', handleSaveDay);
+  document.getElementById('btnQaAdd').addEventListener('click', handleQuickAdd);
+  document.getElementById('qaAbbr').addEventListener('input', e=>{ e.target.value=e.target.value.toUpperCase(); });
+  document.getElementById('qaWeight').addEventListener('keydown', e=>{ if(e.key==='Enter') handleQuickAdd(); });
+  document.getElementById('storicoContent').addEventListener('click', e=>{ if(e.target.dataset.action==='edit') handleEditSession(e.target.dataset.date); });
+  document.getElementById('storicoSearch').addEventListener('input', renderStorico);
+  document.getElementById('exSelect').addEventListener('change', renderTrend);
+  document.getElementById('metricSelect').addEventListener('change', renderTrend);
+  document.getElementById('btnAddGlossary').addEventListener('click', handleAddGlossaryEntry);
+  document.getElementById('glNewAbbr').addEventListener('input', e=>{ e.target.value=e.target.value.toUpperCase(); });
+  const glEnter=e=>{ if(e.key==='Enter') handleAddGlossaryEntry(); };
+  document.getElementById('glNewAbbr').addEventListener('keydown', glEnter);
+  document.getElementById('glNewName').addEventListener('keydown', glEnter);
+}
+
+async function initApp() {
+  // Migrazione da localStorage (V5 → V6)
+  try {
+    const lsS = localStorage.getItem('workout_log_sessions');
+    const lsG = localStorage.getItem('workout_log_glossary');
+    if (lsS) {
+      const existing = await DB.get(CONFIG.SESSIONS);
+      if (!existing) {
+        await DB.set(CONFIG.SESSIONS, JSON.parse(lsS));
+        if (lsG) await DB.set(CONFIG.GLOSSARY, JSON.parse(lsG));
+      }
+      localStorage.removeItem('workout_log_sessions');
+      localStorage.removeItem('workout_log_glossary');
+    }
+  } catch(e) {}
+
+  try {
+    const sessions = await DB.get(CONFIG.SESSIONS);
+    if (sessions) State.sessions = sessions.map(sess => {
+      const lines = parseAllLines(sess.raw);
+      const exercises = lines.filter(l=>l.type==='exercise');
+      const bwLine = lines.find(l=>l.type==='bw');
+      return { ...sess, exercises, bodyWeight: bwLine?bwLine.weight:(sess.bodyWeight||null), lines };
+    });
+  } catch(e) {}
+
+  try {
+    const glossary = await DB.get(CONFIG.GLOSSARY);
+    if (glossary) State.glossary = glossary;
+  } catch(e) {}
+
+  attachGlobalListeners();
+  initLogTab();
+  renderFileStatus();
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+}
+
+document.addEventListener('DOMContentLoaded', initApp);
+</script>
+</body>
+</html>
