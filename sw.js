@@ -1,5 +1,5 @@
 const CACHE = 'workout-v1';
-const SHELL = ['./palestraV6.html', './manifest.json', './sw.js', './icon.png'];
+const SHELL = ['./index.html', './', './manifest.json', './sw.js', './icon.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
