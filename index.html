@@ -18,7 +18,7 @@
     --text: #1a1a18; --text2: #6b6a65; --text3: #a09f99;
     --green: #1D9E75; --green-bg: #eaf3de;
     --red: #c0392b; --amber: #BA7517; --amber-bg: #faeeda;
-    --orange: #D85A30; --blue: #185FA5;
+    --orange: #D85A30; --blue: #185FA5; --purple: #7C3AED; --pink: #C2185B;
     --radius: 10px; --radius-sm: 7px;
     --mono: 'SF Mono', 'Fira Mono', 'Menlo', monospace;
     --sans: -apple-system, 'Helvetica Neue', Arial, sans-serif;
@@ -30,7 +30,7 @@
       --text: #f0efe9; --text2: #8e8d87; --text3: #5a5955;
       --green: #5DCAA5; --green-bg: #04342c;
       --red: #e47070; --amber: #EF9F27; --amber-bg: #412402;
-      --orange: #F0997B; --blue: #85B7EB;
+      --orange: #F0997B; --blue: #85B7EB; --purple: #A78BFA; --pink: #F472B6;
     }
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -179,6 +179,27 @@
   .invalid-warning code { font-family: var(--mono); font-size: 11px; }
   .session-edit-btn { font-size: 11px; color: var(--text3); background: none; border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 3px 9px; cursor: pointer; font-family: var(--sans); transition: color 0.12s, border-color 0.12s; }
   .session-edit-btn:hover { color: var(--text); border-color: var(--text); }
+
+  /* ── Summary stats (Storico) ── */
+  .summary-row { display:flex; margin-bottom:18px; }
+  .summary-item { flex:1; }
+  .summary-item+.summary-item { padding-left:16px; border-left:1px solid var(--border); margin-left:16px; }
+  .summary-val { font-family:var(--mono); font-size:26px; font-weight:700; letter-spacing:-0.5px; line-height:1; }
+  .summary-label { font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:0.06em; margin-top:4px; }
+  .summary-delta { font-size:11px; margin-top:5px; color:var(--green); font-family:var(--mono); }
+  .summary-delta.neg { color:var(--red); }
+
+  /* ── Muscle volume bars (Trend) ── */
+  .section-label { font-size:11px; letter-spacing:0.07em; text-transform:uppercase; color:var(--text3); margin:4px 0 12px; }
+  .muscle-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .muscle-name { font-size:13px; color:var(--text2); min-width:70px; }
+  .muscle-bar-wrap { flex:1; height:6px; background:var(--surface2); border-radius:3px; overflow:hidden; }
+  .muscle-bar { height:100%; border-radius:3px; }
+  .muscle-val { font-family:var(--mono); font-size:12px; color:var(--text3); min-width:38px; text-align:right; }
+  .muscle-hint { font-size:11px; color:var(--text3); margin-top:14px; line-height:1.6; }
+
+  /* ── Muscle group select (Legenda) ── */
+  .gl-group-sel { padding:5px 4px; font-family:var(--sans); font-size:11px; border:1px solid var(--border2); border-radius:var(--radius-sm); background:var(--surface2); color:var(--text2); outline:none; cursor:pointer; max-width:88px; flex-shrink:0; color-scheme:light dark; }
 </style>
 </head>
 <body>
@@ -234,6 +255,7 @@
   </div>
 
   <div id="tab-storico" class="tab-content" style="display:none">
+    <div id="summaryRow"></div>
     <div id="heatmapWrap"></div>
     <input id="storicoSearch" class="storico-search" type="text" placeholder="Cerca esercizio o data…" autocomplete="off" autocorrect="off" spellcheck="false">
     <div id="storicoContent"></div>
@@ -252,6 +274,7 @@
     <div id="statsGrid" class="stats-grid"></div>
     <div class="chart-wrap" id="chartWrap"></div>
     <div id="trendEmpty" class="empty"></div>
+    <div id="muscleVolumeSection"></div>
   </div>
 
   <div id="tab-glossario" class="tab-content" style="display:none">
@@ -299,11 +322,12 @@ const DB = (() => {
 })();
 
 // ── 2. Stato ──────────────────────────────────────────────────────────────────
-const CONFIG = { SESSIONS: 'sessions_v1', GLOSSARY: 'glossary_v1' };
+const CONFIG = { SESSIONS: 'sessions_v1', GLOSSARY: 'glossary_v1', MUSCLE_GROUPS: 'musclegroups_v1' };
 
 const State = {
   sessions: [],
   glossary: {},
+  muscleGroups: {},
   fileHandle: null,
   fileName: null,
   currentTab: 'log'
@@ -917,6 +941,7 @@ function renderHeatmap() {
 
 // ── Storico ───────────────────────────────────────────────────────────────────
 function renderStorico() {
+  renderSummaryStats();
   renderHeatmap();
   const el=document.getElementById('storicoContent');
   const q=(document.getElementById('storicoSearch')?.value||'').trim().toUpperCase();
@@ -955,6 +980,7 @@ function renderStorico() {
 
 // ── Trend ─────────────────────────────────────────────────────────────────────
 function renderTrend() {
+  renderMuscleVolume();
   const allAbbrs=[...new Set(State.sessions.flatMap(s=>s.exercises.map(e=>e.abbr)))].sort();
   const hasBW=State.sessions.some(s=>s.bodyWeight);
   if (hasBW) allAbbrs.unshift('BW');
@@ -1043,10 +1069,25 @@ function renderGlossario() {
   const sorted=[...known].sort();
   const el=document.getElementById('glossarioContent');
   if (!sorted.length){ el.innerHTML='<div class="empty" style="padding:20px 0 0"><strong>Nessuna abbreviazione</strong>Appaiono automaticamente quando registri allenamenti.</div>'; return; }
-  el.innerHTML=sorted.map(abbr=>`<div class="glossario-row"><span class="gl-abbr">${escapeHTML(abbr)}</span><input class="gl-input" type="text" placeholder="nome esteso..." data-abbr="${escapeHTML(abbr)}" value="${escapeHTML(State.glossary[abbr]||'')}"></div>`).join('');
+  const GL_GROUPS = ['schiena','spalle','petto','gambe','braccia','altro'];
+  el.innerHTML=sorted.map(abbr=>`<div class="glossario-row">
+    <span class="gl-abbr">${escapeHTML(abbr)}</span>
+    <input class="gl-input" type="text" placeholder="nome esteso..." data-abbr="${escapeHTML(abbr)}" value="${escapeHTML(State.glossary[abbr]||'')}">
+    <select class="gl-group-sel" data-abbr="${escapeHTML(abbr)}">
+      <option value="">— gruppo —</option>
+      ${GL_GROUPS.map(g=>`<option value="${g}"${State.muscleGroups[abbr]===g?' selected':''}>${g.charAt(0).toUpperCase()+g.slice(1)}</option>`).join('')}
+    </select>
+  </div>`).join('');
   document.querySelectorAll('.gl-input').forEach(input=>{
     input.addEventListener('change', handleGlossaryInputUpdate);
     input.addEventListener('blur', handleGlossaryInputUpdate);
+  });
+  document.querySelectorAll('.gl-group-sel').forEach(sel=>{
+    sel.addEventListener('change', e=>{
+      const abbr=e.target.dataset.abbr, g=e.target.value;
+      if (g) State.muscleGroups[abbr]=g; else delete State.muscleGroups[abbr];
+      persistMuscleGroups();
+    });
   });
 }
 
@@ -1064,6 +1105,80 @@ function handleAddGlossaryEntry() {
   abbrEl.value=''; nameEl.value='';
   persistGlossary(); renderGlossario();
   setTimeout(()=>{ const m=[...document.querySelectorAll('.gl-input')].find(i=>i.dataset.abbr===abbr); if(m)m.focus(); },50);
+}
+
+// ── Summary stats ─────────────────────────────────────────────────────────────
+function renderSummaryStats() {
+  const el = document.getElementById('summaryRow');
+  if (!el) return;
+  if (!State.sessions.length) { el.innerHTML = ''; return; }
+  const now = new Date();
+  const thisMonth = now.toISOString().slice(0, 7);
+  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0, 7);
+  const sessThis = State.sessions.filter(s => s.date.startsWith(thisMonth)).length;
+  const sessPrev = State.sessions.filter(s => s.date.startsWith(prevMonth)).length;
+  const sessDelta = sessThis - sessPrev;
+  const volThis = State.sessions.filter(s => s.date.startsWith(thisMonth))
+    .reduce((a, s) => a + s.exercises.reduce((b, e) => b + (e.volume || 0), 0), 0);
+  const volPrev = State.sessions.filter(s => s.date.startsWith(prevMonth))
+    .reduce((a, s) => a + s.exercises.reduce((b, e) => b + (e.volume || 0), 0), 0);
+  const volDeltaPct = volPrev ? Math.round(((volThis - volPrev) / volPrev) * 100) : null;
+  const fmtVol = v => v >= 1000 ? Math.round(v / 1000) + 'k' : String(v);
+  const sessSign = sessDelta > 0 ? '+' : '';
+  const sessDeltaHtml = sessPrev > 0 || sessDelta !== 0
+    ? `<div class="summary-delta${sessDelta < 0 ? ' neg' : ''}">${sessDelta > 0 ? '↑' : sessDelta < 0 ? '↓' : ''} ${sessSign}${sessDelta} vs mese scorso</div>` : '';
+  const volDeltaHtml = volDeltaPct !== null
+    ? `<div class="summary-delta${volDeltaPct < 0 ? ' neg' : ''}">${volDeltaPct > 0 ? '↑' : '↓'} ${Math.abs(volDeltaPct)}% vs mese scorso</div>` : '';
+  el.innerHTML = `<div class="summary-row">
+    <div class="summary-item">
+      <div class="summary-val">${sessThis}</div>
+      <div class="summary-label">Sessioni questo mese</div>
+      ${sessDeltaHtml}
+    </div>
+    <div class="summary-item">
+      <div class="summary-val">${fmtVol(volThis)}</div>
+      <div class="summary-label">Volume kg</div>
+      ${volDeltaHtml}
+    </div>
+  </div>`;
+}
+
+// ── Muscle volume ─────────────────────────────────────────────────────────────
+async function persistMuscleGroups() {
+  try { await DB.set(CONFIG.MUSCLE_GROUPS, State.muscleGroups); } catch(e) {}
+}
+
+function renderMuscleVolume() {
+  const el = document.getElementById('muscleVolumeSection');
+  if (!el) return;
+  const COLORS = {
+    schiena:'var(--blue)', spalle:'var(--amber)', petto:'var(--orange)',
+    gambe:'var(--green)', braccia:'var(--purple)', altro:'var(--text2)'
+  };
+  const grouped = {};
+  State.sessions.forEach(s => {
+    s.exercises.forEach(e => {
+      const g = State.muscleGroups[e.abbr];
+      if (!g || !e.volume) return;
+      grouped[g] = (grouped[g] || 0) + e.volume;
+    });
+  });
+  const entries = Object.entries(grouped).sort((a, b) => b[1] - a[1]);
+  const divider = '<hr style="border:none;border-top:1px solid var(--border);margin:18px 0 16px">';
+  if (!entries.length) {
+    el.innerHTML = State.sessions.length
+      ? `${divider}<div class="section-label">Volume per gruppo muscolare</div><div class="muscle-hint">Assegna un gruppo muscolare a ciascun esercizio nella tab <strong style="color:var(--text2)">Legenda</strong>.</div>`
+      : '';
+    return;
+  }
+  const maxVol = entries[0][1];
+  const fmtT = v => (v / 1000).toFixed(1) + 't';
+  el.innerHTML = `${divider}<div class="section-label">Volume per gruppo muscolare</div>
+    ${entries.map(([g, v]) => `<div class="muscle-row">
+      <div class="muscle-name">${g.charAt(0).toUpperCase() + g.slice(1)}</div>
+      <div class="muscle-bar-wrap"><div class="muscle-bar" style="width:${Math.round((v / maxVol) * 100)}%;background:${COLORS[g] || 'var(--text3)'}"></div></div>
+      <div class="muscle-val">${fmtT(v)}</div>
+    </div>`).join('')}`;
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -1119,6 +1234,11 @@ async function initApp() {
   try {
     const glossary = await DB.get(CONFIG.GLOSSARY);
     if (glossary) State.glossary = glossary;
+  } catch(e) {}
+
+  try {
+    const muscleGroups = await DB.get(CONFIG.MUSCLE_GROUPS);
+    if (muscleGroups) State.muscleGroups = muscleGroups;
   } catch(e) {}
 
   attachGlobalListeners();
