@@ -871,7 +871,6 @@ function renderLogPreview() {
   if (!visibleLines.length) { el.innerHTML=''; return; }
 
   const prMap = buildRunningPRs(State.sessions);
-  const existingSession = State.sessions.find(s => s.date === targetDate);
   let historicalPRs;
   if (existingSession) {
     historicalPRs = prMap.get(targetDate) || {};
