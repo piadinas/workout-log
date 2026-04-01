@@ -701,7 +701,7 @@ async function handleDownloadFile() {
   const fileName = State.fileName||'workout_log.txt';
   const file = new File([content], fileName, {type:'text/plain'});
   if (navigator.canShare && navigator.canShare({files:[file]})) {
-    try { await navigator.share({files:[file],title:'Workout Log'}); }
+    try { await navigator.share({files:[file]}); }
     catch(e) { if(e.name!=='AbortError') showToast('Errore condivisione'); }
     return;
   }
