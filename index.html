@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#111110" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.png">
-<title>Workout Log</title>
+<title>Workout Log V7</title>
 <style>
   :root {
     --bg: #f7f6f3; --surface: #ffffff; --surface2: #f0efe9;
@@ -199,8 +199,10 @@
   .muscle-val { font-family:var(--mono); font-size:12px; color:var(--text3); min-width:38px; text-align:right; }
   .muscle-hint { font-size:11px; color:var(--text3); margin-top:14px; line-height:1.6; }
 
-  /* ── Muscle group select (Legenda) ── */
-  .gl-group-sel { padding:5px 4px; font-family:var(--sans); font-size:11px; border:1px solid var(--border2); border-radius:var(--radius-sm); background:var(--surface2); color:var(--text2); outline:none; cursor:pointer; max-width:88px; flex-shrink:0; color-scheme:light dark; }
+  /* ── Muscle group input (Legenda) ── */
+  .gl-group-input { padding:7px 8px; font-family:var(--sans); font-size:12px; border:1px solid var(--border2); border-radius:var(--radius-sm); background:var(--surface2); color:var(--text2); outline:none; width:90px; flex-shrink:0; transition:border-color 0.15s, background 0.15s; }
+  .gl-group-input:focus { border-color:var(--border2); background:var(--surface); color:var(--text); }
+  .gl-group-input::placeholder { color:var(--text3); font-style:italic; }
 </style>
 </head>
 <body>
@@ -535,7 +537,7 @@ function renderSVGChart(container, pts, color, tooltipUnit) {
   const vals = pts.map(p => p.value);
   const minV = Math.min(...vals);
   const maxV = Math.max(...vals);
-  const spread = maxV - minV || 1;
+  const spread = (maxV - minV) || (maxV * 0.1) || 10;
 
   const xs = i => P.left + (i / (pts.length-1)) * pw;
   const ys = v => P.top + ph - ((v - minV) / spread) * ph;
@@ -755,7 +757,7 @@ function showToast(msg) {
   toastTimer = setTimeout(()=>el.classList.remove('show'), 2200);
 }
 
-function todayStr() { return new Date().toISOString().slice(0,10); }
+function todayStr() { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); }
 function fmtDateShort(d) { return new Date(d+'T12:00:00').toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short',year:'numeric'}); }
 function fmtDateChart(d) { return new Date(d+'T12:00:00').toLocaleDateString('it-IT',{day:'numeric',month:'short'}); }
 
@@ -806,7 +808,7 @@ function handleLogDateChange() {
 function handleEditSession(date) {
   const currentDate = document.getElementById('logDateInput').value || todayStr();
   const currentRaw = document.getElementById('logInput').value;
-  if (currentRaw.trim()) State.pendingDrafts[currentDate] = currentRaw;
+  State.pendingDrafts[currentDate] = currentRaw;
   handleTabSwitch('log');
   document.getElementById('logDateInput').value = date;
   handleLogDateChange();
@@ -1108,25 +1110,23 @@ function renderGlossario() {
   const sorted=[...known].sort();
   const el=document.getElementById('glossarioContent');
   if (!sorted.length){ el.innerHTML='<div class="empty" style="padding:20px 0 0"><strong>Nessuna abbreviazione</strong>Appaiono automaticamente quando registri allenamenti.</div>'; return; }
-  const GL_GROUPS = ['schiena','spalle','petto','gambe','braccia','altro'];
   el.innerHTML=sorted.map(abbr=>`<div class="glossario-row">
     <span class="gl-abbr">${escapeHTML(abbr)}</span>
     <input class="gl-input" type="text" placeholder="nome esteso..." data-abbr="${escapeHTML(abbr)}" value="${escapeHTML(State.glossary[abbr]||'')}">
-    <select class="gl-group-sel" data-abbr="${escapeHTML(abbr)}">
-      <option value="">— gruppo —</option>
-      ${GL_GROUPS.map(g=>`<option value="${g}"${State.muscleGroups[abbr]===g?' selected':''}>${g.charAt(0).toUpperCase()+g.slice(1)}</option>`).join('')}
-    </select>
+    <input class="gl-group-input" type="text" placeholder="gruppo..." data-abbr="${escapeHTML(abbr)}" value="${escapeHTML(State.muscleGroups[abbr]||'')}">
   </div>`).join('');
   document.querySelectorAll('.gl-input').forEach(input=>{
     input.addEventListener('change', handleGlossaryInputUpdate);
     input.addEventListener('blur', handleGlossaryInputUpdate);
   });
-  document.querySelectorAll('.gl-group-sel').forEach(sel=>{
-    sel.addEventListener('change', e=>{
-      const abbr=e.target.dataset.abbr, g=e.target.value;
+  document.querySelectorAll('.gl-group-input').forEach(input=>{
+    const handler = e => {
+      const abbr=e.target.dataset.abbr, g=e.target.value.trim();
       if (g) State.muscleGroups[abbr]=g; else delete State.muscleGroups[abbr];
       persistMuscleGroups();
-    });
+    };
+    input.addEventListener('change', handler);
+    input.addEventListener('blur', handler);
   });
 }
 
@@ -1211,30 +1211,55 @@ function renderMuscleVolume() {
     schiena:'var(--blue)', spalle:'var(--amber)', petto:'var(--orange)',
     gambe:'var(--green)', braccia:'var(--purple)', altro:'var(--text2)'
   };
+  const divider = '<hr style="border:none;border-top:1px solid var(--border);margin:18px 0 16px">';
+
+  if (!State.sessions.length) { el.innerHTML = ''; return; }
+
+  // Leggi il range selezionato (preserva la scelta tra re-render)
+  const existingSel = document.getElementById('muscleRangeSel');
+  const range = existingSel ? existingSel.value : '3m';
+
+  // Calcola la data di cutoff in locale (no UTC)
+  let cutoff = null;
+  if (range !== 'all') {
+    const now = new Date();
+    const months = range === '1m' ? 1 : 3;
+    const c = new Date(now.getFullYear(), now.getMonth() - months, now.getDate());
+    cutoff = c.getFullYear() + '-' + String(c.getMonth()+1).padStart(2,'0') + '-' + String(c.getDate()).padStart(2,'0');
+  }
+  const sessions = cutoff ? State.sessions.filter(s => s.date >= cutoff) : State.sessions;
+
+  // Conta i set per gruppo muscolare
   const grouped = {};
-  State.sessions.forEach(s => {
+  sessions.forEach(s => {
     s.exercises.forEach(e => {
       const g = State.muscleGroups[e.abbr];
-      if (!g || !e.volume) return;
-      grouped[g] = (grouped[g] || 0) + e.volume;
+      if (!g) return;
+      const sets = e.segments.reduce((a, seg) => a + seg.count, 0);
+      grouped[g] = (grouped[g] || 0) + sets;
     });
   });
+
+  const rangeSelect = `<select id="muscleRangeSel" onchange="renderMuscleVolume()" style="flex:none;width:auto;padding:4px 8px;font-size:11px;font-family:var(--sans);border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text2);outline:none;cursor:pointer;">
+    <option value="1m"${range==='1m'?' selected':''}>Ultimo mese</option>
+    <option value="3m"${range==='3m'?' selected':''}>Ultimi 3 mesi</option>
+    <option value="all"${range==='all'?' selected':''}>Tutto</option>
+  </select>`;
+  const header = `${divider}<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">`+
+    `<div class="section-label" style="margin:0">Set per gruppo muscolare</div>${rangeSelect}</div>`;
+
   const entries = Object.entries(grouped).sort((a, b) => b[1] - a[1]);
-  const divider = '<hr style="border:none;border-top:1px solid var(--border);margin:18px 0 16px">';
   if (!entries.length) {
-    el.innerHTML = State.sessions.length
-      ? `${divider}<div class="section-label">Volume per gruppo muscolare</div><div class="muscle-hint">Assegna un gruppo muscolare a ciascun esercizio nella tab <strong style="color:var(--text2)">Legenda</strong>.</div>`
-      : '';
+    el.innerHTML = header + `<div class="muscle-hint">Nessun dato nel periodo selezionato. Assegna i gruppi muscolari nella tab <strong style="color:var(--text2)">Legenda</strong>.</div>`;
     return;
   }
-  const maxVol = entries[0][1];
-  const fmtT = v => (v / 1000).toFixed(1) + 't';
-  el.innerHTML = `${divider}<div class="section-label">Volume per gruppo muscolare</div>
-    ${entries.map(([g, v]) => `<div class="muscle-row">
-      <div class="muscle-name">${g.charAt(0).toUpperCase() + g.slice(1)}</div>
-      <div class="muscle-bar-wrap"><div class="muscle-bar" style="width:${Math.round((v / maxVol) * 100)}%;background:${COLORS[g] || 'var(--text3)'}"></div></div>
-      <div class="muscle-val">${fmtT(v)}</div>
-    </div>`).join('')}`;
+
+  const maxSets = entries[0][1];
+  el.innerHTML = header + entries.map(([g, v]) => `<div class="muscle-row">
+    <div class="muscle-name">${g.charAt(0).toUpperCase() + g.slice(1)}</div>
+    <div class="muscle-bar-wrap"><div class="muscle-bar" style="width:${Math.round((v/maxSets)*100)}%;background:${COLORS[g]||'var(--text3)'}"></div></div>
+    <div class="muscle-val">${v} set</div>
+  </div>`).join('');
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
