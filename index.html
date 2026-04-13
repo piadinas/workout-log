@@ -330,6 +330,7 @@ const State = {
   sessions: [],
   glossary: {},
   muscleGroups: {},
+  pendingDrafts: {},
   fileHandle: null,
   fileName: null,
   currentTab: 'log'
@@ -473,9 +474,11 @@ function exRowHtml(ex, compact, isPR) {
 }
 
 // ── 4. File .txt (import/export) ──────────────────────────────────────────────
-function sessionsToTxt(sessions, glossary) {
+function sessionsToTxt(sessions, glossary, muscleGroups) {
   const glLines = Object.entries(glossary).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,v])=>'## '+k+' = '+v);
-  const glBlock = glLines.length ? glLines.join('\n')+'\n\n' : '';
+  const mgLines = Object.entries(muscleGroups||{}).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,v])=>'### '+k+' = '+v);
+  const headerLines = [...glLines, ...mgLines];
+  const glBlock = headerLines.length ? headerLines.join('\n')+'\n\n' : '';
   const sesBlock = sessions.slice().sort((a,b)=>b.date.localeCompare(a.date))
     .map(s=>'# '+s.date+'\n'+s.raw.trim()).join('\n\n')+'\n';
   return glBlock + sesBlock;
@@ -483,7 +486,10 @@ function sessionsToTxt(sessions, glossary) {
 
 function txtToSessions(txt) {
   const newGlossary = {};
+  const newMuscleGroups = {};
   txt.split('\n').forEach(line => {
+    const mg = line.match(/^###\s*([A-Z]{1,6})\s*=\s*(.+)$/);
+    if (mg) { newMuscleGroups[mg[1].trim()] = mg[2].trim().toLowerCase(); return; }
     const m = line.match(/^##\s*([A-Z]{1,6})\s*=\s*(.+)$/);
     if (m) newGlossary[m[1].trim()] = m[2].trim();
   });
@@ -500,7 +506,7 @@ function txtToSessions(txt) {
     const bodyWeight = bwLine ? bwLine.weight : null;
     if (exercises.length || bodyWeight) newSessions.push({ date:dm[1], raw, exercises, bodyWeight, lines:parsedLines });
   }
-  return { sessions: newSessions.sort((a,b)=>b.date.localeCompare(a.date)), glossary: newGlossary };
+  return { sessions: newSessions.sort((a,b)=>b.date.localeCompare(a.date)), glossary: newGlossary, muscleGroups: newMuscleGroups };
 }
 
 // ── 5. SVG Chart ──────────────────────────────────────────────────────────────
@@ -655,6 +661,7 @@ async function handleOpenFile() {
       State.fileName = file.name;
       const parsed = txtToSessions(await file.text());
       State.glossary = parsed.glossary;
+      if (Object.keys(parsed.muscleGroups).length) { State.muscleGroups = parsed.muscleGroups; persistMuscleGroups(); }
       updateSessions(parsed.sessions);
       refreshAllViews();
       showToast('Importato: '+file.name);
@@ -667,6 +674,7 @@ async function handleOpenFile() {
       State.fileName = f.name;
       const parsed = txtToSessions(await f.text());
       State.glossary = parsed.glossary;
+      if (Object.keys(parsed.muscleGroups).length) { State.muscleGroups = parsed.muscleGroups; persistMuscleGroups(); }
       updateSessions(parsed.sessions);
       refreshAllViews();
       showToast('Importato: '+f.name);
@@ -690,14 +698,14 @@ async function handleSaveToFs() {
   }
   try {
     const w = await State.fileHandle.createWritable();
-    await w.write(sessionsToTxt(State.sessions, State.glossary));
+    await w.write(sessionsToTxt(State.sessions, State.glossary, State.muscleGroups));
     await w.close();
     showToast('Salvato ✓');
   } catch(e) { showToast('Errore salvataggio'); }
 }
 
 async function handleDownloadFile() {
-  const content = sessionsToTxt(State.sessions, State.glossary);
+  const content = sessionsToTxt(State.sessions, State.glossary, State.muscleGroups);
   const fileName = State.fileName||'workout_log.txt';
   const file = new File([content], fileName, {type:'text/plain'});
   if (navigator.canShare && navigator.canShare({files:[file]})) {
@@ -788,13 +796,17 @@ function initLogTab() {
 }
 
 function handleLogDateChange() {
-  const date = document.getElementById('logDateInput').value||todayStr();
-  const session = State.sessions.find(s=>s.date===date);
-  document.getElementById('logInput').value = session ? session.raw : '';
+  const date = document.getElementById('logDateInput').value || todayStr();
+  const draft = State.pendingDrafts[date];
+  const session = State.sessions.find(s => s.date === date);
+  document.getElementById('logInput').value = draft !== undefined ? draft : (session ? session.raw : '');
   renderLogPreview();
 }
 
 function handleEditSession(date) {
+  const currentDate = document.getElementById('logDateInput').value || todayStr();
+  const currentRaw = document.getElementById('logInput').value;
+  if (currentRaw.trim()) State.pendingDrafts[currentDate] = currentRaw;
   handleTabSwitch('log');
   document.getElementById('logDateInput').value = date;
   handleLogDateChange();
@@ -921,6 +933,7 @@ function handleSaveDay() {
       {date:targetDate,raw,exercises,bodyWeight,lines:allLines}
     ].sort((a,b)=>b.date.localeCompare(a.date)));
   }
+  delete State.pendingDrafts[targetDate];
 
   const btn = document.getElementById('btnSaveDay');
   btn.textContent=isEmpty?'✓ Eliminato':'✓ Salvato';
@@ -1155,8 +1168,9 @@ function renderSummaryStats() {
   if (!el) return;
   if (!State.sessions.length) { el.innerHTML = ''; return; }
   const now = new Date();
-  const thisMonth = now.toISOString().slice(0, 7);
-  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0, 7);
+  const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  const prevD = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevMonth = prevD.getFullYear() + '-' + String(prevD.getMonth() + 1).padStart(2, '0');
   const sessThis = State.sessions.filter(s => s.date.startsWith(thisMonth)).length;
   const sessPrev = State.sessions.filter(s => s.date.startsWith(prevMonth)).length;
   const sessDelta = sessThis - sessPrev;
