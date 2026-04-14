@@ -6,54 +6,40 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Workout Log">
-<meta name="theme-color" content="#f7f6f3" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#111110" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#111110">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.png">
 <title>Workout Log V7</title>
 <style>
   :root {
-    --bg: #f7f6f3; --surface: #ffffff; --surface2: #f0efe9;
-    --border: rgba(0,0,0,0.10); --border2: rgba(0,0,0,0.18);
-    --text: #1a1a18; --text2: #6b6a65; --text3: #a09f99;
-    --green: #1D9E75; --green-bg: #eaf3de;
-    --red: #c0392b; --amber: #BA7517; --amber-bg: #faeeda;
-    --orange: #D85A30; --blue: #185FA5; --purple: #7C3AED; --pink: #C2185B;
+    --bg: #111110; --surface: #1c1c1a; --surface2: #252522;
+    --border: rgba(255,255,255,0.09); --border2: rgba(255,255,255,0.16);
+    --text: #f0efe9; --text2: #8e8d87; --text3: #5a5955;
+    --green: #5DCAA5; --green-bg: #04342c;
+    --red: #e47070; --amber: #EF9F27; --amber-bg: #412402;
+    --orange: #F0997B; --blue: #85B7EB; --purple: #A78BFA; --pink: #F472B6;
     --radius: 10px; --radius-sm: 7px;
     --mono: 'SF Mono', 'Fira Mono', 'Menlo', monospace;
     --sans: -apple-system, 'Helvetica Neue', Arial, sans-serif;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #111110; --surface: #1c1c1a; --surface2: #252522;
-      --border: rgba(255,255,255,0.09); --border2: rgba(255,255,255,0.16);
-      --text: #f0efe9; --text2: #8e8d87; --text3: #5a5955;
-      --green: #5DCAA5; --green-bg: #04342c;
-      --red: #e47070; --amber: #EF9F27; --amber-bg: #412402;
-      --orange: #F0997B; --blue: #85B7EB; --purple: #A78BFA; --pink: #F472B6;
-    }
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html { background: var(--bg); }
   body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; min-height: -webkit-fill-available; }
   .app { max-width: 480px; margin: 0 auto; padding: 0 0 120px; }
 
-  .header { padding: 56px 20px 0; display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; }
-  .header-title { font-size: 28px; font-weight: 600; letter-spacing: -0.5px; }
+  .header { padding: 56px 20px 16px; display: flex; justify-content: space-between; align-items: center; }
+  .header-title { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
   .header-sub { font-size: 13px; color: var(--text3); margin-top: 2px; }
-  .file-status { font-size: 11px; color: var(--text3); text-align: right; line-height: 1.4; max-width: 140px; }
-  .file-status.has-file { color: var(--green); }
+  .file-status { display: none; }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+  .icon-btn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border2); background: var(--surface); color: var(--text2); font-size: 17px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.12s, color 0.12s; flex-shrink: 0; font-family: var(--sans); }
+  .icon-btn:active { opacity: 0.7; }
+  .icon-btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .file-toolbar { display: none; }
 
-  .tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 20px; position: sticky; top: 0; background: var(--bg); z-index: 10; }
-  .tab-btn { flex: 1; padding: 12px 0; background: none; border: none; font-family: var(--sans); font-size: 14px; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s; }
-  .tab-btn.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
-
-  .file-toolbar { display: flex; gap: 8px; padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
-  .file-btn { flex: 1; padding: 9px 8px; font-family: var(--sans); font-size: 12px; font-weight: 500; border: 1px solid var(--border2); border-radius: var(--radius-sm); background: var(--surface); color: var(--text2); cursor: pointer; transition: background 0.12s, color 0.12s; text-align: center; }
-  .file-btn:hover { background: var(--surface2); color: var(--text); }
-  .file-btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
-  .file-btn.primary:hover { opacity: 0.85; }
-  .file-btn .icon { display: block; font-size: 15px; margin-bottom: 2px; }
+  .tabs { display: flex; gap: 3px; padding: 3px; margin: 0 20px 16px; background: var(--surface2); border-radius: 10px; position: sticky; top: 8px; z-index: 10; }
+  .tab-btn { flex: 1; padding: 8px 4px; background: none; border: none; border-radius: 7px; font-family: var(--sans); font-size: 12px; font-weight: 500; color: var(--text3); cursor: pointer; transition: background 0.15s, color 0.15s, box-shadow 0.15s; }
+  .tab-btn.active { background: var(--bg); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.5); }
 
   .tab-content { padding: 20px; }
   .date-label { font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text3); }
@@ -95,7 +81,7 @@
   .badge-drop { background: var(--amber-bg); color: var(--amber); }
   .badge-mix { background: var(--surface2); color: var(--text3); border: 1px solid var(--border2); }
 
-  .save-btn { width: 100%; margin-top: 14px; padding: 14px; font-family: var(--sans); font-size: 15px; font-weight: 600; border: none; border-radius: var(--radius); cursor: pointer; transition: background 0.2s, color 0.2s; background: var(--text); color: var(--bg); }
+  .save-btn { width: 100%; margin-top: 14px; padding: 14px; font-family: var(--sans); font-size: 15px; font-weight: 600; border: none; border-radius: var(--radius); cursor: pointer; transition: background 0.2s, color 0.2s; background: var(--green); color: #111110; }
   .save-btn:disabled { background: var(--surface2); color: var(--text3); cursor: default; }
   .save-btn.saved { background: var(--green-bg); color: var(--green); }
   .save-btn.danger { background: var(--red); color: #fff; }
@@ -212,14 +198,13 @@
       <div class="header-title">Workout Log</div>
       <div class="header-sub" id="headerSub">nessun file</div>
     </div>
-    <div class="file-status" id="fileStatusBadge"></div>
-  </div>
-
-  <div class="file-toolbar">
-    <button class="file-btn" id="btnNewFile"><span class="icon">+</span>Nuovo</button>
-    <button class="file-btn" id="btnOpenFile"><span class="icon">&#8599;</span>Importa</button>
-    <button class="file-btn" id="btnDownloadFile"><span class="icon">&#8657;</span>Esporta</button>
-    <button class="file-btn primary" id="btnSaveFs"><span class="icon">&#10003;</span>Salva</button>
+    <div class="header-actions">
+      <div class="file-status" id="fileStatusBadge"></div>
+      <button class="icon-btn" id="btnNewFile" title="Nuovo">+</button>
+      <button class="icon-btn" id="btnOpenFile" title="Importa">↗</button>
+      <button class="icon-btn" id="btnDownloadFile" title="Esporta">⇧</button>
+      <button class="icon-btn primary" id="btnSaveFs" title="Salva">✓</button>
+    </div>
   </div>
 
   <div class="tabs" id="tabContainer">
@@ -765,12 +750,13 @@ function renderFileStatus() {
   const sub = document.getElementById('headerSub');
   const badge = document.getElementById('fileStatusBadge');
   if (State.fileName) {
-    sub.textContent = State.fileName; sub.style.color = 'var(--green)';
-    badge.textContent = State.sessions.length+' sessioni'; badge.className = 'file-status has-file';
+    sub.textContent = State.fileName + ' · ' + State.sessions.length + ' sessioni';
+    sub.style.color = 'var(--green)';
   } else {
     sub.textContent = State.sessions.length ? State.sessions.length+' sessioni in memoria' : 'nessun file';
-    sub.style.color = ''; badge.textContent = ''; badge.className = 'file-status';
+    sub.style.color = '';
   }
+  badge.textContent = ''; badge.className = 'file-status';
 }
 
 function refreshAllViews() {
