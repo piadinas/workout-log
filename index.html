@@ -311,7 +311,7 @@ const DB = (() => {
 })();
 
 // ── 2. Stato ──────────────────────────────────────────────────────────────────
-const CONFIG = { SESSIONS: 'sessions_v1', GLOSSARY: 'glossary_v1', MUSCLE_GROUPS: 'musclegroups_v1' };
+const CONFIG = { SESSIONS: 'sessions_v1', GLOSSARY: 'glossary_v1', MUSCLE_GROUPS: 'musclegroups_v1', DRAFT: 'draft_v1' };
 
 const State = {
   sessions: [],
@@ -322,6 +322,30 @@ const State = {
   fileName: null,
   currentTab: 'log'
 };
+
+// ── PR cache (invalidato solo al salvataggio, non ad ogni tasto) ──────────────
+let _prCacheVer = 0, _prCache = null, _prCachedVer = -1;
+function getCachedPRs() {
+  if (_prCachedVer !== _prCacheVer) {
+    _prCache = buildRunningPRs(State.sessions);
+    _prCachedVer = _prCacheVer;
+  }
+  return _prCache;
+}
+
+// ── Debounce: preview (200ms) + salvataggio bozza su DB (2s) ─────────────────
+let _previewTimer = null, _draftTimer = null;
+function schedulePreviewAndDraft() {
+  clearTimeout(_previewTimer);
+  clearTimeout(_draftTimer);
+  _previewTimer = setTimeout(renderLogPreview, 200);
+  _draftTimer   = setTimeout(persistCurrentDraft, 2000);
+}
+async function persistCurrentDraft() {
+  const date = document.getElementById('logDateInput').value || todayStr();
+  const raw  = document.getElementById('logInput').value;
+  try { await DB.set(CONFIG.DRAFT, raw.trim() ? { date, raw } : null); } catch(e) {}
+}
 
 // ── 3. Parser ─────────────────────────────────────────────────────────────────
 function escapeHTML(str) {
@@ -718,6 +742,7 @@ function handleNewFile() {
 // ── 7. Storage (IndexedDB) ────────────────────────────────────────────────────
 function updateSessions(newSessions) {
   State.sessions = newSessions;
+  _prCacheVer++;
   persistData();
   if (State.fileHandle) handleSaveToFs();
   renderFileStatus();
@@ -870,7 +895,7 @@ function renderLogPreview() {
   const visibleLines = allLines.filter(l=>l.type!=='invalid');
   if (!visibleLines.length) { el.innerHTML=''; return; }
 
-  const prMap = buildRunningPRs(State.sessions);
+  const prMap = getCachedPRs();
   let historicalPRs;
   if (existingSession) {
     historicalPRs = prMap.get(targetDate) || {};
@@ -922,6 +947,7 @@ function handleSaveDay() {
     ].sort((a,b)=>b.date.localeCompare(a.date)));
   }
   delete State.pendingDrafts[targetDate];
+  DB.set(CONFIG.DRAFT, null).catch(() => {});
 
   const btn = document.getElementById('btnSaveDay');
   btn.textContent=isEmpty?'✓ Eliminato':'✓ Salvato';
@@ -1256,13 +1282,17 @@ function attachGlobalListeners() {
   document.getElementById('btnSaveFs').addEventListener('click', handleSaveToFs);
   document.getElementById('tabContainer').addEventListener('click', e=>{ if(e.target.classList.contains('tab-btn')) handleTabSwitch(e.target.dataset.tab); });
   document.getElementById('logDateInput').addEventListener('change', handleLogDateChange);
-  document.getElementById('logInput').addEventListener('input', renderLogPreview);
+  document.getElementById('logInput').addEventListener('input', schedulePreviewAndDraft);
   document.getElementById('btnSaveDay').addEventListener('click', handleSaveDay);
   document.getElementById('btnQaAdd').addEventListener('click', handleQuickAdd);
   document.getElementById('qaAbbr').addEventListener('input', e=>{ e.target.value=e.target.value.toUpperCase(); updateQaHint(); });
   document.getElementById('qaWeight').addEventListener('keydown', e=>{ if(e.key==='Enter') handleQuickAdd(); });
   document.getElementById('storicoContent').addEventListener('click', e=>{ if(e.target.dataset.action==='edit') handleEditSession(e.target.dataset.date); });
-  document.getElementById('storicoSearch').addEventListener('input', renderStorico);
+  let _searchTimer = null;
+  document.getElementById('storicoSearch').addEventListener('input', () => {
+    clearTimeout(_searchTimer);
+    _searchTimer = setTimeout(renderStorico, 200);
+  });
   document.getElementById('exSelect').addEventListener('change', renderTrend);
   document.getElementById('metricSelect').addEventListener('change', renderTrend);
   document.getElementById('btnAddGlossary').addEventListener('click', handleAddGlossaryEntry);
@@ -1306,6 +1336,12 @@ async function initApp() {
   try {
     const muscleGroups = await DB.get(CONFIG.MUSCLE_GROUPS);
     if (muscleGroups) State.muscleGroups = muscleGroups;
+  } catch(e) {}
+
+  // Ripristina bozza non salvata (sopravvive al riavvio iOS)
+  try {
+    const draft = await DB.get(CONFIG.DRAFT);
+    if (draft?.date && draft?.raw) State.pendingDrafts[draft.date] = draft.raw;
   } catch(e) {}
 
   attachGlobalListeners();
