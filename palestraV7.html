@@ -91,7 +91,7 @@
   .hint code { font-family: var(--mono); font-size: 11px; background: var(--surface2); padding: 1px 5px; border-radius: 3px; }
   .hint-comment { color: var(--text3); opacity: 0.7; }
 
-  .session-block { margin-bottom: 24px; }
+  .session-block { margin-bottom: 24px; content-visibility: auto; contain-intrinsic-size: auto 200px; }
   .session-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
   .session-count { font-size: 11px; color: var(--text3); }
 
@@ -325,11 +325,23 @@ const State = {
 
 // ── PR cache (invalidato solo al salvataggio, non ad ogni tasto) ──────────────
 let _prCacheVer = 0, _prCache = null, _prCachedVer = -1;
+let _sessByDate = null, _sessByDateVer = -1;
+function getSessByDate() {
+  if (_sessByDateVer !== _prCacheVer) {
+    _sessByDate = new Map(State.sessions.map(s => [s.date, s]));
+    _sessByDateVer = _prCacheVer;
+  }
+  return _sessByDate;
+}
 
 // ── FS write queue (evita overlap di createWritable) ─────────────────────────
-let _fsQueue = Promise.resolve();
-function queueFsSave() {
-  _fsQueue = _fsQueue.then(() => handleSaveToFs()).catch(() => {});
+let _fsBusy = false, _fsPending = false;
+async function queueFsSave() {
+  if (_fsBusy) { _fsPending = true; return; }
+  _fsBusy = true;
+  try { await handleSaveToFs(); } catch {}
+  _fsBusy = false;
+  if (_fsPending) { _fsPending = false; queueFsSave(); }
 }
 function getCachedPRs() {
   if (_prCachedVer !== _prCacheVer) {
@@ -340,7 +352,7 @@ function getCachedPRs() {
 }
 
 // ── Debounce: preview (200ms) + salvataggio bozza su DB (2s) ─────────────────
-let _previewTimer = null, _draftTimer = null;
+let _previewTimer = null, _draftTimer = null, _saveFlashTimer = null, _searchTimer = null;
 function schedulePreviewAndDraft() {
   clearTimeout(_previewTimer);
   clearTimeout(_draftTimer);
@@ -446,6 +458,7 @@ function buildRunningPRs(sessions) {
       if (ex.peakWeight && ex.peakWeight > (running[ex.abbr]||0)) running[ex.abbr] = ex.peakWeight;
     }
   }
+  map.latest = {...running};
   return map;
 }
 
@@ -633,6 +646,20 @@ function renderSVGChart(container, pts, color, tooltipUnit) {
   tip.className = 'chart-tooltip';
   tip.style.display = 'none';
   container.style.position = 'relative';
+  let _tipTimer = null;
+
+  const hideTip = () => { tip.style.display='none'; };
+  const showTipFor = i => {
+    const p = pts[i];
+    const cx = xs(i);
+    const cy = ys(p.value);
+    tip.textContent = fmtDateChart(p.date) + ' · ' + p.value + tooltipUnit;
+    tip.style.display = '';
+    const cw = container.clientWidth;
+    const left = Math.max(60, Math.min(cx * (cw/W), cw-60));
+    const top = cy * ((container.clientHeight||H)/H) - 38;
+    tip.style.left = left+'px'; tip.style.top = top+'px';
+  };
 
   pts.forEach((p,i) => {
     const cx = xs(i); const cy = ys(p.value);
@@ -647,21 +674,23 @@ function renderSVGChart(container, pts, color, tooltipUnit) {
     const hit = document.createElementNS(NS, 'circle');
     hit.setAttribute('cx', cx.toFixed(1)); hit.setAttribute('cy', cy.toFixed(1));
     hit.setAttribute('r', '20'); hit.setAttribute('fill', 'transparent');
-
-    const showTip = () => {
-      tip.textContent = fmtDateChart(p.date) + ' · ' + p.value + tooltipUnit;
-      tip.style.display = '';
-      const cw = container.clientWidth;
-      const left = Math.max(60, Math.min(cx * (cw/W), cw-60));
-      const top = cy * ((container.clientHeight||H)/H) - 38;
-      tip.style.left = left+'px'; tip.style.top = top+'px';
-    };
-    const hideTip = () => { tip.style.display='none'; };
-    hit.addEventListener('mouseenter', showTip);
-    hit.addEventListener('mouseleave', hideTip);
-    hit.addEventListener('touchstart', e=>{ e.preventDefault(); showTip(); }, {passive:false});
-    hit.addEventListener('touchend', ()=>setTimeout(hideTip, 1500));
+    hit.dataset.idx = i;
     svg.appendChild(hit);
+  });
+
+  svg.addEventListener('mouseenter', e => { if (e.target.dataset.idx !== undefined) showTipFor(+e.target.dataset.idx); }, true);
+  svg.addEventListener('mouseleave', e => { if (e.target.dataset.idx !== undefined) hideTip(); }, true);
+  svg.addEventListener('touchstart', e => {
+    const idx = e.target.dataset.idx;
+    if (idx === undefined) return;
+    e.preventDefault();
+    clearTimeout(_tipTimer);
+    showTipFor(+idx);
+  }, {passive:false});
+  svg.addEventListener('touchend', e => {
+    if (e.target.dataset.idx === undefined) return;
+    clearTimeout(_tipTimer);
+    _tipTimer = setTimeout(hideTip, 1500);
   });
 
   container.appendChild(svg);
@@ -726,9 +755,8 @@ async function handleDownloadFile() {
   const fileName = State.fileName||'workout_log.txt';
   const file = new File([content], fileName, {type:'text/plain'});
   if (navigator.canShare && navigator.canShare({files:[file]})) {
-    try { await navigator.share({files:[file]}); }
-    catch(e) { if(e.name!=='AbortError') showToast('Errore condivisione'); }
-    return;
+    try { await navigator.share({files:[file]}); return; }
+    catch(e) { if (e.name === 'AbortError') return; }
   }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([content],{type:'text/plain'}));
@@ -741,7 +769,6 @@ function handleNewFile() {
   State.fileHandle = null; State.fileName = null;
   updateSessions([]);
   document.getElementById('logDateInput').value = todayStr();
-  handleLogDateChange();
   refreshAllViews();
 }
 
@@ -764,6 +791,22 @@ async function persistGlossary() {
   if (State.fileHandle) queueFsSave();
 }
 
+let _glossaryDebounce = null, _muscleGroupsDebounce = null;
+function persistGlossaryDebounced() {
+  clearTimeout(_glossaryDebounce);
+  _glossaryDebounce = setTimeout(() => {
+    DB.set(CONFIG.GLOSSARY, State.glossary).catch(() => {});
+    if (State.fileHandle) queueFsSave();
+  }, 600);
+}
+function persistMuscleGroupsDebounced() {
+  clearTimeout(_muscleGroupsDebounce);
+  _muscleGroupsDebounce = setTimeout(() => {
+    DB.set(CONFIG.MUSCLE_GROUPS, State.muscleGroups).catch(() => {});
+    if (State.fileHandle) queueFsSave();
+  }, 600);
+}
+
 // ── 8. UI ─────────────────────────────────────────────────────────────────────
 let toastTimer;
 function showToast(msg) {
@@ -779,8 +822,10 @@ function todayStr() {
     String(d.getMonth() + 1).padStart(2, '0') + '-' +
     String(d.getDate()).padStart(2, '0');
 }
-function fmtDateShort(d) { return new Date(d+'T12:00:00').toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short',year:'numeric'}); }
-function fmtDateChart(d) { return new Date(d+'T12:00:00').toLocaleDateString('it-IT',{day:'numeric',month:'short'}); }
+const _fmtShort = new Intl.DateTimeFormat('it-IT', {weekday:'short',day:'numeric',month:'short',year:'numeric'});
+const _fmtChart = new Intl.DateTimeFormat('it-IT', {day:'numeric',month:'short'});
+function fmtDateShort(d) { return _fmtShort.format(new Date(d+'T12:00:00')); }
+function fmtDateChart(d) { return _fmtChart.format(new Date(d+'T12:00:00')); }
 
 function renderFileStatus() {
   const sub = document.getElementById('headerSub');
@@ -803,6 +848,8 @@ function refreshAllViews() {
 }
 
 function handleTabSwitch(tab) {
+  clearTimeout(_saveFlashTimer);
+  clearTimeout(_searchTimer);
   State.currentTab = tab;
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
   ['log','storico','trend','glossario'].forEach(t=>{
@@ -820,17 +867,20 @@ function initLogTab() {
 }
 
 function handleLogDateChange() {
+  clearTimeout(_saveFlashTimer);
   const date = document.getElementById('logDateInput').value || todayStr();
   const draft = State.pendingDrafts[date];
-  const session = State.sessions.find(s => s.date === date);
+  const session = getSessByDate().get(date);
   document.getElementById('logInput').value = draft !== undefined ? draft : (session ? session.raw : '');
   renderLogPreview();
 }
 
 function handleEditSession(date) {
+  clearTimeout(_draftTimer);
   const currentDate = document.getElementById('logDateInput').value || todayStr();
   const currentRaw = document.getElementById('logInput').value;
   State.pendingDrafts[currentDate] = currentRaw;
+  if (currentRaw.trim()) DB.set(CONFIG.DRAFT, { date: currentDate, raw: currentRaw }).catch(() => {});
   handleTabSwitch('log');
   document.getElementById('logDateInput').value = date;
   handleLogDateChange();
@@ -869,7 +919,7 @@ function handleQuickAdd() {
   }
 
   ta.value = lines.join('\n');
-  renderLogPreview();
+  schedulePreviewAndDraft();
   document.getElementById('qaReps').value = '';
   document.getElementById('qaWeight').value = '';
   document.getElementById('qaReps').focus();
@@ -884,7 +934,7 @@ function renderLogPreview() {
   const bwLines = allLines.filter(l=>l.type==='bw');
 
   const btn = document.getElementById('btnSaveDay');
-  const existingSession = State.sessions.find(s=>s.date===targetDate);
+  const existingSession = getSessByDate().get(targetDate);
   const isEmpty = exercises.length===0 && bwLines.length===0;
 
   btn.classList.remove('saved');
@@ -907,18 +957,7 @@ function renderLogPreview() {
   if (!visibleLines.length) { el.innerHTML=''; return; }
 
   const prMap = getCachedPRs();
-  let historicalPRs;
-  if (existingSession) {
-    historicalPRs = prMap.get(targetDate) || {};
-  } else {
-    // Sessione non ancora salvata: confronta col massimo storico reale
-    historicalPRs = {};
-    for (const s of State.sessions) {
-      for (const ex of s.exercises) {
-        if (ex.peakWeight && ex.peakWeight > (historicalPRs[ex.abbr] || 0)) historicalPRs[ex.abbr] = ex.peakWeight;
-      }
-    }
-  }
+  const historicalPRs = existingSession ? (prMap.get(targetDate) || {}) : (prMap.latest || {});
 
   let html='';
   if (exercises.length) {
@@ -960,7 +999,8 @@ function handleSaveDay() {
     ].sort((a,b)=>b.date.localeCompare(a.date)));
   }
   delete State.pendingDrafts[targetDate];
-  DB.set(CONFIG.DRAFT, null).catch(() => {});
+  const _otherDrafts = Object.entries(State.pendingDrafts).filter(([,v]) => v && v.trim());
+  DB.set(CONFIG.DRAFT, _otherDrafts.length ? { date: _otherDrafts[0][0], raw: _otherDrafts[0][1] } : null).catch(() => {});
 
   const btn = document.getElementById('btnSaveDay');
   btn.textContent=isEmpty?'✓ Eliminato':'✓ Salvato';
@@ -972,7 +1012,7 @@ function handleSaveDay() {
     ? '<div class="save-success">Allenamento eliminato</div>'
     : '<div class="save-success">✓ Allenamento salvato</div>';
 
-  setTimeout(()=>{ btn.disabled=false; btn.classList.remove('saved'); renderLogPreview(); }, 2000);
+  _saveFlashTimer = setTimeout(()=>{ btn.disabled=false; btn.classList.remove('saved'); renderLogPreview(); }, 2000);
 }
 
 // ── Heatmap ───────────────────────────────────────────────────────────────────
@@ -1006,12 +1046,15 @@ function renderHeatmap() {
 }
 
 // ── Storico ───────────────────────────────────────────────────────────────────
-function renderStorico() {
-  renderSummaryStats();
-  renderHeatmap();
+function renderStorico({ skipStats = false } = {}) {
+  if (!skipStats) { renderSummaryStats(); renderHeatmap(); }
   const el=document.getElementById('storicoContent');
-  const q=(document.getElementById('storicoSearch')?.value||'').trim().toUpperCase();
-  const filtered=q ? State.sessions.filter(s=>s.exercises.some(e=>e.abbr.includes(q))||s.date.replace(/-/g,'').includes(q.replace(/[-\/]/g,''))) : State.sessions;
+  const qRaw=(document.getElementById('storicoSearch')?.value||'').trim().toUpperCase();
+  const qDigits=qRaw.replace(/[^0-9]/g,'');
+  const filtered=qRaw ? State.sessions.filter(s=>
+    s.exercises.some(e=>e.abbr.includes(qRaw))||
+    (qDigits.length>=4 && s.date.replace(/-/g,'').includes(qDigits))
+  ) : State.sessions;
 
   if (!State.sessions.length) { el.innerHTML='<div class="empty"><strong>Nessuna sessione</strong>Importa un file .txt o registra il tuo primo allenamento.</div>'; return; }
   if (!filtered.length) { el.innerHTML='<div class="empty"><strong>Nessun risultato</strong>Nessuna sessione corrisponde alla ricerca.</div>'; return; }
@@ -1045,8 +1088,8 @@ function renderStorico() {
 }
 
 // ── Trend ─────────────────────────────────────────────────────────────────────
-function renderTrend() {
-  renderMuscleVolume();
+function renderTrend({ chartOnly = false } = {}) {
+  if (!chartOnly) renderMuscleVolume();
   const allAbbrs=[...new Set(State.sessions.flatMap(s=>s.exercises.map(e=>e.abbr)))].sort();
   const hasBW=State.sessions.some(s=>s.bodyWeight);
   if (hasBW) allAbbrs.unshift('BW');
@@ -1054,7 +1097,14 @@ function renderTrend() {
   const sel=document.getElementById('exSelect');
   const metricSel=document.getElementById('metricSelect');
   const prev=sel.value;
-  sel.innerHTML=allAbbrs.length ? allAbbrs.map(a=>`<option value="${escapeHTML(a)}"${a===prev?' selected':''}>${escapeHTML(a)}</option>`).join('') : '<option>—</option>';
+  if (!chartOnly) {
+    const sig=allAbbrs.join('|');
+    if (sel.dataset.sig !== sig) {
+      sel.innerHTML=allAbbrs.length ? allAbbrs.map(a=>`<option value="${escapeHTML(a)}">${escapeHTML(a)}</option>`).join('') : '<option>—</option>';
+      sel.dataset.sig=sig;
+      sel.value=prev||allAbbrs[0];
+    }
+  }
 
   const abbr=sel.value;
   const empty=document.getElementById('trendEmpty');
@@ -1147,7 +1197,7 @@ function renderGlossario() {
     const handler = e => {
       const abbr=e.target.dataset.abbr, g=e.target.value.trim();
       if (g) State.muscleGroups[abbr]=g; else delete State.muscleGroups[abbr];
-      persistMuscleGroups();
+      persistMuscleGroupsDebounced();
     };
     input.addEventListener('change', handler);
   });
@@ -1156,7 +1206,7 @@ function renderGlossario() {
 function handleGlossaryInputUpdate(e) {
   const abbr=e.target.dataset.abbr, name=e.target.value.trim();
   if (name) State.glossary[abbr]=name; else delete State.glossary[abbr];
-  persistGlossary();
+  persistGlossaryDebounced();
 }
 
 function updateQaHint() {
@@ -1164,10 +1214,7 @@ function updateQaHint() {
   const hintEl = document.getElementById('qaHint');
   if (!abbr) { hintEl.style.display = 'none'; return; }
   const targetDate = document.getElementById('logDateInput').value || todayStr();
-  const prev = State.sessions
-    .filter(s => s.date !== targetDate)
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .find(s => s.exercises.some(e => e.abbr === abbr));
+  const prev = State.sessions.find(s => s.date !== targetDate && s.exercises.some(e => e.abbr === abbr));
   if (!prev) { hintEl.style.display = 'none'; return; }
   const ex = prev.exercises.find(e => e.abbr === abbr);
   const segs = ex.segments.map(sg => sg.count + '×' + sg.reps + (sg.weight ? '@' + sg.weight : '')).join(' + ');
@@ -1263,7 +1310,7 @@ function renderMuscleVolume() {
     });
   });
 
-  const rangeSelect = `<select id="muscleRangeSel" onchange="renderMuscleVolume()" style="flex:none;width:auto;padding:4px 8px;font-size:11px;font-family:var(--sans);border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text2);outline:none;cursor:pointer;">
+  const rangeSelect = `<select id="muscleRangeSel" style="flex:none;width:auto;padding:4px 8px;font-size:11px;font-family:var(--sans);border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text2);outline:none;cursor:pointer;">
     <option value="1m"${range==='1m'?' selected':''}>Ultimo mese</option>
     <option value="3m"${range==='3m'?' selected':''}>Ultimi 3 mesi</option>
     <option value="all"${range==='all'?' selected':''}>Tutto</option>
@@ -1299,13 +1346,15 @@ function attachGlobalListeners() {
   document.getElementById('qaAbbr').addEventListener('input', e=>{ e.target.value=e.target.value.toUpperCase(); updateQaHint(); });
   document.getElementById('qaWeight').addEventListener('keydown', e=>{ if(e.key==='Enter') handleQuickAdd(); });
   document.getElementById('storicoContent').addEventListener('click', e=>{ if(e.target.dataset.action==='edit') handleEditSession(e.target.dataset.date); });
-  let _searchTimer = null;
   document.getElementById('storicoSearch').addEventListener('input', () => {
     clearTimeout(_searchTimer);
-    _searchTimer = setTimeout(renderStorico, 200);
+    _searchTimer = setTimeout(() => renderStorico({ skipStats: true }), 200);
   });
-  document.getElementById('exSelect').addEventListener('change', renderTrend);
-  document.getElementById('metricSelect').addEventListener('change', renderTrend);
+  document.getElementById('exSelect').addEventListener('change', () => renderTrend());
+  document.getElementById('metricSelect').addEventListener('change', () => renderTrend({ chartOnly: true }));
+  document.getElementById('muscleVolumeSection').addEventListener('change', e => {
+    if (e.target.id === 'muscleRangeSel') renderMuscleVolume();
+  });
   document.getElementById('btnAddGlossary').addEventListener('click', handleAddGlossaryEntry);
   document.getElementById('glNewAbbr').addEventListener('input', e=>{ e.target.value=e.target.value.toUpperCase(); });
   const glEnter=e=>{ if(e.key==='Enter') handleAddGlossaryEntry(); };
