@@ -1458,6 +1458,8 @@ details.help code {
       <button class="glyph-btn" id="btnOpenFile" aria-label="Importa file" title="Importa">
         <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
       </button>
+      <!-- Input file persistente: iOS PWA standalone funziona meglio con input nel DOM raggiungibile -->
+      <input type="file" id="hiddenFileInput" aria-hidden="true" tabindex="-1" style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none;overflow:hidden;clip:rect(0 0 0 0);">
       <button class="glyph-btn" id="btnDownloadFile" aria-label="Esporta file" title="Esporta">
         <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
       </button>
@@ -2087,50 +2089,52 @@ async function importFromText(text, fileName) {
   return true;
 }
 
-async function handleOpenFile() {
-  // File System Access API (desktop Chrome/Edge)
+function handleOpenFile() {
+  // File System Access API (desktop Chrome/Edge): consente "Salva" diretto sul file scelto
   if ('showOpenFilePicker' in window) {
-    try {
-      const [h] = await window.showOpenFilePicker({
-        types: [{ description: 'Workout Log', accept: { 'text/plain': ['.txt'] } }],
-      });
-      State.fileHandle = h;
-      const file = await h.getFile();
-      const text = await file.text();
-      await importFromText(text, file.name);
-      return;
-    } catch (e) {
-      if (e.name !== 'AbortError') {
-        console.error('showOpenFilePicker failed', e);
-        showToast('Errore apertura');
+    (async () => {
+      try {
+        const [h] = await window.showOpenFilePicker({
+          types: [{ description: 'Workout Log', accept: { 'text/plain': ['.txt'] } }],
+        });
+        State.fileHandle = h;
+        const file = await h.getFile();
+        const text = await file.text();
+        await importFromText(text, file.name);
+      } catch (e) {
+        if (e.name !== 'AbortError') {
+          console.error('showOpenFilePicker failed', e);
+          showToast('Errore apertura');
+        }
       }
-      return;
-    }
+    })();
+    return;
   }
 
-  // Fallback per iOS Safari / PWA standalone: input[type=file]
-  // Accept ampio: iOS può non riconoscere .txt come text/plain in alcuni contesti
-  const inp = document.createElement('input');
-  inp.type = 'file';
-  inp.accept = 'text/plain,text/*,.txt,.log';
-  inp.style.position = 'fixed';
-  inp.style.left = '-9999px';
-  document.body.appendChild(inp);
-  inp.onchange = async () => {
-    try {
-      const f = inp.files && inp.files[0];
-      if (!f) { showToast('Nessun file scelto'); return; }
-      const text = await f.text();
-      await importFromText(text, f.name);
-    } catch (e) {
-      console.error('File read failed', e);
-      showToast('Lettura fallita');
-    } finally {
-      inp.remove();
-    }
-  };
-  // iOS richiede che il click sia sincrono dentro user gesture: inp.click() è già qui
+  // Fallback per iOS Safari / PWA standalone.
+  // Critico: l'input deve essere già nel DOM e raggiungibile per iOS standalone.
+  // Niente "accept" — alcune versioni iOS filtrano via i .txt da iCloud/Drive.
+  const inp = document.getElementById('hiddenFileInput');
+  if (!inp) { showToast('Picker non disponibile'); return; }
+  inp.value = '';      // reset, altrimenti onchange non scatta se rischiamo lo stesso file
+  inp.removeAttribute('accept');
+  // click() sincrono dentro il gesture handler (questa funzione è chiamata da addEventListener click)
   inp.click();
+}
+
+async function handleHiddenFileChange(e) {
+  const inp = e.target;
+  try {
+    const f = inp.files && inp.files[0];
+    if (!f) { showToast('Nessun file scelto'); return; }
+    const text = await f.text();
+    await importFromText(text, f.name);
+  } catch (err) {
+    console.error('File read failed', err);
+    showToast('Lettura fallita');
+  } finally {
+    inp.value = '';
+  }
 }
 
 async function handleSaveToFs() {
@@ -3087,6 +3091,7 @@ function attachGlobalListeners() {
   document.getElementById('btnOpenFile').addEventListener('click', handleOpenFile);
   document.getElementById('btnDownloadFile').addEventListener('click', handleDownloadFile);
   document.getElementById('btnSaveFs').addEventListener('click', handleSaveToFs);
+  document.getElementById('hiddenFileInput').addEventListener('change', handleHiddenFileChange);
   document.getElementById('tabContainer').addEventListener('click', e => {
     const btn = e.target.closest('.tab-item');
     if (btn) handleTabSwitch(btn.dataset.tab);
