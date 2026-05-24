@@ -1,4 +1,4 @@
-const CACHE = 'workout-v4-neglected';
+const CACHE = 'workout-v5-ios-fixes';
 const SHELL = ['./', './index.html', './manifest.json', './icon.png'];
 
 self.addEventListener('install', e => {
