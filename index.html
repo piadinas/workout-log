@@ -1668,16 +1668,33 @@ function getCachedPRs() {
 }
 
 let _previewTimer = null, _draftTimer = null, _saveFlashTimer = null, _searchTimer = null;
+let _activeDate = null;       // data attualmente caricata nella textarea
+let _logInputDirty = false;   // true solo dopo un input reale dell'utente sulla data attiva
 function schedulePreviewAndDraft() {
   clearTimeout(_previewTimer);
   clearTimeout(_draftTimer);
   _previewTimer = setTimeout(() => { renderLogPreview(); renderHeroStats(); }, 180);
-  _draftTimer   = setTimeout(persistCurrentDraft, 2000);
+  _draftTimer   = setTimeout(stashCurrentDraft, 2000);
 }
-async function persistCurrentDraft() {
-  const date = document.getElementById('logDateInput').value || todayStr();
-  const raw  = document.getElementById('logInput').value;
-  try { await DB.set(CONFIG.DRAFT, raw.trim() ? { date, raw } : null); } catch(e) {}
+function persistDrafts() {
+  return DB.set(CONFIG.DRAFT, { ...State.pendingDrafts }).catch(() => {});
+}
+// Allinea pendingDrafts alla textarea e persiste l'intera mappa su IDB.
+// La bozza esiste solo se non vuota e diversa dalla sessione salvata; lo
+// svuotamento cancella la bozza solo se è stato l'utente a farlo (dirty).
+function stashCurrentDraft() {
+  clearTimeout(_draftTimer);
+  if (!_activeDate) return Promise.resolve();
+  const date = _activeDate;
+  const raw = document.getElementById('logInput').value;
+  const trimmed = raw.trim();
+  const session = getSessByDate().get(date);
+  if (trimmed && (!session || session.raw !== trimmed)) {
+    State.pendingDrafts[date] = raw;
+  } else if (_logInputDirty || (session && session.raw === trimmed)) {
+    delete State.pendingDrafts[date];
+  }
+  return persistDrafts();
 }
 
 /* ───────────────────────────────────────────────────────────────────
@@ -1729,13 +1746,15 @@ function parseWorkoutLine(line) {
   const uniqueW = [...new Set(segments.map(s => s.weight))];
   const isMultiWeight = uniqueW.length > 1;
   const estimated1RM = segments.reduce((best, s) => {
-    if (!s.weight || s.reps < 2) return best;
-    const e = Math.round(s.weight * (1 + s.reps/30));
+    if (!s.weight || s.reps < 1) return best;
+    // per le singole l'1RM stimato è il peso alzato: escluderle toglieva
+    // dal grafico 1RM proprio i giorni di massimale
+    const e = s.reps === 1 ? Math.round(s.weight) : Math.round(s.weight * (1 + s.reps/30));
     return e > best ? e : best;
   }, 0) || null;
 
   let pattern = null;
-  if (isMultiWeight) {
+  if (isMultiWeight && segments.every(s => s.weight)) {
     const ws = segments.map(s => s.weight||0);
     const pi = ws.indexOf(Math.max(...ws));
     if (ws.every((w,i) => i===0||w<=ws[i-1])) pattern = 'drop';
@@ -1749,13 +1768,16 @@ function parseWorkoutLine(line) {
 function parseAllLines(text) {
   return text.split('\n').map(rawLine => {
     const line = rawLine.trim();
-    if (!line || line.startsWith('#')) return null;
+    if (!line) return null;
+    // '#' è riservato agli header del file: segnalarlo (una riga '# data' nel
+    // testo spaccherebbe la sessione al re-import), non ignorarlo in silenzio
+    if (line.startsWith('#')) return { type:'invalid', text:line };
     if (line.startsWith('//')) return { type:'comment', text:line.slice(2).trim() };
-    const bwMatch = line.match(/^BW\s+(\d+(?:[.,]\d+)?)\s*k?g?\s*$/i);
-    if (bwMatch) return { type:'bw', weight:parseFloat(bwMatch[1].replace(',','.')) };
     const inlineMatch = line.match(/^(.*?)\s*\/\/(.*)$/);
     const cleanLine = inlineMatch ? inlineMatch[1].trim() : line;
     const inlineComment = inlineMatch ? inlineMatch[2].trim() : null;
+    const bwMatch = cleanLine.match(/^BW\s+(\d+(?:[.,]\d+)?)\s*k?g?\s*$/i);
+    if (bwMatch) return { type:'bw', weight:parseFloat(bwMatch[1].replace(',','.')) };
     const ex = parseWorkoutLine(cleanLine);
     if (ex) {
       if (inlineComment) ex.comment = inlineComment;
@@ -1793,11 +1815,14 @@ function segsToHtml(segments) {
     const w = segments[0].weight;
     return setsStr + (w ? `<span class="seg-at"> @</span><span class="seg-w">${escapeHTML(w)}</span><span class="seg-at"> kg</span>` : '');
   }
+  // ' kg' in coda solo se tutti i segmenti sono pesati: con un segmento a
+  // corpo libero in coda ("1×8 kg") il suffisso si leggerebbe come un peso
+  const allWeighted = segments.every(s => s.weight);
   return segments.map(s =>
     `${s.count}<span class="seg-x">×</span>${s.reps}` +
     (s.weight ? `<span class="seg-at">@</span><span class="seg-w">${escapeHTML(s.weight)}</span>` : '')
   ).join(' <span class="seg-plus">+</span> ')
-  + ' <span class="seg-at">kg</span>';
+  + (allWeighted ? ' <span class="seg-at">kg</span>' : '');
 }
 
 const PATTERN_LABEL = { drop:'drop', diamond:'diamante', mix:'misto' };
@@ -1851,8 +1876,13 @@ function sessionsToTxt(sessions, glossary, muscleGroups) {
   const mgLines = Object.entries(muscleGroups||{}).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,v])=>'### '+k+' = '+v);
   const headerLines = [...glLines, ...mgLines];
   const glBlock = headerLines.length ? headerLines.join('\n')+'\n\n' : '';
+  // Righe '#' dentro il raw diventerebbero header al re-import (split della
+  // sessione): le si esporta declassate a commento '//', semantica invariata.
+  const safeRaw = raw => raw.trim().split('\n')
+    .map(l => l.trim().startsWith('#') ? '// ' + l.trim().replace(/^#+\s*/, '') : l)
+    .join('\n');
   const sesBlock = sessions.slice().sort((a,b)=>b.date.localeCompare(a.date))
-    .map(s=>'# '+s.date+'\n'+s.raw.trim()).join('\n\n')+'\n';
+    .map(s=>'# '+s.date+'\n'+safeRaw(s.raw)).join('\n\n')+'\n';
   return glBlock + sesBlock;
 }
 
@@ -1866,7 +1896,7 @@ function txtToSessions(txt) {
     if (m) newGlossary[m[1].trim()] = m[2].trim();
   });
   const newSessions = [];
-  const blocks = txt.split(/\n(?=# \d{4}-\d{2}-\d{2})/);
+  const blocks = txt.split(/\n(?=#\s*\d{4}-\d{2}-\d{2})/);
   for (const block of blocks) {
     const lines = block.trim().split('\n');
     const dm = lines[0].match(/^#\s*(\d{4}-\d{2}-\d{2})/);
@@ -2048,10 +2078,10 @@ function renderSVGChart(container, pts, color, tooltipUnit) {
   svg.addEventListener('touchstart', e => {
     const idx = e.target.dataset.idx;
     if (idx === undefined) return;
-    e.preventDefault();
+    // niente preventDefault: bloccava lo scroll della pagina su tutto il grafico
     clearTimeout(_tipTimer);
     showTipFor(+idx);
-  }, {passive:false});
+  }, {passive:true});
   svg.addEventListener('touchend', e => {
     if (e.target.dataset.idx === undefined) return;
     clearTimeout(_tipTimer);
@@ -2078,10 +2108,21 @@ async function importFromText(text, fileName) {
     showToast('Nessuna sessione trovata');
     return false;
   }
+  if (State.sessions.length &&
+      !confirm(`Sostituire le ${State.sessions.length} sessioni attuali con "${fileName}" (${parsed.sessions.length} sessioni)?`)) {
+    return false;
+  }
   State.fileName = fileName;
   State.glossary = parsed.glossary;
   State.muscleGroups = parsed.muscleGroups;
+  // Le bozze del vecchio dataset non hanno più senso; svuotare anche la
+  // textarea, altrimenti lo stash del refresh la ri-salverebbe come bozza
+  State.pendingDrafts = {};
+  document.getElementById('logInput').value = '';
+  _logInputDirty = false;
+  DB.set(CONFIG.GLOSSARY, State.glossary).catch(() => {});
   persistMuscleGroups();
+  persistDrafts();
   updateSessions(parsed.sessions, { skipFs: true });
   refreshAllViews();
   const n = parsed.sessions.length;
@@ -2097,10 +2138,10 @@ function handleOpenFile() {
         const [h] = await window.showOpenFilePicker({
           types: [{ description: 'Workout Log', accept: { 'text/plain': ['.txt'] } }],
         });
-        State.fileHandle = h;
         const file = await h.getFile();
         const text = await file.text();
-        await importFromText(text, file.name);
+        // Adotta l'handle solo a import riuscito: mai bindare l'autosave a un file non valido
+        if (await importFromText(text, file.name)) State.fileHandle = h;
       } catch (e) {
         if (e.name !== 'AbortError') {
           console.error('showOpenFilePicker failed', e);
@@ -2167,14 +2208,24 @@ async function handleDownloadFile() {
     catch(e) { if (e.name === 'AbortError') return; }
   }
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([content],{type:'text/plain'}));
+  const blobUrl = URL.createObjectURL(new Blob([content],{type:'text/plain'}));
+  a.href = blobUrl;
   a.download = fileName; a.click();
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
   showToast('Esportato ✓');
 }
 
 function handleNewFile() {
   if (State.sessions.length && !confirm('Nuovo file? I dati non salvati andranno persi.')) return;
   State.fileHandle = null; State.fileName = null;
+  State.glossary = {};
+  State.muscleGroups = {};
+  State.pendingDrafts = {};
+  document.getElementById('logInput').value = '';
+  _logInputDirty = false;
+  persistGlossary();
+  persistMuscleGroups();
+  persistDrafts();
   updateSessions([]);
   document.getElementById('logDateInput').value = todayStr();
   refreshAllViews();
@@ -2191,9 +2242,13 @@ function updateSessions(newSessions, { skipFs = false } = {}) {
   renderFileStatus();
 }
 
+let _persistErrorShown = false;
 async function persistData() {
   const toSave = State.sessions.map(({date,raw,exercises,bodyWeight})=>({date,raw,exercises,bodyWeight}));
-  try { await DB.set(CONFIG.SESSIONS, toSave); } catch(e) {}
+  try { await DB.set(CONFIG.SESSIONS, toSave); } catch(e) {
+    // mai confermare "✓ Salvato" inghiottendo per sempre i fallimenti di scrittura
+    if (!_persistErrorShown) { _persistErrorShown = true; showToast('⚠ Salvataggio locale non riuscito'); }
+  }
 }
 
 async function persistGlossary() {
@@ -2299,9 +2354,35 @@ function handleTabSwitch(tab) {
 
 function initLogTab() {
   const di = document.getElementById('logDateInput');
+  di.max = todayStr();
   if (!di.value) di.value = todayStr();
   handleLogDateChange();
   renderNeglected();
+}
+
+// Rollover del giorno: una PWA iOS può restare in background per giorni.
+// Al ritorno in foreground si riallineano data attiva, topbar e viste.
+let _lastSeenToday = todayStr();
+function handleAppResume() {
+  const today = todayStr();
+  if (today === _lastSeenToday) return;
+  const wasToday = _lastSeenToday;
+  _lastSeenToday = today;
+  renderTopbarMark();
+  const di = document.getElementById('logDateInput');
+  di.max = today;
+  if (di.value === wasToday) {
+    // L'utente era sul "vecchio oggi": avanza al nuovo oggi.
+    // L'eventuale bozza è già in pendingDrafts (stash su backgrounding).
+    di.value = today;
+    handleLogDateChange();
+    if (State.pendingDrafts[wasToday]) showToast('Bozza del ' + fmtDateChart(wasToday) + ' conservata');
+  } else {
+    renderHero(); renderHeroStats(); renderLogPreview();
+  }
+  renderNeglected();
+  if (State.currentTab === 'storico') renderStorico();
+  if (State.currentTab === 'trend') renderTrend();
 }
 
 function renderHero() {
@@ -2474,7 +2555,10 @@ function fillQuickAddAbbr(abbr) {
 
 function handleLogDateChange() {
   clearTimeout(_saveFlashTimer);
+  stashCurrentDraft();   // salva la bozza della data che si sta lasciando
   const date = document.getElementById('logDateInput').value || todayStr();
+  _activeDate = date;
+  _logInputDirty = false;
   const draft = State.pendingDrafts[date];
   const session = getSessByDate().get(date);
   document.getElementById('logInput').value = draft !== undefined ? draft : (session ? session.raw : '');
@@ -2484,14 +2568,9 @@ function handleLogDateChange() {
 }
 
 function handleEditSession(date) {
-  clearTimeout(_draftTimer);
-  const currentDate = document.getElementById('logDateInput').value || todayStr();
-  const currentRaw = document.getElementById('logInput').value;
-  State.pendingDrafts[currentDate] = currentRaw;
-  if (currentRaw.trim()) DB.set(CONFIG.DRAFT, { date: currentDate, raw: currentRaw }).catch(() => {});
   handleTabSwitch('log');
   document.getElementById('logDateInput').value = date;
-  handleLogDateChange();
+  handleLogDateChange();   // stasha la bozza corrente e carica la data richiesta
 }
 
 function handleQuickAdd() {
@@ -2499,34 +2578,38 @@ function handleQuickAdd() {
   const setsEl = document.getElementById('qaSets');
   const sets = parseInt(setsEl?.value) || 1;
   const reps = document.getElementById('qaReps').value.trim();
-  const weight = document.getElementById('qaWeight').value.trim();
+  const weight = document.getElementById('qaWeight').value.trim().replace(',', '.');
   if (!abbr || !reps) { document.getElementById(abbr ? 'qaReps' : 'qaAbbr').focus(); return; }
-  const setsReps = sets > 1 ? sets+'x'+reps : reps;
-  const segment = weight ? `${setsReps}@${weight}` : setsReps;
 
   const ta = document.getElementById('logInput');
   const lines = ta.value ? ta.value.split('\n') : [];
   const lastLine = lines[lines.length - 1] || '';
-  const lastAbbr = lastLine.match(/^([A-Za-z]{1,6})[\s@x]/i)?.[1]?.toUpperCase();
-  if (lines.length > 0 && lastAbbr === abbr) {
-    const lastSegRegex = /(?:(\d+)[xX×])?(\d+)(?:@(\d+(?:[.,]\d+)?))?(?:\s*k?g?)?\s*$/i;
-    const lastSegMatch = lastSegRegex.exec(lastLine);
-    const shouldMerge = lastSegMatch &&
-      String(lastSegMatch[2]) === String(reps) &&
-      (lastSegMatch[3] || '') === String(weight || '');
-    if (shouldMerge) {
-      const lastCount = parseInt(lastSegMatch[1] || '1');
-      const newCount = lastCount + sets;
-      const newSeg = newCount + 'x' + reps + (weight ? '@' + weight : '');
-      lines[lines.length - 1] = lastLine.slice(0, lastSegMatch.index) + newSeg;
+
+  // Il merge testuale va fatto sulla riga RI-PARSATA: manipolare la stringa
+  // con regex corrompeva pesi globali ("LP 12+10+8 @40") e commenti inline.
+  const cm = lastLine.match(/^(.*?)\s*(\/\/.*)$/);
+  const lastBody = cm ? cm[1] : lastLine;
+  const lastComment = cm ? cm[2] : '';
+  const parsedLast = parseWorkoutLine(lastBody);
+
+  const segStr = s => (s.count > 1 ? s.count + 'x' : '') + s.reps + (s.weight ? '@' + s.weight : '');
+  const newSeg = { count: sets, reps: +reps, weight: weight ? parseFloat(weight) : null };
+
+  if (parsedLast && parsedLast.abbr === abbr) {
+    const segs = parsedLast.segments.map(s => ({ ...s }));
+    const tail = segs[segs.length - 1];
+    if (tail.reps === newSeg.reps && (tail.weight ?? null) === (newSeg.weight ?? null)) {
+      tail.count += newSeg.count;
     } else {
-      lines[lines.length - 1] = lastLine + ' + ' + segment;
+      segs.push(newSeg);
     }
+    lines[lines.length - 1] = abbr + ' ' + segs.map(segStr).join(' + ') + (lastComment ? ' ' + lastComment : '');
   } else {
-    lines.push(abbr + ' ' + segment);
+    lines.push(abbr + ' ' + segStr(newSeg));
   }
 
   ta.value = lines.join('\n');
+  _logInputDirty = true;
   schedulePreviewAndDraft();
   document.getElementById('qaReps').value = '';
   document.getElementById('qaWeight').value = '';
@@ -2546,8 +2629,12 @@ function renderLogPreview() {
   const isEmpty = exercises.length === 0 && bwLines.length === 0;
 
   btn.classList.remove('saved');
-  if (isEmpty && existingSession) {
+  if (isEmpty && existingSession && _logInputDirty) {
+    // Solo se è stato l'utente a svuotare il testo: mai proporre l'eliminazione
+    // come stato di riposo (post-save la textarea viene svuotata dal codice)
     btn.disabled = false; btn.textContent = 'Elimina allenamento'; btn.classList.add('danger');
+  } else if (isEmpty && existingSession) {
+    btn.disabled = true; btn.textContent = 'Salva allenamento'; btn.classList.remove('danger');
   } else {
     btn.disabled = isEmpty;
     btn.textContent = existingSession ? 'Aggiorna allenamento' : 'Salva allenamento';
@@ -2565,7 +2652,7 @@ function renderLogPreview() {
   if (!visibleLines.length) {
     // Show saved entries if any
     if (existingSession && existingSession.exercises.length) {
-      el.innerHTML = renderPreviewEntries(existingSession.lines || parseAllLines(existingSession.raw), targetDate, 'Voci salvate · tocca scrivi per modificare');
+      el.innerHTML = renderPreviewEntries(existingSession.lines || (existingSession.lines = parseAllLines(existingSession.raw)), targetDate, 'Voci salvate · tocca scrivi per modificare');
       return;
     }
     el.innerHTML = '';
@@ -2621,8 +2708,7 @@ function handleSaveDay() {
     ].sort((a, b) => b.date.localeCompare(a.date)));
   }
   delete State.pendingDrafts[targetDate];
-  const _otherDrafts = Object.entries(State.pendingDrafts).filter(([, v]) => v && v.trim());
-  DB.set(CONFIG.DRAFT, _otherDrafts.length ? { date: _otherDrafts[0][0], raw: _otherDrafts[0][1] } : null).catch(() => {});
+  persistDrafts();
 
   const btn = document.getElementById('btnSaveDay');
   btn.textContent = isEmpty ? '✓ Eliminato' : '✓ Salvato';
@@ -2630,6 +2716,7 @@ function handleSaveDay() {
   if (isEmpty) btn.classList.remove('danger');
 
   document.getElementById('logInput').value = '';
+  _logInputDirty = false;
   document.getElementById('preview').innerHTML = isEmpty
     ? '<div class="save-success">— allenamento eliminato —</div>'
     : '<div class="save-success">— salvato —</div>';
@@ -2725,7 +2812,7 @@ function renderStorico({ skipStats = false } = {}) {
 
   const prMap = getCachedPRs();
   el.innerHTML = filtered.map(s => {
-    const lines = s.lines || parseAllLines(s.raw);
+    const lines = s.lines || (s.lines = parseAllLines(s.raw));
     const exLines = lines.filter(l => l.type === 'exercise');
     const historicalPRs = prMap.get(s.date) || {};
     let body = '<div class="entries">';
@@ -2772,7 +2859,9 @@ function renderTrend({ chartOnly = false } = {}) {
     if (sel.dataset.sig !== sig) {
       sel.innerHTML = allAbbrs.length ? allAbbrs.map(a => `<option value="${escapeHTML(a)}">${escapeHTML(a)}</option>`).join('') : '<option>—</option>';
       sel.dataset.sig = sig;
-      sel.value = prev || allAbbrs[0];
+      // prev può non esistere più (es. dopo import): un value senza match
+      // lascerebbe la select vuota con selectedIndex -1
+      sel.value = allAbbrs.includes(prev) ? prev : allAbbrs[0];
     }
   }
 
@@ -2808,6 +2897,7 @@ function renderTrend({ chartOnly = false } = {}) {
     }
     const minBW = Math.min(...pts.map(p => p.value)), maxBW = Math.max(...pts.map(p => p.value));
     const delta = +(pts[pts.length - 1].value - pts[0].value).toFixed(1);
+    document.getElementById('statsGrid').style.gridTemplateColumns = 'repeat(3, 1fr)';
     document.getElementById('statsGrid').innerHTML = [
       { label: 'rilevazioni', val: pts.length, u: '', cls: '' },
       { label: 'range', val: minBW + '–' + maxBW, u: 'kg', cls: '' },
@@ -2858,10 +2948,11 @@ function renderTrend({ chartOnly = false } = {}) {
     </div>`).join('');
 
   if (pts.length < 2) {
+    const noWeight = pts.length === 0 && allEx.length > 0;
     empty.innerHTML = `<div class="empty-state">
       <div class="es-mark">·</div>
-      <div class="es-title">${pts.length === 1 ? 'Serve almeno una seconda sessione' : 'Nessuna sessione'}</div>
-      <div class="es-body">${pts.length === 1 ? 'per mostrare il grafico.' : 'con questo esercizio.'}</div>
+      <div class="es-title">${pts.length === 1 ? 'Serve almeno una seconda sessione' : noWeight ? 'Nessun peso registrato' : 'Nessuna sessione'}</div>
+      <div class="es-body">${pts.length === 1 ? 'per mostrare il grafico.' : noWeight ? `Le sessioni di ${escapeHTML(abbr)} non hanno <code>@peso</code>: nessuna metrica da tracciare.` : 'con questo esercizio.'}</div>
     </div>`;
     chartWrap.style.display = 'none'; return;
   }
@@ -2895,7 +2986,9 @@ function renderGlossario() {
   });
   document.querySelectorAll('.gl-group').forEach(input => {
     input.addEventListener('change', e => {
-      const abbr = e.target.dataset.abbr, g = e.target.value.trim();
+      // lowercase come all'import: 'Petto' e 'petto' diventerebbero due gruppi
+      const abbr = e.target.dataset.abbr, g = e.target.value.trim().toLowerCase();
+      e.target.value = g;
       if (g) State.muscleGroups[abbr] = g; else delete State.muscleGroups[abbr];
       persistMuscleGroupsDebounced();
     });
@@ -2925,6 +3018,9 @@ function handleAddGlossaryEntry() {
   const abbrEl = document.getElementById('glNewAbbr'), nameEl = document.getElementById('glNewName');
   const abbr = abbrEl.value.trim().toUpperCase(), name = nameEl.value.trim();
   if (!abbr) { abbrEl.focus(); return; }
+  // stesso charset del parser e del formato file (## [A-Z]{1,6} = …):
+  // altrimenti la voce si perderebbe in silenzio al re-import
+  if (!/^[A-Z]{1,6}$/.test(abbr)) { showToast('Abbreviazione: solo lettere A–Z'); abbrEl.focus(); return; }
   if (name) State.glossary[abbr] = name; else State.glossary[abbr] = State.glossary[abbr] || '';
   abbrEl.value = ''; nameEl.value = '';
   persistGlossary(); renderGlossario();
@@ -3097,7 +3193,13 @@ function attachGlobalListeners() {
     if (btn) handleTabSwitch(btn.dataset.tab);
   });
   document.getElementById('logDateInput').addEventListener('change', handleLogDateChange);
-  document.getElementById('logInput').addEventListener('input', schedulePreviewAndDraft);
+  document.getElementById('logInput').addEventListener('input', () => { _logInputDirty = true; schedulePreviewAndDraft(); });
+  // iOS può killare la PWA in background in qualsiasi momento: flush immediato della bozza
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') stashCurrentDraft();
+    else handleAppResume();
+  });
+  window.addEventListener('pagehide', () => { stashCurrentDraft(); });
   document.getElementById('btnSaveDay').addEventListener('click', handleSaveDay);
   document.getElementById('btnQaAdd').addEventListener('click', handleQuickAdd);
   document.getElementById('qaAbbr').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase(); updateQaHint(); });
@@ -3128,17 +3230,28 @@ function attachGlobalListeners() {
 }
 
 async function initApp() {
-  // Migrazione da localStorage
+  // Listener subito: se IndexedDB è lento (o appeso, noto bug WebKit)
+  // l'app resta comunque interattiva invece di nascere morta
+  renderTopbarMark();
+  attachGlobalListeners();
+
+  // Migrazione da localStorage — try separati: un JSON corrotto non deve
+  // né bloccare l'altra chiave né lasciare un retry-loop a ogni boot
   try {
     const lsS = localStorage.getItem('workout_log_sessions');
-    const lsG = localStorage.getItem('workout_log_glossary');
     if (lsS) {
-      const existing = await DB.get(CONFIG.SESSIONS);
-      if (!existing) {
-        await DB.set(CONFIG.SESSIONS, JSON.parse(lsS));
-        if (lsG) await DB.set(CONFIG.GLOSSARY, JSON.parse(lsG));
-      }
+      try {
+        const parsed = JSON.parse(lsS);
+        if (!(await DB.get(CONFIG.SESSIONS))) await DB.set(CONFIG.SESSIONS, parsed);
+      } catch(e) {}
       localStorage.removeItem('workout_log_sessions');
+    }
+    const lsG = localStorage.getItem('workout_log_glossary');
+    if (lsG) {
+      try {
+        const parsed = JSON.parse(lsG);
+        if (!(await DB.get(CONFIG.GLOSSARY))) await DB.set(CONFIG.GLOSSARY, parsed);
+      } catch(e) {}
       localStorage.removeItem('workout_log_glossary');
     }
   } catch(e) {}
@@ -3156,12 +3269,19 @@ async function initApp() {
     bodyWeight: sess.bodyWeight ?? null,
   }));
   if (glossary) State.glossary = glossary;
-  if (muscleGroups) State.muscleGroups = muscleGroups;
-  if (draft?.date && draft?.raw) State.pendingDrafts[draft.date] = draft.raw;
+  if (muscleGroups) State.muscleGroups = Object.fromEntries(
+    Object.entries(muscleGroups).map(([k, v]) => [k, String(v).toLowerCase()]));
+  if (draft) {
+    if (typeof draft.date === 'string' && typeof draft.raw === 'string') {
+      State.pendingDrafts[draft.date] = draft.raw;   // formato legacy a slot singolo
+    } else {
+      for (const [d, r] of Object.entries(draft)) {
+        if (typeof r === 'string' && r.trim()) State.pendingDrafts[d] = r;
+      }
+    }
+  }
 
-  renderTopbarMark();
-  attachGlobalListeners();
-  initLogTab();
+  refreshAllViews();
   renderFileStatus();
 
   if ('serviceWorker' in navigator) {

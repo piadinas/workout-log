@@ -1,5 +1,6 @@
-const CACHE = 'workout-v6-ios-import';
+const CACHE = 'workout-v7-debug-fixes';
 const SHELL = ['./', './index.html', './manifest.json', './icon.png'];
+const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
@@ -20,14 +21,19 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
 
   const url = new URL(e.request.url);
-  if (url.origin !== self.location.origin) return;
+  // Cross-origin: passa solo per i font (cache-first sotto), il resto bypassa
+  if (url.origin !== self.location.origin && !FONT_HOSTS.includes(url.hostname)) return;
 
   if (e.request.mode === 'navigate' || e.request.destination === 'document') {
     e.respondWith(
       fetch(e.request)
         .then(response => {
-          const copy = response.clone();
-          caches.open(CACHE).then(c => c.put('./index.html', copy));
+          // Mai sovrascrivere lo shell con 404/500/redirect/captive portal:
+          // offline verrebbe servita quella pagina al posto dell'app
+          if (response.ok && response.type === 'basic') {
+            const copy = response.clone();
+            caches.open(CACHE).then(c => c.put('./index.html', copy));
+          }
           return response;
         })
         .catch(() => caches.match('./index.html').then(r => r || caches.match('./')))
