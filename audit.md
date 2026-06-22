@@ -1,12 +1,66 @@
 # Code Audit — index.html / sw.js
 
-> File pubblicato: `index.html` (V8 redesign) · Service worker: `sw.js` · Stato: **passaggio 4 del 2026-06-10**
+> File pubblicato: `index.html` (V8 redesign) · Service worker: `sw.js` · Stato: **passaggio 5 del 2026-06-22**
 >
-> Sessione di debug post-redesign: 3 audit indipendenti (parser/round-trip, persistenza/race, date/rendering/PWA) + riproduzione dal vivo nel browser di ogni finding prima e dopo il fix. I passaggi 1–3 (audit di palestraV7, 2026-05-05) sono superati: i fix sono nel codice attuale.
+> Passaggio 5: caccia ai bug multi-agente (7 lenti in parallelo: iOS/scroll, layout CSS, touch, logica, rendering, a11y, sicurezza) con verifica avversariale — 24 bug confermati su 25, 0 falsi positivi. Fix e verifica dal vivo nel browser. Innescato dal bug della tabbar fluttuante, sfuggito ai passaggi precedenti perché puramente di rendering iOS.
+>
+> Passaggio 4 (2026-06-10): 3 audit indipendenti (parser/round-trip, persistenza/race, date/rendering/PWA). I passaggi 1–3 (audit di palestraV7, 2026-05-05) sono superati.
 
 ---
 
-## RISOLTI NEL PASSAGGIO 4
+## RISOLTI NEL PASSAGGIO 5
+
+### Rendering / iOS (il sintomo che ha innescato il giro)
+
+1. **Tabbar che "fluttua" durante lo scroll su iOS** — un elemento `position: fixed` con `backdrop-filter` ri-rasterizza il blur con un frame di ritardo durante lo scroll. Fix: `transform: translateZ(0)` + `will-change: transform` (proprio layer di compositing) + `overscroll-behavior: none` su `html`/`body` contro il rimbalzo rubber-band. Verificato: barra inchiodata a tutte le posizioni di scroll.
+
+2. **Grafico Trend incollato al bordo inferiore sui plateau** (MEDIUM) — con valori tutti uguali `minV===maxV` mappava ogni punto sul fondo. Fix: scala dell'asse separata dai dati, con padding simmetrico che centra la linea piatta. Verificato: linea a metà altezza con banner stagnazione.
+
+3. **Heatmap: l'etichetta del mese allargava la colonna-settimana** (LOW) — disallineava tutte le celle. Fix: `flex: 0 0 11px` sulla settimana + niente etichetta sulla colonna parziale di sinistra (evita "genfeb" sovrapposti). Verificato: 22 colonne tutte a 11px.
+
+### Sicurezza / crash (HIGH/MEDIUM)
+
+4. **Stored XSS via nome gruppo muscolare** (HIGH) — `renderMuscleVolume` interpolava il nome del gruppo non escapato in `innerHTML`: `### BP = <img src=x onerror=...>` eseguiva JS. Fix: `escapeHTML()` al sink. Verificato: il payload viene escapato, `onerror` non scatta.
+
+5. **Crash del Diario per data di calendario impossibile** (MEDIUM) — importare `# 2026-13-45` salvava la sessione, poi `Intl.format(Invalid Date)` lanciava `RangeError` rompendo il render. Fix: `isRealISODate()` valida la data reale all'import (rigetta anche 2026-02-30); `fmtDate*` difensive sui dati legacy. Verificato: date impossibili rigettate, Diario non crasha.
+
+### Interazione / logica (LOW)
+
+6. **CTA "Salva" bloccato su "✓ Salvato"** dopo cambio tab durante il flash di 2s — `handleTabSwitch` ora richiama `renderLogPreview()` tornando su Oggi.
+7. **Quick-add non fondeva con newline finale** nella textarea — ora ignora le righe vuote in coda.
+8. **Enter sul campo "reps"** non aggiungeva esercizi a corpo libero (senza peso) — rimossa la condizione sul peso.
+9. **Etichetta "volume oggi"** mostrata anche su date passate — ora "volume sessione" se la data ≠ oggi.
+10. **Cutoff range muscolari 1m/3m errato a fine mese** (es. 31 marzo − 1 mese → 3 marzo) — clamp all'ultimo giorno valido del mese-target.
+11. **Swipe cambio tab su scroll diagonale** — aggiunta guard di direzione prevalente (`|dx| > |dy|·1.5`).
+
+### Accessibilità (MEDIUM/LOW)
+
+12. **Zoom pinch bloccato** (`user-scalable=no`, WCAG 1.4.4) — rimosso dal meta viewport; sblocca anche il recupero dall'auto-zoom iOS sui campi.
+13. **`outline:none` globale senza sostituto** — aggiunta regola `:focus-visible` (appare solo da tastiera, invisibile al tocco).
+14. **Toast non annunciato** dagli screen reader — `role="status" aria-live="polite"`.
+15. **`input type=date` senza nome** — `aria-label="Data allenamento"`.
+16. **Scroll `smooth`** ignorava `prefers-reduced-motion` — ora calcolato.
+
+### Layout / pulizia (LOW)
+
+17. **Token lunghi senza spazi traboccavano** orizzontalmente (commenti con URL) — `overflow-wrap: break-word` + `min-width: 0`. Nomi gruppo lunghi: ellissi su `.muscle-name`.
+18. **CSS morto del bottomsheet** (`.sheet`/`.sheet-mask`, ~29 righe mai collegate) — rimosso.
+
+### Applicati su conferma dell'utente (toccano il look)
+
+19. **Contrasto `--ink-3`/`--ink-4`** (WCAG 1.4.3): `--ink-3` #6c675e→#827d72 (~5:1), `--ink-4` #3b3833→#635e55 (1.69:1→~3:1). Micro-etichette ora leggibili, gerarchia preservata.
+20. **Font input a 16px**: tutti i campi testuali (qa-input, freetext, search, gl-name, gl-group, gl-new-*) a 16px → niente auto-zoom iOS al focus. Aggiunto `min-width: 0` su `.gl-name`/`.gl-group` per non sfondare la griglia (nota: gruppi di 7+ caratteri tipo "schiena" vengono troncati visivamente nel pill da 84px, valore intatto).
+21. **stat-grid responsive**: `.stat-cell-val` → `clamp(16px, 5vw, 22px)`, le 4 card non sforano su iPhone stretti.
+
+22. **Etichette asse X del grafico sovrapposte a destra** ("31GIGIU"): le etichette regolari troppo vicine all'ultima (sempre disegnata) ora vengono saltate. Verificato: nessuna sovrapposizione.
+
+### NON modificati
+
+- **Fallback date-picker su iOS < 16** (no `showPicker`): raro e rischioso da ristrutturare. Unico finding confermato non corretto.
+
+---
+
+## RISOLTI NEL PASSAGGIO 4 (storico)
 
 ### Data loss (HIGH)
 

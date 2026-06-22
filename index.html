@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -27,8 +27,8 @@
   /* Palette — warm off-black ledger with paper white & a single citric accent */
   --ink: #f4ede0;            /* paper white, warm */
   --ink-2: #aea89c;          /* oat */
-  --ink-3: #6c675e;          /* stone */
-  --ink-4: #3b3833;          /* slate */
+  --ink-3: #827d72;          /* stone — schiarito per contrasto AA su testo piccolo */
+  --ink-4: #635e55;          /* slate — schiarito (era 1.69:1, illeggibile) */
   --paper: #0c0a08;          /* off-black, warm */
   --paper-2: #14110d;        /* card / surface */
   --paper-3: #1c1813;        /* surface raised */
@@ -76,13 +76,16 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   font-feature-settings: 'ss01', 'ss02', 'cv11';
-  overscroll-behavior-y: contain;
+  overscroll-behavior-y: none;
 }
 html {
   overflow-x: clip;
   min-height: 100%;
   /* PWA standalone iOS: il background del root deve coprire il display intero */
   background: var(--paper);
+  /* Blocca il rimbalzo rubber-band del documento: in standalone fa "saltare"
+     gli elementi fixed quando si scorre oltre il fondo. */
+  overscroll-behavior: none;
 }
 
 body {
@@ -114,6 +117,14 @@ input, textarea, select {
   border: none;
   outline: none;
   font-size: 16px; /* prevent iOS zoom */
+}
+
+/* Indicatore di focus per la navigazione da tastiera (non appare al tocco/mouse),
+   ripristina l'accessibilità persa con outline:none globale. */
+:focus-visible {
+  outline: 2px solid var(--ink-2);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 /* ─── App shell ─────────────────────────────────────────────────── */
@@ -488,7 +499,7 @@ input, textarea, select {
 }
 .qa-input {
   font-family: var(--mono);
-  font-size: 15px;
+  font-size: 16px; /* >=16px: evita l'auto-zoom iOS al focus */
   font-weight: 500;
   padding: 11px 6px;
   text-align: center;
@@ -540,7 +551,7 @@ input, textarea, select {
   min-height: 100px;
   padding: 16px 14px;
   font-family: var(--mono);
-  font-size: 14.5px;
+  font-size: 16px; /* >=16px: evita l'auto-zoom iOS al focus */
   font-weight: 400;
   line-height: 2;
   background: var(--paper-2);
@@ -725,6 +736,8 @@ details.help code {
   color: var(--ink-3);
   line-height: 1.5;
   padding-right: 8px;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 .entry-comment::before { content: '— '; color: var(--ink-4); }
 
@@ -848,7 +861,7 @@ details.help code {
   padding: 13px 0;
   font-family: var(--sans);
   font-weight: 400;
-  font-size: 15px;
+  font-size: 16px; /* >=16px: evita l'auto-zoom iOS al focus */
   color: var(--ink);
   border-bottom: 1px solid var(--rule);
   margin-bottom: 22px;
@@ -996,6 +1009,10 @@ details.help code {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  /* Larghezza bloccata a quella delle celle: l'etichetta del mese (nowrap)
+     non deve allargare la colonna e disallineare le settimane. */
+  flex: 0 0 11px;
+  min-width: 0;
 }
 .hm-month-lbl {
   height: 14px;
@@ -1070,7 +1087,7 @@ details.help code {
 .stat-cell-val {
   font-family: var(--display);
   font-weight: 500;
-  font-size: 22px;
+  font-size: clamp(16px, 5vw, 22px); /* responsive: 4 card + delta lungo non sfora su 375px */
   line-height: 1;
   color: var(--ink);
   letter-spacing: -0.02em;
@@ -1176,6 +1193,10 @@ details.help code {
   font-size: 13px;
   color: var(--ink-2);
   font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 .muscle-bar {
   height: 4px;
@@ -1226,8 +1247,9 @@ details.help code {
 .gl-name {
   font-family: var(--sans);
   font-weight: 400;
-  font-size: 14.5px;
+  font-size: 16px; /* >=16px: evita l'auto-zoom iOS al focus */
   color: var(--ink);
+  min-width: 0;
   padding: 4px 0;
   border-radius: 4px;
   letter-spacing: -0.005em;
@@ -1238,7 +1260,8 @@ details.help code {
 
 .gl-group {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 16px; /* >=16px: evita l'auto-zoom iOS al focus */
+  min-width: 0; /* rispetta la colonna 84px invece di sfondarla a 16px */
   padding: 6px 10px;
   color: var(--ink-2);
   background: var(--paper-2);
@@ -1264,7 +1287,7 @@ details.help code {
 .gl-new-abbr {
   padding: 12px 8px;
   font-family: var(--mono);
-  font-size: 14px;
+  font-size: 16px; /* >=16px: evita l'auto-zoom iOS al focus */
   font-weight: 600;
   text-align: center;
   letter-spacing: 0.04em;
@@ -1278,7 +1301,7 @@ details.help code {
   padding: 12px 14px;
   font-family: var(--sans);
   font-weight: 400;
-  font-size: 14.5px;
+  font-size: 16px; /* >=16px: evita l'auto-zoom iOS al focus */
   background: var(--paper-2);
   border: 1px solid var(--rule);
   border-radius: 10px;
@@ -1322,6 +1345,12 @@ details.help code {
   background: rgba(12, 10, 8, 0.88);
   -webkit-backdrop-filter: saturate(140%) blur(22px);
   backdrop-filter: saturate(140%) blur(22px);
+  /* iOS: un elemento fixed con backdrop-filter ri-rasterizza il blur con un
+     frame di ritardo durante lo scroll e "fluttua". Promuoverlo a un proprio
+     layer di compositing lo tiene inchiodato al viewport. */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
   border-top: 1px solid var(--rule);
   /* Padding-bottom = max(min spacing, safe area) — non sommare per evitare gap nero su iPhone */
   padding-top: 8px;
@@ -1402,36 +1431,6 @@ details.help code {
 .stagger-3 { animation: pageIn 480ms 140ms var(--ease-out) both; }
 .stagger-4 { animation: pageIn 480ms 200ms var(--ease-out) both; }
 
-/* ─── Date picker bottomsheet ──────────────────────────────────── */
-.sheet-mask {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0);
-  z-index: 60;
-  opacity: 0;
-  pointer-events: none;
-  transition: background var(--t-base), opacity var(--t-base);
-}
-.sheet-mask.open { background: rgba(0,0,0,0.5); opacity: 1; pointer-events: auto; }
-.sheet {
-  position: fixed; left: 0; right: 0; bottom: 0;
-  z-index: 61;
-  background: var(--paper);
-  border-top-left-radius: 24px;
-  border-top-right-radius: 24px;
-  padding: 14px var(--space-edge) calc(20px + var(--safe-bottom));
-  transform: translateY(100%);
-  transition: transform 360ms var(--ease-out);
-  border-top: 1px solid var(--rule);
-}
-.sheet.open { transform: translateY(0); }
-.sheet-handle {
-  width: 38px;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--ink-4);
-  margin: 0 auto 14px;
-}
-
 /* ─── PR badge for inline preview ──────────────────────────────── */
 
 /* ─── Print/extra safety ───────────────────────────────────────── */
@@ -1482,7 +1481,7 @@ details.help code {
         <button class="date-trigger" id="dateTriggerBtn" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>cambia
         </button>
-        <input type="date" id="logDateInput">
+        <input type="date" id="logDateInput" aria-label="Data allenamento">
       </div>
 
       <div class="hero-stats stagger-3" id="heroStats"></div>
@@ -1590,7 +1589,7 @@ details.help code {
 
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script>
 /* ───────────────────────────────────────────────────────────────────
@@ -1886,6 +1885,17 @@ function sessionsToTxt(sessions, glossary, muscleGroups) {
   return glBlock + sesBlock;
 }
 
+// Valida che la stringa sia una data di calendario REALE (es. 2026-13-45 e
+// 2026-02-30 sono respinte): altrimenti new Date(...) lancia/normalizza e fa
+// crashare il render del Diario/heatmap.
+function isRealISODate(s) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return false;
+  const y = +m[1], mo = +m[2], d = +m[3];
+  const dt = new Date(y, mo - 1, d);
+  return dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === d;
+}
+
 function txtToSessions(txt) {
   const newGlossary = {};
   const newMuscleGroups = {};
@@ -1900,7 +1910,7 @@ function txtToSessions(txt) {
   for (const block of blocks) {
     const lines = block.trim().split('\n');
     const dm = lines[0].match(/^#\s*(\d{4}-\d{2}-\d{2})/);
-    if (!dm) continue;
+    if (!dm || !isRealISODate(dm[1])) continue;
     const raw = lines.slice(1).join('\n').trim();
     const parsedLines = parseAllLines(raw);
     const exercises = parsedLines.filter(l=>l.type==='exercise');
@@ -1932,17 +1942,21 @@ function renderSVGChart(container, pts, color, tooltipUnit) {
   const vals = pts.map(p => p.value);
   const minV = Math.min(...vals);
   const maxV = Math.max(...vals);
-  const spread = (maxV - minV) || (maxV * 0.1) || 10;
+  // Scala dell'asse separata dai dati: su un plateau (tutti i valori uguali)
+  // senza padding la linea si schiaccia sul bordo inferiore. Si centra.
+  let scaleMin = minV, scaleMax = maxV;
+  if (scaleMax === scaleMin) { const pad = Math.abs(scaleMax * 0.1) || 1; scaleMin -= pad; scaleMax += pad; }
+  const spread = (scaleMax - scaleMin) || 10;
 
   const xs = i => P.left + (i / (pts.length-1)) * pw;
-  const ys = v => P.top + ph - ((v - minV) / spread) * ph;
+  const ys = v => P.top + ph - ((v - scaleMin) / spread) * ph;
 
   const rawStep = spread / 4;
   const mag = Math.pow(10, Math.floor(Math.log10(rawStep || 1)));
   const niceTick = [1,2,2.5,5,10].map(f=>f*mag).find(f=>f>=rawStep) || rawStep;
-  const tickMin = Math.floor(minV/niceTick)*niceTick;
+  const tickMin = Math.floor(scaleMin/niceTick)*niceTick;
   const yTicks = [];
-  for (let t=tickMin; t<=maxV+niceTick*0.01; t+=niceTick) yTicks.push(+t.toFixed(10));
+  for (let t=tickMin; t<=scaleMax+niceTick*0.01; t+=niceTick) yTicks.push(+t.toFixed(10));
 
   const maxXLabels = Math.floor(pw / 64);
   const xStep = Math.max(1, Math.ceil(pts.length / maxXLabels));
@@ -1973,7 +1987,7 @@ function renderSVGChart(container, pts, color, tooltipUnit) {
 
   // Y gridlines + labels (serif italic)
   yTicks.forEach(v => {
-    if (v < minV - spread*0.1 || v > maxV + spread*0.1) return;
+    if (v < scaleMin - spread*0.1 || v > scaleMax + spread*0.1) return;
     const y = ys(v).toFixed(1);
     const gl = document.createElementNS(NS, 'line');
     gl.setAttribute('x1', P.left); gl.setAttribute('x2', P.left+pw);
@@ -1994,7 +2008,10 @@ function renderSVGChart(container, pts, color, tooltipUnit) {
 
   // X labels (mono)
   pts.forEach((p,i) => {
-    if (i%xStep!==0 && i!==pts.length-1) return;
+    const isLast = i === pts.length - 1, isFirst = i === 0;
+    // L'ultima etichetta è sempre disegnata (anchor 'end'): salta le etichette
+    // regolari che le cadono troppo vicine, evitando la sovrapposizione a destra.
+    if (!isFirst && !isLast && (i % xStep !== 0 || pts.length - 1 - i < xStep)) return;
     const x = xs(i).toFixed(1);
     const t = document.createElementNS(NS, 'text');
     t.setAttribute('x', x); t.setAttribute('y', H-8);
@@ -2299,12 +2316,12 @@ const _fmtSession = new Intl.DateTimeFormat('it-IT', {weekday:'long',day:'numeri
 const _fmtChart = new Intl.DateTimeFormat('it-IT', {day:'numeric',month:'short'});
 const _fmtMarkDay = new Intl.DateTimeFormat('it-IT', {day:'2-digit', month:'2-digit'});
 
-function fmtDateShort(d) { return _fmtShort.format(new Date(d+'T12:00:00')); }
-function fmtDateSession(d) {
-  const dt = new Date(d+'T12:00:00');
-  return _fmtSession.format(dt);
-}
-function fmtDateChart(d) { return _fmtChart.format(new Date(d+'T12:00:00')); }
+// Difensive: dati legacy potrebbero contenere date non valide; mai lasciar
+// lanciare RangeError da Intl.format(Invalid Date) — si ripiega sulla stringa.
+function fmtDateShort(d) { const dt = new Date(d+'T12:00:00'); return isNaN(dt) ? d : _fmtShort.format(dt); }
+function fmtDateSession(d) { const dt = new Date(d+'T12:00:00'); return isNaN(dt) ? d : _fmtSession.format(dt); }
+function fmtDateChart(d) { const dt = new Date(d+'T12:00:00'); return isNaN(dt) ? d : _fmtChart.format(dt); }
+const _reduceMotion = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function renderFileStatus() {
   const sub = document.getElementById('headerSub');
@@ -2349,7 +2366,10 @@ function handleTabSwitch(tab) {
   if (tab==='storico') renderStorico();
   if (tab==='trend') renderTrend();
   if (tab==='glossario') renderGlossario();
-  window.scrollTo({top: 0, behavior: 'smooth'});
+  // Tornando su "Oggi" ricalcola il CTA: altrimenti resta "✓ Salvato"
+  // disabilitato se si cambia tab durante il flash post-salvataggio.
+  if (tab==='log') renderLogPreview();
+  window.scrollTo({top: 0, behavior: _reduceMotion() ? 'auto' : 'smooth'});
 }
 
 function initLogTab() {
@@ -2445,7 +2465,7 @@ function renderHeroStats() {
   el.innerHTML = `
     <div class="hstat">
       <div class="hstat-val">${fmtVol(totalVol)}<span class="u">kg</span></div>
-      <div class="hstat-lbl">volume ${data.src === 'draft' ? 'in corso' : 'oggi'}</div>
+      <div class="hstat-lbl">volume ${data.src === 'draft' ? 'in corso' : (targetDate === todayStr() ? 'oggi' : 'sessione')}</div>
     </div>
     <div class="hstat">
       <div class="hstat-val">${data.exercises.length}<span class="u">es</span></div>
@@ -2550,7 +2570,7 @@ function fillQuickAddAbbr(abbr) {
   inp.value = abbr;
   inp.dispatchEvent(new Event('input', { bubbles: true }));
   document.getElementById('qaReps').focus();
-  document.querySelector('.quickadd')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  document.querySelector('.quickadd')?.scrollIntoView({ behavior: _reduceMotion() ? 'auto' : 'smooth', block: 'center' });
 }
 
 function handleLogDateChange() {
@@ -2583,6 +2603,9 @@ function handleQuickAdd() {
 
   const ta = document.getElementById('logInput');
   const lines = ta.value ? ta.value.split('\n') : [];
+  // Rimuove righe vuote in coda: un newline finale non deve impedire il merge
+  // con l'ultima serie ne' creare un buco prima di un nuovo esercizio.
+  while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
   const lastLine = lines[lines.length - 1] || '';
 
   // Il merge testuale va fatto sulla riga RI-PARSATA: manipolare la stringa
@@ -2751,7 +2774,9 @@ function renderHeatmap() {
       const dateStr = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
       const isFuture = date > today;
       const hasSession = trainingDates.has(dateStr);
-      if (d === 0 && date.getMonth() !== lastMonth) {
+      // w>0: niente etichetta sulla colonna parziale di sinistra, che
+      // altrimenti si sovrappone all'inizio-mese successivo (es. "genfeb").
+      if (d === 0 && w > 0 && date.getMonth() !== lastMonth) {
         monthLabel = date.toLocaleDateString('it-IT', { month: 'short' });
         lastMonth = date.getMonth();
       }
@@ -3087,6 +3112,9 @@ function renderMuscleVolume() {
     const now = new Date();
     const months = range === '1m' ? 1 : 3;
     const c = new Date(now.getFullYear(), now.getMonth() - months, now.getDate());
+    // Fine mese: il 31 marzo - 1 mese traboccherebbe a "3 marzo". Se il mese
+    // non e' quello atteso, il giorno e' traboccato: si clampa all'ultimo valido.
+    if (c.getMonth() !== ((now.getMonth() - months) % 12 + 12) % 12) c.setDate(0);
     cutoff = c.getFullYear() + '-' + String(c.getMonth() + 1).padStart(2, '0') + '-' + String(c.getDate()).padStart(2, '0');
   }
   const sessions = cutoff ? State.sessions.filter(s => s.date >= cutoff) : State.sessions;
@@ -3117,7 +3145,7 @@ function renderMuscleVolume() {
 
   const maxSets = entries[0][1];
   el.innerHTML = header + entries.map(([g, v]) => `<div class="muscle-row">
-    <div class="muscle-name">${g.charAt(0).toUpperCase() + g.slice(1)}</div>
+    <div class="muscle-name">${escapeHTML(g.charAt(0).toUpperCase() + g.slice(1))}</div>
     <div class="muscle-bar"><div class="muscle-fill" style="width:${Math.round((v / maxSets) * 100)}%;background:${COLORS[g] || COLORS.altro}"></div></div>
     <div class="muscle-val">${v} set</div>
   </div>`).join('') + '</div>';
@@ -3157,7 +3185,9 @@ function setupSwipeGesture() {
     const dx = e.changedTouches[0].clientX - touchStartX;
     const dy = e.changedTouches[0].clientY - touchStartY;
     const dt = Date.now() - touchStartTime;
-    if (Math.abs(dx) < 70 || Math.abs(dy) > 60 || dt > 500) return;
+    // Richiede anche direzione nettamente orizzontale: evita il cambio tab
+    // su uno scroll diagonale (flick verticale con deriva laterale).
+    if (Math.abs(dx) < 70 || Math.abs(dy) > 60 || Math.abs(dx) < Math.abs(dy) * 1.5 || dt > 500) return;
     const idx = TABS.indexOf(State.currentTab);
     if (dx < 0 && idx < TABS.length - 1) handleTabSwitch(TABS[idx + 1]);
     if (dx > 0 && idx > 0) handleTabSwitch(TABS[idx - 1]);
@@ -3204,7 +3234,7 @@ function attachGlobalListeners() {
   document.getElementById('btnQaAdd').addEventListener('click', handleQuickAdd);
   document.getElementById('qaAbbr').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase(); updateQaHint(); });
   document.getElementById('qaWeight').addEventListener('keydown', e => { if (e.key === 'Enter') handleQuickAdd(); });
-  document.getElementById('qaReps').addEventListener('keydown', e => { if (e.key === 'Enter' && document.getElementById('qaWeight').value) handleQuickAdd(); });
+  document.getElementById('qaReps').addEventListener('keydown', e => { if (e.key === 'Enter') handleQuickAdd(); });
   document.getElementById('storicoContent').addEventListener('click', e => {
     if (e.target.dataset.action === 'edit') handleEditSession(e.target.dataset.date);
   });
