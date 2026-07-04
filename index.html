@@ -218,8 +218,98 @@ input, textarea, select {
 }
 .glyph-btn:active { transform: scale(0.88); color: var(--ink); background: var(--paper-2); }
 .glyph-btn svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-.glyph-btn.primary { color: var(--brick); }
-.glyph-btn.primary:active { color: var(--brick-deep); }
+.glyph-btn .bound-dot {
+  position: absolute;
+  top: 6px; right: 5px;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--brick);
+  display: none;
+}
+.glyph-btn.bound .bound-dot { display: block; }
+
+/* ─── Menu file (backup) ────────────────────────────────────────── */
+.file-wrap { position: relative; }
+.file-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 35;           /* sotto la topbar (40): il menù le resta sopra */
+  background: rgba(34, 27, 17, 0.10);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms var(--ease-out);
+}
+.file-menu-backdrop.open { opacity: 1; pointer-events: auto; }
+.file-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 60;
+  width: min(310px, calc(100vw - 2 * var(--space-edge)));
+  background: var(--sheet);
+  border: 1px solid var(--rule-2);
+  border-radius: 16px;
+  box-shadow: 0 18px 44px rgba(60, 45, 25, 0.20);
+  padding: 6px;
+  opacity: 0;
+  transform: translateY(-6px) scale(0.97);
+  transform-origin: top right;
+  pointer-events: none;
+  transition: opacity 160ms var(--ease-out), transform 200ms var(--ease-out);
+}
+.file-menu.open { opacity: 1; transform: none; pointer-events: auto; }
+.fm-status {
+  padding: 10px 12px 11px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 6px;
+  overflow-wrap: break-word;
+}
+.fm-status strong { color: var(--brick); font-weight: 600; }
+.fm-item {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  padding: 11px 12px;
+  border-radius: 10px;
+  transition: background var(--t-fast);
+}
+.fm-item:active { background: var(--paper-2); }
+.fm-item svg {
+  width: 17px; height: 17px;
+  stroke: var(--ink-2);
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+.fm-item-txt { display: block; min-width: 0; }
+.fm-title {
+  display: block;
+  font-family: var(--sans);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+}
+.fm-sub {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-3);
+  margin-top: 1px;
+  letter-spacing: 0.02em;
+}
+.fm-item.danger .fm-title { color: var(--brick); }
+.fm-item.danger svg { stroke: var(--brick); }
+.fm-sep { height: 1px; background: var(--rule); margin: 6px 4px; }
 
 /* ─── Page wrapper ──────────────────────────────────────────────── */
 .page {
@@ -1695,22 +1785,41 @@ details.help code {
       <div class="topbar-file" id="headerSub">offline</div>
     </div>
     <div class="topbar-actions">
-      <button class="glyph-btn" id="btnNewFile" aria-label="Nuovo file" title="Nuovo">
-        <svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15h6"/></svg>
-      </button>
-      <button class="glyph-btn" id="btnOpenFile" aria-label="Importa file" title="Importa">
-        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
-      </button>
       <!-- Input file persistente: iOS PWA standalone funziona meglio con input nel DOM raggiungibile -->
       <input type="file" id="hiddenFileInput" aria-hidden="true" tabindex="-1" style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none;overflow:hidden;clip:rect(0 0 0 0);">
-      <button class="glyph-btn" id="btnDownloadFile" aria-label="Esporta file" title="Esporta">
-        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
-      </button>
-      <button class="glyph-btn primary" id="btnSaveFs" aria-label="Salva su file" title="Salva su file">
-        <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-      </button>
+      <div class="file-wrap">
+        <button class="glyph-btn" id="btnFileMenu" aria-label="File e backup" aria-haspopup="true" aria-expanded="false" title="File e backup">
+          <svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <span class="bound-dot"></span>
+        </button>
+        <div class="file-menu" id="fileMenu" role="menu" aria-label="File e backup">
+          <div class="fm-status" id="fmStatus">—</div>
+          <button class="fm-item" data-fm="import" role="menuitem" type="button">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+            <span class="fm-item-txt"><span class="fm-title">Importa .txt</span>
+            <span class="fm-sub">sostituisce le sessioni attuali</span></span>
+          </button>
+          <button class="fm-item" data-fm="export" role="menuitem" type="button">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+            <span class="fm-item-txt"><span class="fm-title">Esporta copia .txt</span>
+            <span class="fm-sub">condividi o scarica il backup</span></span>
+          </button>
+          <button class="fm-item" data-fm="bind" id="fmBind" role="menuitem" type="button">
+            <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <span class="fm-item-txt"><span class="fm-title" id="fmBindTitle">Collega un file</span>
+            <span class="fm-sub" id="fmBindSub">d'ora in poi ogni modifica si salva lì</span></span>
+          </button>
+          <div class="fm-sep"></div>
+          <button class="fm-item danger" data-fm="new" role="menuitem" type="button">
+            <svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15h6"/></svg>
+            <span class="fm-item-txt"><span class="fm-title">Nuovo quaderno</span>
+            <span class="fm-sub">azzera tutto — chiede conferma</span></span>
+          </button>
+        </div>
+      </div>
     </div>
   </header>
+  <div class="file-menu-backdrop" id="fileMenuBackdrop"></div>
 
   <!-- ─── OGGI ─────────────────────────────────────────────────── -->
   <main id="tab-log" class="page">
@@ -1902,7 +2011,7 @@ let _fsBusy = false, _fsPending = false;
 async function queueFsSave() {
   if (_fsBusy) { _fsPending = true; return; }
   _fsBusy = true;
-  try { await handleSaveToFs(); } catch {}
+  try { await handleSaveToFs({ silent: true }); } catch {}
   _fsBusy = false;
   if (_fsPending) { _fsPending = false; queueFsSave(); }
 }
@@ -2476,7 +2585,7 @@ async function handleHiddenFileChange(e) {
   }
 }
 
-async function handleSaveToFs() {
+async function handleSaveToFs({ silent = false } = {}) {
   if (!State.fileHandle) {
     if ('showSaveFilePicker' in window) {
       try {
@@ -2493,8 +2602,18 @@ async function handleSaveToFs() {
     const w = await State.fileHandle.createWritable();
     await w.write(sessionsToTxt(State.sessions, State.glossary, State.muscleGroups));
     await w.close();
-    showToast('Salvato ✓');
+    // Con l'autosave la scrittura è continua: il toast solo su azione esplicita
+    if (!silent) showToast('Salvato ✓');
   } catch(e) { showToast('Errore salvataggio'); }
+}
+
+// "Collega/Cambia file": se l'utente annulla il picker, il collegamento
+// precedente non va perso in silenzio.
+async function rebindFile() {
+  const prev = State.fileHandle;
+  State.fileHandle = null;
+  await handleSaveToFs();
+  if (!State.fileHandle) { State.fileHandle = prev; renderFileStatus(); }
 }
 
 async function handleDownloadFile() {
@@ -2626,6 +2745,42 @@ function renderFileStatus() {
       : State.sessions.length ? `${State.sessions.length} voci` : 'nuova bozza';
     sub.classList.remove('bound');
   }
+  // Il puntino sul tasto menù segnala il collegamento vivo a un file
+  const trigger = document.getElementById('btnFileMenu');
+  if (trigger) trigger.classList.toggle('bound', !!State.fileHandle);
+}
+
+/* ─── Menù file (backup) ─────────────────────────────────────────
+   Un solo tasto in topbar: dentro, azioni etichettate e una riga di
+   stato che dice sempre dove vivono i dati (file collegato / dispositivo). */
+let _fileMenuOpen = false;
+
+function updateFileMenu() {
+  const st = document.getElementById('fmStatus');
+  const bind = document.getElementById('fmBind');
+  const canFs = 'showSaveFilePicker' in window;
+  // Su iOS/Safari non esiste la File System Access API: la voce "collega" sparisce
+  bind.style.display = canFs ? '' : 'none';
+  const name = State.fileName ? escapeHTML(State.fileName) : '';
+  if (State.fileHandle) {
+    st.innerHTML = '◆ <strong>' + name + '</strong><br>collegato — ogni modifica scrive sul file';
+    document.getElementById('fmBindTitle').textContent = 'Cambia file collegato';
+    document.getElementById('fmBindSub').textContent = 'scegli un’altra destinazione';
+  } else {
+    st.innerHTML = (name ? 'origine: <strong>' + name + '</strong><br>' : '')
+      + 'i dati vivono su questo dispositivo'
+      + (canFs ? '' : '<br>esporta un .txt come backup');
+    document.getElementById('fmBindTitle').textContent = 'Collega un file';
+    document.getElementById('fmBindSub').textContent = 'd’ora in poi ogni modifica si salva lì';
+  }
+}
+
+function toggleFileMenu(open) {
+  _fileMenuOpen = open === undefined ? !_fileMenuOpen : open;
+  if (_fileMenuOpen) updateFileMenu();
+  document.getElementById('fileMenu').classList.toggle('open', _fileMenuOpen);
+  document.getElementById('fileMenuBackdrop').classList.toggle('open', _fileMenuOpen);
+  document.getElementById('btnFileMenu').setAttribute('aria-expanded', String(_fileMenuOpen));
 }
 
 const ZONE_LABEL = { log: 'oggi', storico: 'archivio', trend: 'andamento' };
@@ -2641,6 +2796,7 @@ function refreshAllViews() {
 
 function handleTabSwitch(tab) {
   clearTimeout(_searchTimer);
+  if (_fileMenuOpen) toggleFileMenu(false);
   // Uscendo da "Oggi" consolida subito quanto scritto: mai lasciare
   // l'autosave a metà quando si cambia zona.
   if (State.currentTab === 'log' && tab !== 'log') { autosaveCommit(); stashCurrentDraft(); }
@@ -3636,10 +3792,20 @@ function setupScrollShrink() {
    19. Init
    ─────────────────────────────────────────────────────────────────── */
 function attachGlobalListeners() {
-  document.getElementById('btnNewFile').addEventListener('click', handleNewFile);
-  document.getElementById('btnOpenFile').addEventListener('click', handleOpenFile);
-  document.getElementById('btnDownloadFile').addEventListener('click', handleDownloadFile);
-  document.getElementById('btnSaveFs').addEventListener('click', handleSaveToFs);
+  document.getElementById('btnFileMenu').addEventListener('click', () => toggleFileMenu());
+  document.getElementById('fileMenuBackdrop').addEventListener('click', () => toggleFileMenu(false));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && _fileMenuOpen) toggleFileMenu(false); });
+  document.getElementById('fileMenu').addEventListener('click', e => {
+    const item = e.target.closest('.fm-item');
+    if (!item) return;
+    toggleFileMenu(false);
+    const fm = item.dataset.fm;
+    // Tutto sincrono: il click deve restare un gesture valido per l'input file iOS
+    if (fm === 'import') handleOpenFile();
+    else if (fm === 'export') handleDownloadFile();
+    else if (fm === 'bind') rebindFile();
+    else if (fm === 'new') handleNewFile();
+  });
   document.getElementById('hiddenFileInput').addEventListener('change', handleHiddenFileChange);
   document.getElementById('tabContainer').addEventListener('click', e => {
     const btn = e.target.closest('.tab-item');
