@@ -81,21 +81,23 @@ html, body {
   font-feature-settings: 'ss01', 'ss02', 'cv11';
   overscroll-behavior-y: none;
 }
+/* App-shell: il DOCUMENTO non scorre mai — scorre solo .scroller interno.
+   È la cura del bug iOS della tabbar "fluttuante": con la tastiera WebKit
+   trasla il layout viewport e a volte lo lascia traslato alla chiusura;
+   tutto ciò che era position:fixed restava appeso al viewport sbagliato.
+   Senza scroll del documento non c'è offset residuo che possa spostare
+   la barra — che infatti non è più fixed ma un normale figlio flex. */
 html {
-  overflow-x: clip;
-  min-height: 100%;
+  overflow: hidden;
+  height: 100%;
   /* PWA standalone iOS: il background del root deve coprire il display intero */
   background: var(--paper);
-  /* Blocca il rimbalzo rubber-band del documento: in standalone fa "saltare"
-     gli elementi fixed quando si scorre oltre il fondo. */
   overscroll-behavior: none;
 }
 
 body {
-  min-height: 100vh;
-  min-height: 100svh;
-  min-height: 100dvh;
-  min-height: -webkit-fill-available;
+  height: 100%;
+  overflow: hidden;
   position: relative;
 }
 
@@ -136,18 +138,31 @@ input, textarea, select {
 .shell {
   max-width: 520px;
   margin: 0 auto;
-  min-height: 100vh;
-  min-height: 100svh;
-  /* Riserva spazio per la tabbar fixed (≈54px icona+pad) + safe area + breathing */
-  padding-bottom: calc(64px + max(8px, env(safe-area-inset-bottom, 8px)) + 16px);
+  height: 100vh;
+  height: 100svh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
   position: relative;
 }
 
-/* ─── Sticky topbar ─────────────────────────────────────────────── */
+/* ─── Area scorrevole interna (l'unica che scorre) ──────────────── */
+.scroller {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: clip;
+  -webkit-overflow-scrolling: touch;
+  /* il rimbalzo resta dentro: mai incatenarlo al documento */
+  overscroll-behavior: contain;
+  padding-bottom: 24px;
+}
+
+/* ─── Topbar (statica in cima al guscio) ────────────────────────── */
 .topbar {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 40;
+  flex-shrink: 0;
   padding: calc(var(--safe-top) + 14px) var(--space-edge) 10px;
   background: linear-gradient(to bottom, var(--paper) 60%, rgba(245, 240, 229, 0.85) 90%, rgba(245, 240, 229, 0));
   display: flex;
@@ -1674,20 +1689,12 @@ details.help code {
 
 /* ─── Bottom navigation ─────────────────────────────────────────── */
 .tabbar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  /* Figlio flex del guscio, NON position:fixed: sta in fondo per layout,
+     quindi non può fluttuare quando iOS trasla il viewport per la tastiera.
+     Niente più backdrop-blur: nulla scorre sotto la barra. */
+  flex-shrink: 0;
   z-index: 30;
-  background: rgba(245, 240, 229, 0.88);
-  -webkit-backdrop-filter: saturate(140%) blur(22px);
-  backdrop-filter: saturate(140%) blur(22px);
-  /* iOS: un elemento fixed con backdrop-filter ri-rasterizza il blur con un
-     frame di ritardo durante lo scroll e "fluttua". Promuoverlo a un proprio
-     layer di compositing lo tiene inchiodato al viewport. */
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-  will-change: transform;
+  background: var(--paper);
   border-top: 1px solid var(--rule);
   /* Padding-bottom = max(min spacing, safe area) — non sommare per evitare gap su iPhone */
   padding-top: 8px;
@@ -1821,6 +1828,8 @@ details.help code {
   </header>
   <div class="file-menu-backdrop" id="fileMenuBackdrop"></div>
 
+  <div class="scroller" id="scroller">
+
   <!-- ─── OGGI ─────────────────────────────────────────────────── -->
   <main id="tab-log" class="page">
 
@@ -1927,6 +1936,8 @@ details.help code {
     <div id="trendEmpty"></div>
     <div id="muscleVolumeSection"></div>
   </main>
+
+  </div><!-- /.scroller -->
 
   <!-- ─── Bottom tabbar ───────────────────────────────────────── -->
   <nav class="tabbar" id="tabContainer">
@@ -2816,7 +2827,9 @@ function handleTabSwitch(tab) {
   if (tab==='storico') { renderStorico(); if (_nomiOpen) renderGlossario(); }
   if (tab==='trend') renderTrend();
   if (tab==='log') renderLogPreview();
-  window.scrollTo({top: 0, behavior: _reduceMotion() ? 'auto' : 'smooth'});
+  // Reset istantaneo: uno smooth-scroll dopo lo swap del contenuto può
+  // essere cancellato dal re-layout e lasciare lo scroll a metà.
+  document.getElementById('scroller').scrollTop = 0;
 }
 
 function initLogTab() {
@@ -3381,7 +3394,7 @@ function toggleNomi(open) {
   document.getElementById('arcMain').style.display = open ? 'none' : '';
   document.getElementById('nomiView').hidden = !open;
   if (open) renderGlossario(); else renderStorico();
-  window.scrollTo({top: 0, behavior: _reduceMotion() ? 'auto' : 'smooth'});
+  document.getElementById('scroller').scrollTop = 0;
 }
 
 function renderStorico({ skipStats = false } = {}) {
@@ -3774,18 +3787,54 @@ function setupSwipeGesture() {
 }
 
 /* ───────────────────────────────────────────────────────────────────
-   18. Scroll-shrink topbar
+   18. Scroll-shrink topbar (ascolta lo scroller interno)
    ─────────────────────────────────────────────────────────────────── */
 function setupScrollShrink() {
   const bar = document.getElementById('topbar');
+  const scroller = document.getElementById('scroller');
   let prev = 0;
   const onScroll = () => {
-    const y = window.scrollY;
+    const y = scroller.scrollTop;
     if (y > 20 && prev <= 20) bar.style.padding = `calc(${getComputedStyle(document.documentElement).getPropertyValue('--safe-top')} + 8px) var(--space-edge) 8px`;
     else if (y <= 20 && prev > 20) bar.style.padding = `calc(${getComputedStyle(document.documentElement).getPropertyValue('--safe-top')} + 14px) var(--space-edge) 10px`;
     prev = y;
   };
-  window.addEventListener('scroll', onScroll, {passive: true});
+  scroller.addEventListener('scroll', onScroll, {passive: true});
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   18b. Guarigione tastiera iOS
+   Anche con overflow:hidden, WebKit può traslare il documento per
+   mostrare il campo a fuoco e — bug noto — lasciarlo traslato alla
+   chiusura della tastiera (l'app resta "alzata"). Qui il documento
+   deve stare SEMPRE a scroll 0: appena la tastiera si chiude, o dopo
+   un blur senza nuovo focus, si riallinea.
+   ─────────────────────────────────────────────────────────────────── */
+function healDocumentScroll() {
+  if (window.scrollY !== 0 || document.documentElement.scrollTop !== 0) {
+    window.scrollTo(0, 0);
+  }
+}
+
+function setupKeyboardHeal() {
+  const vv = window.visualViewport;
+  if (vv) {
+    let wasOpen = false;
+    vv.addEventListener('resize', () => {
+      const open = vv.height < window.innerHeight - 60;
+      if (wasOpen && !open) requestAnimationFrame(healDocumentScroll);
+      wasOpen = open;
+    });
+  }
+  document.addEventListener('focusout', () => {
+    // Aspetta l'eventuale focus successivo (es. reps → kg nel quick-add):
+    // si riallinea solo se la tastiera è davvero andata via.
+    setTimeout(() => {
+      const ae = document.activeElement;
+      if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
+      healDocumentScroll();
+    }, 400);
+  });
 }
 
 /* ───────────────────────────────────────────────────────────────────
@@ -3873,6 +3922,7 @@ function attachGlobalListeners() {
   setupDatePickerTrigger();
   setupSwipeGesture();
   setupScrollShrink();
+  setupKeyboardHeal();
 }
 
 async function initApp() {
