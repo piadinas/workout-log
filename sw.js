@@ -1,4 +1,4 @@
-const CACHE = 'workout-v7-debug-fixes';
+const CACHE = 'workout-v8-daylight';
 const SHELL = ['./', './index.html', './manifest.json', './icon.png'];
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 

@@ -5,44 +5,47 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Ledger">
-<meta name="theme-color" content="#0c0a08">
+<meta name="theme-color" content="#f5f0e5">
 <meta name="format-detection" content="telephone=no">
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="light">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.png">
 <title>Ledger · Workout</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@200..700&family=Geist+Mono:wght@300..600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@200..700&family=Geist+Mono:wght@300..600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&display=swap" rel="stylesheet">
 
 <style>
 /* ─────────────────────────────────────────────────────────────────
-   THE ATHLETE'S LEDGER · iPhone-first workout log
+   THE ATHLETE'S LEDGER · PAPER / DAYLIGHT
+   iPhone-first workout log — carta calda, inchiostro, matita rossa
    ───────────────────────────────────────────────────────────────── */
 
 :root {
-  /* Palette — warm off-black ledger with paper white & a single citric accent */
-  --ink: #f4ede0;            /* paper white, warm */
-  --ink-2: #aea89c;          /* oat */
-  --ink-3: #827d72;          /* stone — schiarito per contrasto AA su testo piccolo */
-  --ink-4: #635e55;          /* slate — schiarito (era 1.69:1, illeggibile) */
-  --paper: #0c0a08;          /* off-black, warm */
-  --paper-2: #14110d;        /* card / surface */
-  --paper-3: #1c1813;        /* surface raised */
-  --rule: rgba(244, 237, 224, 0.07);
-  --rule-2: rgba(244, 237, 224, 0.14);
+  /* Palette — carta calda con inchiostro bruno e un solo accento: la matita rossa */
+  --ink: #221b11;            /* inchiostro, quasi nero caldo */
+  --ink-2: #5c5442;          /* seppia */
+  --ink-3: #6f6650;          /* pietra — AA su testo piccolo */
+  --ink-4: #99907a;          /* sabbia, solo decorativo */
+  --paper: #f5f0e5;          /* carta, crema calda */
+  --paper-2: #ece5d4;        /* superficie / lavaggio */
+  --paper-3: #e2d9c3;        /* superficie rialzata / chip */
+  --sheet: #fcfaf3;          /* foglio vivo: campi di scrittura */
+  --rule: rgba(34, 27, 17, 0.10);
+  --rule-2: rgba(34, 27, 17, 0.19);
 
-  --citrus: #d8ff4a;         /* lime, single accent */
-  --citrus-soft: rgba(216, 255, 74, 0.14);
-  --coral: #ff8a6e;          /* danger */
-  --coral-soft: rgba(255, 138, 110, 0.12);
-  --water: #a5cae0;          /* secondary, only used for BW */
+  --brick: #b23b28;          /* matita rossa, unico accento */
+  --brick-deep: #8e2d1e;     /* pressione / attivo */
+  --brick-soft: rgba(178, 59, 40, 0.12);
+  --brick-wash: rgba(178, 59, 40, 0.06);
+  --ochre: #96690f;          /* avviso caldo (Da riprendere) */
+  --slate: #56718a;          /* secondario, solo per BW */
 
   /* Typography */
-  --display: 'Geist', -apple-system, 'SF Pro Display', Helvetica, sans-serif;
+  --display: 'Source Serif 4', 'Iowan Old Style', Georgia, serif;
   --sans: 'Geist', -apple-system, 'SF Pro Text', Helvetica, sans-serif;
   --mono: 'Geist Mono', 'SF Mono', 'JetBrains Mono', ui-monospace, monospace;
 
@@ -96,6 +99,8 @@ body {
   position: relative;
 }
 
+::selection { background: rgba(178, 59, 40, 0.18); }
+
 /* Selectable text */
 input, textarea, [contenteditable] {
   -webkit-user-select: text;
@@ -144,7 +149,7 @@ input, textarea, select {
   top: 0;
   z-index: 40;
   padding: calc(var(--safe-top) + 14px) var(--space-edge) 10px;
-  background: linear-gradient(to bottom, var(--paper) 60%, rgba(12, 10, 8, 0.85) 90%, rgba(12, 10, 8, 0));
+  background: linear-gradient(to bottom, var(--paper) 60%, rgba(245, 240, 229, 0.85) 90%, rgba(245, 240, 229, 0));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -174,10 +179,9 @@ input, textarea, select {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--citrus);
-  margin: 0 6px 1px 4px;
+  background: var(--brick);
+  margin: 0 6px 1px 0;
   vertical-align: middle;
-  box-shadow: 0 0 8px var(--citrus-soft);
 }
 
 .topbar-file {
@@ -190,7 +194,7 @@ input, textarea, select {
   text-overflow: ellipsis;
   min-width: 0;
 }
-.topbar-file.bound { color: var(--citrus); }
+.topbar-file.bound { color: var(--brick); }
 
 .topbar-actions {
   display: flex;
@@ -212,10 +216,10 @@ input, textarea, select {
               background var(--t-fast);
   position: relative;
 }
-.glyph-btn:active { transform: scale(0.88); color: var(--ink); }
+.glyph-btn:active { transform: scale(0.88); color: var(--ink); background: var(--paper-2); }
 .glyph-btn svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-.glyph-btn.primary { color: var(--citrus); }
-.glyph-btn.primary:active { color: var(--ink); }
+.glyph-btn.primary { color: var(--brick); }
+.glyph-btn.primary:active { color: var(--brick-deep); }
 
 /* ─── Page wrapper ──────────────────────────────────────────────── */
 .page {
@@ -245,20 +249,20 @@ input, textarea, select {
 
 .hero-day {
   font-family: var(--display);
-  font-weight: 400;
-  font-size: 22px;
+  font-weight: 600;
+  font-size: 25px;
   color: var(--ink);
-  letter-spacing: -0.015em;
+  letter-spacing: -0.01em;
   line-height: 1.1;
   text-transform: lowercase;
 }
 
 .hero-num {
   font-family: var(--display);
-  font-weight: 500;
-  font-size: 22px;
+  font-weight: 600;
+  font-size: 25px;
   line-height: 1.1;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
@@ -282,14 +286,14 @@ input, textarea, select {
   color: var(--ink-3);
   padding: 4px 10px;
   border-radius: 999px;
-  border: 1px solid var(--rule);
+  border: 1px solid var(--rule-2);
   transition: color var(--t-fast), border-color var(--t-fast), background var(--t-fast);
   display: inline-flex;
   align-items: center;
   gap: 5px;
 }
 .hero-meta button.date-trigger:active {
-  color: var(--citrus); border-color: var(--rule-2); background: var(--paper-2);
+  color: var(--brick); border-color: var(--brick); background: var(--brick-wash);
 }
 .hero-meta .date-trigger svg { width: 10px; height: 10px; opacity: 0.7; }
 .hero-meta input[type="date"] {
@@ -301,7 +305,7 @@ input, textarea, select {
   gap: 20px;
   padding: 14px 0 4px;
   border-top: 1px solid var(--rule);
-  margin-bottom: 18px;
+  margin-bottom: 14px;
 }
 .hero-stats.empty { display: none; }
 
@@ -314,10 +318,10 @@ input, textarea, select {
 }
 .hstat-val {
   font-family: var(--display);
-  font-weight: 500;
+  font-weight: 600;
   font-size: 22px;
   line-height: 1.1;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
@@ -336,17 +340,8 @@ input, textarea, select {
   text-transform: uppercase;
   color: var(--ink-3);
 }
-.hstat-delta {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  margin-top: 1px;
-}
-.hstat-delta.up { color: var(--citrus); }
-.hstat-delta.dn { color: var(--coral); }
-.hstat-delta.flat { color: var(--ink-3); }
 
-/* ─── Trascurati (neglected exercises) ──────────────────────────── */
+/* ─── Trascurati (Da riprendere) ────────────────────────────────── */
 .neg-fold {
   margin: 10px 0 14px;
   border-top: 1px solid var(--rule);
@@ -407,10 +402,10 @@ input, textarea, select {
   background: var(--ink-4);
   display: inline-block;
 }
-.neg-sum-meta.warm .neg-sum-dot { background: #f0c674; box-shadow: 0 0 6px rgba(240,198,116,0.4); }
-.neg-sum-meta.hot  .neg-sum-dot { background: var(--coral); box-shadow: 0 0 6px rgba(255,138,110,0.45); }
-.neg-sum-meta.warm { color: #f0c674; }
-.neg-sum-meta.hot  { color: var(--coral); }
+.neg-sum-meta.warm .neg-sum-dot { background: var(--ochre); }
+.neg-sum-meta.hot  .neg-sum-dot { background: var(--brick); }
+.neg-sum-meta.warm { color: var(--ochre); }
+.neg-sum-meta.hot  { color: var(--brick); }
 
 .neg-list {
   padding: 2px 0 12px;
@@ -443,8 +438,8 @@ input, textarea, select {
   color: var(--ink-2);
 }
 .neg-name {
-  font-family: var(--sans);
-  font-size: 12.5px;
+  font-family: var(--display);
+  font-size: 13px;
   color: var(--ink-3);
   white-space: nowrap;
   overflow: hidden;
@@ -459,8 +454,8 @@ input, textarea, select {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.neg-days.warm { color: #f0c674; }
-.neg-days.hot { color: var(--coral); }
+.neg-days.warm { color: var(--ochre); }
+.neg-days.hot { color: var(--brick); }
 
 /* ─── Section label ─────────────────────────────────────────────── */
 .section-rule {
@@ -510,11 +505,11 @@ input, textarea, select {
   min-width: 0;
 }
 .qa-input::placeholder { color: var(--ink-4); font-weight: 400; }
-.qa-input:focus { background: var(--paper-2); }
+.qa-input:focus { background: var(--sheet); }
 .qa-abbr { text-transform: uppercase; font-weight: 600; letter-spacing: 0.04em; }
 .qa-sym {
   font-family: var(--display);
-  font-weight: 300;
+  font-weight: 400;
   font-size: 17px;
   color: var(--ink-3);
   text-align: center;
@@ -543,7 +538,129 @@ input, textarea, select {
   padding: 0 4px 12px;
   margin-top: -4px;
 }
-.qa-hint .qh-date { color: var(--ink-2); }
+.qa-hint .qh-date { color: var(--brick); }
+
+/* ─── Riposo (timer di recupero) ────────────────────────────────── */
+.rest-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  margin: 12px 0 2px;
+  border: 1px solid var(--rule);
+  background: var(--brick-wash);
+  border-radius: 12px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.03em;
+  color: var(--ink-2);
+  animation: fadeIn 240ms var(--ease-out);
+}
+.rest-chip .rc-glyph {
+  width: 12px; height: 12px; flex-shrink: 0;
+  stroke: var(--brick); fill: none; stroke-width: 2; stroke-linecap: round;
+}
+.rest-chip .rc-time {
+  color: var(--brick);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.rest-chip .rc-after { color: var(--ink-3); }
+.rest-chip .rc-skip {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 4px 8px;
+  border-radius: 999px;
+  transition: color var(--t-fast), background var(--t-fast);
+}
+.rest-chip .rc-skip:active { color: var(--brick); background: var(--brick-soft); }
+
+/* ─── Nome nuovo (battesimo inline) ─────────────────────────────── */
+.name-card {
+  margin: 14px 0 4px;
+  padding: 15px 14px 14px;
+  background: var(--sheet);
+  border: 1px solid var(--rule-2);
+  border-radius: 14px;
+  animation: fadeIn 240ms var(--ease-out);
+}
+.nc-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 10px;
+}
+.nc-label strong { color: var(--brick); font-weight: 600; }
+.nc-input {
+  width: 100%;
+  padding: 11px 12px;
+  font-family: var(--display);
+  font-size: 17px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule-2);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  transition: border-color var(--t-fast);
+}
+.nc-input:focus { border-color: var(--brick); }
+.nc-input::placeholder { color: var(--ink-4); }
+.nc-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.nc-chip {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  color: var(--ink-2);
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--rule-2);
+  background: transparent;
+  transition: all var(--t-fast);
+}
+.nc-chip.on {
+  background: var(--brick);
+  border-color: var(--brick);
+  color: var(--paper);
+  font-weight: 600;
+}
+.nc-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.nc-skip {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 6px 2px;
+}
+.nc-done {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--paper);
+  background: var(--brick);
+  padding: 9px 18px;
+  border-radius: 10px;
+  transition: transform var(--t-fast) var(--ease-spring), background var(--t-fast);
+}
+.nc-done:active { transform: scale(0.95); background: var(--brick-deep); }
 
 /* ─── Free text input ───────────────────────────────────────────── */
 .freetext {
@@ -554,14 +671,14 @@ input, textarea, select {
   font-size: 16px; /* >=16px: evita l'auto-zoom iOS al focus */
   font-weight: 400;
   line-height: 2;
-  background: var(--paper-2);
+  background: var(--sheet);
   color: var(--ink);
   border-radius: 14px;
   border: 1px solid var(--rule);
   resize: none;
   transition: border-color var(--t-fast), background var(--t-fast);
 }
-.freetext:focus { border-color: var(--rule-2); background: var(--paper-3); }
+.freetext:focus { border-color: var(--rule-2); }
 .freetext::placeholder { color: var(--ink-4); font-weight: 400; line-height: 2; }
 
 details.help {
@@ -609,88 +726,124 @@ details.help code {
 .warning-box {
   margin-top: 14px;
   padding: 12px 14px;
-  border: 1px solid var(--coral);
+  border: 1px solid var(--brick);
   border-radius: 10px;
-  background: var(--coral-soft);
-  color: var(--coral);
+  background: var(--brick-wash);
+  color: var(--brick);
   font-family: var(--mono);
   font-size: 11.5px;
   line-height: 1.7;
 }
 .warning-box strong { display: block; margin-bottom: 4px; letter-spacing: 0.04em; text-transform: uppercase; font-size: 10.5px; }
-.warning-box code { font-family: var(--mono); color: var(--coral); opacity: 0.85; }
+.warning-box code { font-family: var(--mono); color: var(--brick); opacity: 0.85; }
 
-/* ─── Entry rows (ledger style) ─────────────────────────────────── */
+/* ─── Elimina sessione (appare solo svuotando il testo) ─────────── */
+.delete-day {
+  display: none;
+  width: 100%;
+  margin-top: 14px;
+  padding: 13px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brick);
+  border: 1px solid var(--brick);
+  background: var(--brick-wash);
+  border-radius: 12px;
+  transition: transform var(--t-fast) var(--ease-spring);
+}
+.delete-day.show { display: block; }
+.delete-day:active { transform: scale(0.98); }
+
+/* ─── Entry rows (report della sessione) ────────────────────────── */
 .entries { margin-top: 4px; }
 
 .entry {
   display: grid;
-  grid-template-columns: 30px 56px 1fr auto;
+  grid-template-columns: 48px 1fr auto;
   gap: 12px;
-  align-items: baseline;
-  padding: 14px 0;
+  align-items: center;
+  padding: 13px 0;
   border-bottom: 1px solid var(--rule);
   transition: background var(--t-fast);
 }
 .entry:active { background: var(--paper-2); }
 
-.entry-no {
-  font-family: var(--mono);
-  font-size: 10.5px;
-  color: var(--ink-4);
-  letter-spacing: 0.04em;
-  font-variant-numeric: tabular-nums;
-}
-
-.entry-abbr-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
 .entry-abbr {
   font-family: var(--mono);
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.05em;
-  color: var(--ink);
+  color: var(--ink-2);
   text-transform: uppercase;
-}
-.entry-name {
-  font-family: var(--sans);
-  font-size: 10.5px;
-  color: var(--ink-3);
+  text-align: center;
+  background: var(--paper-3);
+  border-radius: 8px;
+  padding: 6px 2px;
+  align-self: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 56px;
 }
 
+.entry-main { min-width: 0; }
+.entry-name {
+  display: block;
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
 .entry-segs {
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--ink-2);
   line-height: 1.55;
   letter-spacing: 0.01em;
   font-variant-numeric: tabular-nums;
   min-width: 0;
+  overflow-wrap: break-word;
 }
-.entry-segs .seg-x { color: var(--ink-3); font-family: var(--mono); font-size: 12.5px; font-weight: 400; margin: 0 1px; }
+.entry-name + .entry-segs { font-size: 11.5px; color: var(--ink-3); margin-top: 1px; }
+.entry-segs .seg-x { color: var(--ink-3); font-size: 0.95em; font-weight: 400; margin: 0 1px; }
 .entry-segs .seg-w { color: var(--ink); }
+.entry-name + .entry-segs .seg-w { color: var(--ink-2); }
 .entry-segs .seg-at { color: var(--ink-4); margin: 0 2px; }
 .entry-segs .seg-plus { display: inline-block; margin: 0 4px; color: var(--ink-4); }
 
+.entry-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.pr-chip {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--brick);
+  background: var(--brick-soft);
+  padding: 3px 6px;
+  border-radius: 5px;
+}
 .entry-peak {
   font-family: var(--display);
-  font-weight: 500;
+  font-weight: 600;
   font-size: 18px;
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   color: var(--ink);
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  position: relative;
 }
 .entry-peak .pk-u {
   font-family: var(--mono);
@@ -701,20 +854,11 @@ details.help code {
   margin-left: 3px;
   vertical-align: 4px;
 }
-.entry-peak.pr { color: var(--citrus); }
-.entry-peak.pr::after {
-  content: '★';
-  position: absolute;
-  top: -10px;
-  right: -2px;
-  font-size: 11px;
-  color: var(--citrus);
-  text-shadow: 0 0 12px var(--citrus-soft);
-}
+.entry-peak.pr { color: var(--brick); }
 
 .entry-meta {
-  grid-column: 3 / -1;
-  margin-top: 4px;
+  grid-column: 2 / -1;
+  margin-top: -6px;
   display: flex;
   gap: 12px;
   font-family: var(--mono);
@@ -725,11 +869,11 @@ details.help code {
 }
 .entry-meta .m-1rm { color: var(--ink-3); }
 .entry-meta .m-pattern { color: var(--ink-3); }
-.entry-meta .m-pattern.drop { color: var(--coral); }
+.entry-meta .m-pattern.drop { color: var(--brick); }
 
 .entry-comment {
   grid-column: 2 / -1;
-  margin-top: 6px;
+  margin-top: -4px;
   font-family: var(--sans);
   font-weight: 400;
   font-size: 12.5px;
@@ -740,23 +884,27 @@ details.help code {
   overflow-wrap: break-word;
 }
 .entry-comment::before { content: '— '; color: var(--ink-4); }
+.entry-comment.solo { grid-column: 1 / -1; margin-top: 0; }
 
 .bw-entry {
   display: grid;
-  grid-template-columns: 30px 56px 1fr auto;
+  grid-template-columns: 48px 1fr auto;
   gap: 12px;
-  align-items: baseline;
-  padding: 14px 0;
+  align-items: center;
+  padding: 13px 0;
   border-bottom: 1px solid var(--rule);
 }
-.bw-entry .entry-no { color: var(--ink-4); }
 .bw-entry .bw-key {
   font-family: var(--mono);
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.05em;
-  color: var(--water);
+  color: var(--slate);
   text-transform: uppercase;
+  text-align: center;
+  background: rgba(86, 113, 138, 0.12);
+  border-radius: 8px;
+  padding: 6px 2px;
 }
 .bw-entry .bw-tag {
   font-family: var(--mono);
@@ -767,49 +915,30 @@ details.help code {
 }
 .bw-entry .bw-val {
   font-family: var(--display);
-  font-weight: 500;
+  font-weight: 600;
   font-size: 18px;
-  color: var(--water);
+  color: var(--slate);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
-.bw-entry .bw-val .pk-u { font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); letter-spacing: 0.06em; margin-left: 3px; vertical-align: 4px; }
+.bw-entry .bw-val .pk-u { font-family: var(--mono); font-size: 9.5px; font-weight: 400; color: var(--ink-3); letter-spacing: 0.06em; margin-left: 3px; vertical-align: 4px; }
 
-/* ─── Save button ───────────────────────────────────────────────── */
-.save-cta {
-  width: 100%;
-  margin-top: 22px;
-  padding: 16px;
-  font-family: var(--sans);
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  border-radius: 14px;
-  background: var(--citrus);
-  color: var(--paper);
-  transition: transform var(--t-fast) var(--ease-spring),
-              background var(--t-base),
-              opacity var(--t-base);
-}
-.save-cta:disabled {
-  background: var(--paper-2);
-  color: var(--ink-4);
-  cursor: default;
-}
-.save-cta:not(:disabled):active { transform: scale(0.98); }
-.save-cta.saved { background: var(--paper-2); color: var(--citrus); }
-.save-cta.danger { background: var(--coral); color: var(--paper); }
-
-.save-success {
-  text-align: center;
-  margin-top: 20px;
+.preview-hint {
   font-family: var(--mono);
-  font-weight: 500;
-  font-size: 13px;
+  font-size: 11px;
+  color: var(--ink-4);
+  line-height: 1.7;
+  padding: 10px 0 2px;
+}
+
+.save-note {
+  text-align: center;
+  margin: 10px 0 0;
+  font-family: var(--mono);
+  font-size: 10.5px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--citrus);
+  color: var(--ink-3);
   animation: fadeIn 320ms var(--ease-out);
 }
 
@@ -825,7 +954,7 @@ details.help code {
 }
 .empty-state .es-mark {
   font-family: var(--display);
-  font-weight: 300;
+  font-weight: 400;
   font-size: 40px;
   color: var(--ink-4);
   line-height: 1;
@@ -833,7 +962,7 @@ details.help code {
 }
 .empty-state .es-title {
   font-family: var(--display);
-  font-weight: 500;
+  font-weight: 600;
   font-size: 17px;
   color: var(--ink-2);
   margin-bottom: 6px;
@@ -855,7 +984,43 @@ details.help code {
   color: var(--ink-2);
 }
 
-/* ─── Storico / Sessions ────────────────────────────────────────── */
+/* ─── Archivio ──────────────────────────────────────────────────── */
+.arc-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0 16px;
+}
+.arc-year {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.arc-meta {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  color: var(--ink-3);
+  margin-top: 6px;
+}
+.arc-nomi {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 6px 12px;
+  border: 1px solid var(--rule-2);
+  border-radius: 999px;
+  white-space: nowrap;
+  transition: color var(--t-fast), border-color var(--t-fast), background var(--t-fast);
+}
+.arc-nomi:active { color: var(--brick); border-color: var(--brick); background: var(--brick-wash); }
+
 .search {
   width: 100%;
   padding: 13px 0;
@@ -864,133 +1029,154 @@ details.help code {
   font-size: 16px; /* >=16px: evita l'auto-zoom iOS al focus */
   color: var(--ink);
   border-bottom: 1px solid var(--rule);
-  margin-bottom: 22px;
+  margin-bottom: 10px;
   letter-spacing: -0.005em;
   transition: border-color var(--t-fast);
 }
 .search:focus { border-bottom-color: var(--ink-2); }
 .search::placeholder { color: var(--ink-4); }
 
-.session {
-  margin-bottom: 28px;
-  content-visibility: auto;
-  contain-intrinsic-size: auto 240px;
-}
-.session-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--rule);
-  margin-bottom: 4px;
-}
-.session-date {
-  font-family: var(--display);
-  font-weight: 500;
-  font-size: 16px;
-  letter-spacing: -0.015em;
-  color: var(--ink);
-  text-transform: lowercase;
-}
-.session-date .sd-day {
-  color: var(--ink-2);
-  margin-right: 6px;
-}
-.session-actions {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.session-count {
+.arc-month {
   font-family: var(--mono);
-  font-size: 10.5px;
-  color: var(--ink-3);
-  letter-spacing: 0.05em;
+  font-size: 10px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 20px 0 2px;
+}
+.arc-row {
+  display: grid;
+  grid-template-columns: 40px 1fr auto 12px;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--rule);
+  color: inherit;
+  transition: background var(--t-fast);
+}
+.arc-row:active { background: var(--paper-2); }
+.arc-daywrap { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
+.arc-day {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 19px;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.arc-dow {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+.arc-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+.arc-chip {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink-2);
+  background: var(--paper-3);
+  padding: 3px 6px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+.arc-chip.more { background: transparent; color: var(--ink-4); }
+.arc-right { text-align: right; }
+.arc-vol {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.arc-vol .u { font-family: var(--mono); font-size: 9px; font-weight: 400; color: var(--ink-3); margin-left: 2px; }
+.arc-sub {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  color: var(--ink-4);
+  margin-top: 2px;
+  white-space: nowrap;
+}
+.arc-chev {
+  color: var(--ink-4);
+  font-family: var(--sans);
+  font-size: 13px;
+  text-align: center;
+  transition: transform var(--t-base) var(--ease-out);
+}
+.arc-row.open .arc-chev { transform: rotate(90deg); }
+
+.arc-detail {
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--rule);
+  animation: negOpen 240ms var(--ease-out);
+}
+.arc-detail .entries { margin-top: 0; }
+.arc-detail .entry:last-child, .arc-detail .bw-entry:last-child { border-bottom: none; }
+.arc-detail-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 0 4px;
 }
 .session-edit {
   font-family: var(--mono);
   font-size: 10.5px;
   color: var(--ink-3);
-  padding: 5px 10px;
+  padding: 5px 12px;
   border-radius: 999px;
   border: 1px solid var(--rule-2);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   transition: color var(--t-fast), border-color var(--t-fast), background var(--t-fast);
 }
-.session-edit:active { color: var(--citrus); border-color: var(--citrus); background: var(--citrus-soft); }
+.session-edit:active { color: var(--brick); border-color: var(--brick); background: var(--brick-wash); }
+
+/* ─── Nomi (glossario dentro Archivio) ──────────────────────────── */
+.sub-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0 6px;
+}
+.sub-back {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 6px 12px 6px 8px;
+  border: 1px solid var(--rule-2);
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color var(--t-fast), border-color var(--t-fast);
+}
+.sub-back:active { color: var(--brick); border-color: var(--brick); }
+.sub-title {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 20px;
+  color: var(--ink);
+}
 
 /* ─── Heatmap (calendar grid) ───────────────────────────────────── */
-.summary-strip {
-  display: flex;
-  gap: 24px;
-  padding: 2px 0 24px;
-  margin-bottom: 4px;
-  border-bottom: 1px solid var(--rule);
-}
-.sum-item { flex: 1; min-width: 0; }
-.sum-val {
-  font-family: var(--display);
-  font-weight: 500;
-  font-size: 28px;
-  line-height: 1;
-  color: var(--ink);
-  letter-spacing: -0.025em;
-  font-variant-numeric: tabular-nums;
-  margin-bottom: 6px;
-}
-.sum-val .u {
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 400;
-  color: var(--ink-3);
-  letter-spacing: 0.05em;
-  margin-left: 4px;
-  vertical-align: 5px;
-}
-.sum-lbl {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-}
-.sum-delta {
-  font-family: var(--mono);
-  font-size: 10.5px;
-  letter-spacing: 0.04em;
-  margin-top: 4px;
-  color: var(--ink-3);
-}
-.sum-delta.up { color: var(--citrus); }
-.sum-delta.dn { color: var(--coral); }
-
 .heatmap-block {
-  padding: 22px 0;
+  padding: 4px 0 18px;
   border-bottom: 1px solid var(--rule);
-  margin-bottom: 18px;
-}
-.heatmap-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 14px;
-}
-.heatmap-head h4 {
-  font-family: var(--mono);
-  font-size: 10.5px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  font-weight: 500;
-}
-.heatmap-head .hm-meta {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--ink-4);
-  letter-spacing: 0.05em;
+  margin-bottom: 8px;
 }
 .heatmap {
   margin: 0 -4px;
@@ -1032,42 +1218,95 @@ details.help code {
   flex-shrink: 0;
   transition: background var(--t-fast);
 }
-.hm-cell.active { background: var(--citrus); }
+.hm-cell.active { background: var(--brick); }
 .hm-cell.future { background: transparent; pointer-events: none; }
 
-/* ─── Trend / Chart ─────────────────────────────────────────────── */
+/* ─── Andamento ─────────────────────────────────────────────────── */
 .trend-controls {
   display: flex;
+  flex-direction: column;
   gap: 10px;
-  margin: 18px 0 22px;
+  margin: 18px 0 16px;
 }
 .select-pill {
-  flex: 1;
-  padding: 12px 16px;
+  width: 100%;
+  padding: 13px 16px;
   font-family: var(--mono);
   font-size: 13px;
   font-weight: 500;
   color: var(--ink);
-  background: var(--paper-2);
-  border: 1px solid var(--rule);
+  background: var(--sheet);
+  border: 1px solid var(--rule-2);
   border-radius: 12px;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='none' stroke='%236c675e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M1 1l4 4 4-4'/></svg>");
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='none' stroke='%236f6650' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M1 1l4 4 4-4'/></svg>");
   background-repeat: no-repeat;
   background-position: right 14px center;
   padding-right: 36px;
 }
-.select-pill.metric { flex: 0.85; font-size: 12px; }
+
+.seg {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--paper-2);
+  border-radius: 12px;
+}
+.seg-btn {
+  flex: 1;
+  padding: 9px 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  border-radius: 9px;
+  transition: color var(--t-fast), background var(--t-fast);
+}
+.seg-btn.on {
+  background: var(--brick);
+  color: var(--paper);
+  font-weight: 600;
+}
+
+.trend-big { padding: 2px 0 16px; }
+.tb-val {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 46px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.tb-val .u {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-3);
+  letter-spacing: 0.05em;
+  margin-left: 6px;
+}
+.tb-delta {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  margin-top: 8px;
+  color: var(--ink-3);
+}
+.tb-delta .d-val { font-weight: 600; }
+.tb-delta.up .d-val { color: var(--brick); }
+.tb-delta.dn .d-val { color: var(--ink-2); }
 
 .stagnation {
   padding: 12px 14px;
-  border: 1px solid var(--coral);
+  border: 1px solid var(--brick);
   border-radius: 10px;
-  background: var(--coral-soft);
-  color: var(--coral);
+  background: var(--brick-wash);
+  color: var(--brick);
   font-family: var(--mono);
   font-size: 11.5px;
   line-height: 1.55;
@@ -1077,25 +1316,32 @@ details.help code {
 
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
-  padding: 4px 0 20px;
-  border-bottom: 1px solid var(--rule);
+  grid-template-columns: repeat(2, 1fr);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  overflow: hidden;
   margin-bottom: 20px;
 }
-.stat-cell { min-width: 0; }
+.stat-cell {
+  min-width: 0;
+  padding: 13px 16px;
+  border-top: 1px solid var(--rule);
+  border-left: 1px solid var(--rule);
+}
+.stat-cell:nth-child(-n+2) { border-top: none; }
+.stat-cell:nth-child(odd) { border-left: none; }
 .stat-cell-val {
   font-family: var(--display);
-  font-weight: 500;
-  font-size: clamp(16px, 5vw, 22px); /* responsive: 4 card + delta lungo non sfora su 375px */
+  font-weight: 600;
+  font-size: clamp(16px, 5.4vw, 21px);
   line-height: 1;
   color: var(--ink);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
   margin-bottom: 5px;
 }
-.stat-cell-val.up { color: var(--citrus); }
-.stat-cell-val.dn { color: var(--coral); }
+.stat-cell-val.up { color: var(--brick); }
+.stat-cell-val.dn { color: var(--ink-2); }
 .stat-cell-val .u {
   font-family: var(--mono);
   font-size: 10px;
@@ -1118,8 +1364,8 @@ details.help code {
   margin-top: 2px;
   color: var(--ink-3);
 }
-.stat-cell-sub.up { color: var(--citrus); }
-.stat-cell-sub.dn { color: var(--coral); }
+.stat-cell-sub.up { color: var(--brick); }
+.stat-cell-sub.dn { color: var(--ink-2); }
 
 .chart-frame {
   position: relative;
@@ -1144,7 +1390,7 @@ details.help code {
   z-index: 20;
   transform: translateX(-50%);
   transition: opacity 120ms;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  box-shadow: 0 6px 20px rgba(60, 45, 25, 0.22);
 }
 
 /* Muscle volume */
@@ -1170,13 +1416,13 @@ details.help code {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-2);
-  background: var(--paper-2);
-  border: 1px solid var(--rule);
+  background: var(--sheet);
+  border: 1px solid var(--rule-2);
   border-radius: 999px;
   appearance: none;
   -webkit-appearance: none;
   padding-right: 22px;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'><path fill='none' stroke='%236c675e' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round' d='M1 1l3 3 3-3'/></svg>");
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'><path fill='none' stroke='%236f6650' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round' d='M1 1l3 3 3-3'/></svg>");
   background-repeat: no-repeat;
   background-position: right 9px center;
 }
@@ -1189,10 +1435,10 @@ details.help code {
   padding: 10px 0;
 }
 .muscle-name {
-  font-family: var(--sans);
-  font-size: 13px;
+  font-family: var(--display);
+  font-size: 13.5px;
   color: var(--ink-2);
-  font-weight: 400;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1200,7 +1446,7 @@ details.help code {
 }
 .muscle-bar {
   height: 4px;
-  background: var(--paper-2);
+  background: var(--paper-3);
   border-radius: 2px;
   overflow: hidden;
   position: relative;
@@ -1208,6 +1454,7 @@ details.help code {
 .muscle-fill {
   height: 100%;
   border-radius: 2px;
+  background: var(--brick);
   transition: width 320ms var(--ease-out);
 }
 .muscle-val {
@@ -1230,8 +1477,8 @@ details.help code {
 /* ─── Glossary ──────────────────────────────────────────────────── */
 .glossary-row {
   display: grid;
-  grid-template-columns: 56px 1fr 84px;
-  gap: 12px;
+  grid-template-columns: 46px 1fr 96px;
+  gap: 10px;
   align-items: center;
   padding: 14px 0;
   border-bottom: 1px solid var(--rule);
@@ -1245,7 +1492,7 @@ details.help code {
   color: var(--ink);
 }
 .gl-name {
-  font-family: var(--sans);
+  font-family: var(--display);
   font-weight: 400;
   font-size: 16px; /* >=16px: evita l'auto-zoom iOS al focus */
   color: var(--ink);
@@ -1255,7 +1502,7 @@ details.help code {
   letter-spacing: -0.005em;
   transition: background var(--t-fast);
 }
-.gl-name:focus { background: var(--paper-2); padding: 4px 8px; }
+.gl-name:focus { background: var(--sheet); padding: 4px 8px; }
 .gl-name::placeholder { color: var(--ink-4); }
 
 .gl-group {
@@ -1264,7 +1511,7 @@ details.help code {
   min-width: 0; /* rispetta la colonna 84px invece di sfondarla a 16px */
   padding: 6px 10px;
   color: var(--ink-2);
-  background: var(--paper-2);
+  background: var(--sheet);
   border: 1px solid var(--rule);
   border-radius: 8px;
   text-align: center;
@@ -1292,17 +1539,17 @@ details.help code {
   text-align: center;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  background: var(--paper-2);
+  background: var(--sheet);
   border: 1px solid var(--rule);
   border-radius: 10px;
   color: var(--ink);
 }
 .gl-new-name {
   padding: 12px 14px;
-  font-family: var(--sans);
+  font-family: var(--display);
   font-weight: 400;
   font-size: 16px; /* >=16px: evita l'auto-zoom iOS al focus */
-  background: var(--paper-2);
+  background: var(--sheet);
   border: 1px solid var(--rule);
   border-radius: 10px;
   color: var(--ink);
@@ -1342,7 +1589,7 @@ details.help code {
   left: 0;
   right: 0;
   z-index: 30;
-  background: rgba(12, 10, 8, 0.88);
+  background: rgba(245, 240, 229, 0.88);
   -webkit-backdrop-filter: saturate(140%) blur(22px);
   backdrop-filter: saturate(140%) blur(22px);
   /* iOS: un elemento fixed con backdrop-filter ri-rasterizza il blur con un
@@ -1352,7 +1599,7 @@ details.help code {
   -webkit-transform: translateZ(0);
   will-change: transform;
   border-top: 1px solid var(--rule);
-  /* Padding-bottom = max(min spacing, safe area) — non sommare per evitare gap nero su iPhone */
+  /* Padding-bottom = max(min spacing, safe area) — non sommare per evitare gap su iPhone */
   padding-top: 8px;
   padding-left: var(--space-edge);
   padding-right: var(--space-edge);
@@ -1385,7 +1632,7 @@ details.help code {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.tab-item.active { color: var(--ink); }
+.tab-item.active { color: var(--brick); }
 .tab-item.active::after {
   content: '';
   position: absolute;
@@ -1393,10 +1640,9 @@ details.help code {
   left: 50%;
   width: 4px;
   height: 4px;
-  background: var(--citrus);
+  background: var(--brick);
   border-radius: 50%;
   transform: translateX(-50%);
-  box-shadow: 0 0 6px var(--citrus);
 }
 
 /* ─── Toast ─────────────────────────────────────────────────────── */
@@ -1418,7 +1664,7 @@ details.help code {
   pointer-events: none;
   white-space: nowrap;
   z-index: 100;
-  box-shadow: 0 10px 28px rgba(0,0,0,0.4);
+  box-shadow: 0 10px 28px rgba(60, 45, 25, 0.28);
 }
 .toast.show {
   opacity: 1;
@@ -1430,8 +1676,6 @@ details.help code {
 .stagger-2 { animation: pageIn 480ms 80ms var(--ease-out) both; }
 .stagger-3 { animation: pageIn 480ms 140ms var(--ease-out) both; }
 .stagger-4 { animation: pageIn 480ms 200ms var(--ease-out) both; }
-
-/* ─── PR badge for inline preview ──────────────────────────────── */
 
 /* ─── Print/extra safety ───────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
@@ -1447,7 +1691,7 @@ details.help code {
   <!-- Sticky topbar -->
   <header class="topbar" id="topbar">
     <div class="topbar-left">
-      <div class="topbar-mark"><span class="dot"></span><span id="todayMark">—</span></div>
+      <div class="topbar-mark"><span class="dot"></span><span id="todayMark">oggi</span></div>
       <div class="topbar-file" id="headerSub">offline</div>
     </div>
     <div class="topbar-actions">
@@ -1462,13 +1706,13 @@ details.help code {
       <button class="glyph-btn" id="btnDownloadFile" aria-label="Esporta file" title="Esporta">
         <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
       </button>
-      <button class="glyph-btn primary" id="btnSaveFs" aria-label="Salva" title="Salva su file">
+      <button class="glyph-btn primary" id="btnSaveFs" aria-label="Salva su file" title="Salva su file">
         <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
       </button>
     </div>
   </header>
 
-  <!-- ─── LOG / TODAY ─────────────────────────────────────────── -->
+  <!-- ─── OGGI ─────────────────────────────────────────────────── -->
   <main id="tab-log" class="page">
 
     <section class="hero">
@@ -1496,7 +1740,11 @@ details.help code {
       <div id="neglectedWrap" class="neg-list"></div>
     </details>
 
-    <div class="section-rule"><h3>Nuova voce</h3></div>
+    <div id="preview"></div>
+    <div id="restTimer"></div>
+    <div id="nameCard"></div>
+
+    <div class="section-rule"><h3>Aggiungi</h3></div>
 
     <div class="quickadd">
       <input class="qa-input qa-abbr" id="qaAbbr" maxlength="6" placeholder="ABBR" autocorrect="off" autocapitalize="characters" spellcheck="false">
@@ -1526,45 +1774,49 @@ details.help code {
 
     <div id="invalidWarnings" class="warning-box" style="display:none"></div>
 
-    <div id="preview"></div>
-    <button class="save-cta" id="btnSaveDay" disabled>Salva allenamento</button>
+    <button class="delete-day" id="btnDeleteDay" type="button">Elimina l'allenamento del giorno</button>
   </main>
 
-  <!-- ─── STORICO ─────────────────────────────────────────────── -->
+  <!-- ─── ARCHIVIO ─────────────────────────────────────────────── -->
   <main id="tab-storico" class="page hidden">
-    <div id="summaryRow"></div>
-    <div id="heatmapWrap"></div>
-    <input class="search" id="storicoSearch" type="text" placeholder="cerca esercizio o data…" autocomplete="off" autocorrect="off" spellcheck="false">
-    <div id="storicoContent"></div>
+    <div id="arcMain">
+      <div class="arc-head" id="arcHead"></div>
+      <div id="heatmapWrap"></div>
+      <input class="search" id="storicoSearch" type="text" placeholder="cerca esercizio o data…" autocomplete="off" autocorrect="off" spellcheck="false">
+      <div id="storicoContent"></div>
+    </div>
+
+    <div id="nomiView" hidden>
+      <div class="sub-head">
+        <button class="sub-back" id="btnNomiBack" type="button">‹ archivio</button>
+        <span class="sub-title">Nomi</span>
+      </div>
+      <div class="gl-note" style="margin-top:4px">Ogni sigla usata nel diario appare qui. Il nome esteso e il gruppo muscolare (petto, gambe, …) alimentano Andamento.</div>
+      <div id="glossarioContent" style="margin-top:10px"></div>
+      <div class="glossary-new">
+        <input class="gl-new-abbr" id="glNewAbbr" maxlength="6" placeholder="ABBR">
+        <input class="gl-new-name" id="glNewName" placeholder="nome esteso">
+        <button class="gl-new-add" id="btnAddGlossary" type="button" aria-label="Aggiungi">+</button>
+      </div>
+    </div>
   </main>
 
-  <!-- ─── TREND ───────────────────────────────────────────────── -->
+  <!-- ─── ANDAMENTO ────────────────────────────────────────────── -->
   <main id="tab-trend" class="page hidden">
     <div class="trend-controls">
-      <select class="select-pill" id="exSelect"></select>
-      <select class="select-pill metric" id="metricSelect">
-        <option value="peak">Picco</option>
-        <option value="volume">Volume</option>
-        <option value="e1rm">1RM</option>
-      </select>
+      <select class="select-pill" id="exSelect" aria-label="Esercizio"></select>
+      <div class="seg" id="metricSeg" role="tablist" aria-label="Metrica">
+        <button class="seg-btn on" data-metric="peak" type="button">Picco</button>
+        <button class="seg-btn" data-metric="volume" type="button">Volume</button>
+        <button class="seg-btn" data-metric="e1rm" type="button">1RM</button>
+      </div>
     </div>
+    <div id="trendBig"></div>
     <div id="stagnationBanner" class="stagnation" style="display:none"></div>
-    <div id="statsGrid" class="stat-grid"></div>
     <div class="chart-frame" id="chartWrap"></div>
+    <div id="statsGrid" class="stat-grid" style="display:none"></div>
     <div id="trendEmpty"></div>
     <div id="muscleVolumeSection"></div>
-  </main>
-
-  <!-- ─── GLOSSARIO ───────────────────────────────────────────── -->
-  <main id="tab-glossario" class="page hidden">
-    <div class="section-rule first"><h3>Abbreviazioni</h3></div>
-    <div id="glossarioContent"></div>
-    <div class="glossary-new">
-      <input class="gl-new-abbr" id="glNewAbbr" maxlength="6" placeholder="ABBR">
-      <input class="gl-new-name" id="glNewName" placeholder="nome esteso">
-      <button class="gl-new-add" id="btnAddGlossary" type="button" aria-label="Aggiungi">+</button>
-    </div>
-    <div class="gl-note">Le abbreviazioni appaiono automaticamente quando registri allenamenti. Assegna un gruppo muscolare (petto, gambe, …) per visualizzarle nel Trend.</div>
   </main>
 
   <!-- ─── Bottom tabbar ───────────────────────────────────────── -->
@@ -1575,22 +1827,17 @@ details.help code {
     </button>
     <button class="tab-item" data-tab="storico" type="button">
       <svg class="ti-glyph" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 9h16M9 5V3M15 5V3"/></svg>
-      Diario
+      Archivio
     </button>
     <button class="tab-item" data-tab="trend" type="button">
       <svg class="ti-glyph" viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>
-      Trend
-    </button>
-    <button class="tab-item" data-tab="glossario" type="button">
-      <svg class="ti-glyph" viewBox="0 0 24 24"><path d="M4 5h16M4 12h10M4 19h16"/></svg>
-      Nomi
+      Andamento
     </button>
   </nav>
 
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
-
 <script>
 /* ───────────────────────────────────────────────────────────────────
    1. IndexedDB
@@ -1638,6 +1885,7 @@ const State = {
   fileHandle: null,
   fileName: null,
   currentTab: 'log',
+  trendMetric: 'peak',
 };
 
 let _prCacheVer = 0, _prCache = null, _prCachedVer = -1;
@@ -1666,14 +1914,43 @@ function getCachedPRs() {
   return _prCache;
 }
 
-let _previewTimer = null, _draftTimer = null, _saveFlashTimer = null, _searchTimer = null;
+let _previewTimer = null, _draftTimer = null, _commitTimer = null, _searchTimer = null;
 let _activeDate = null;       // data attualmente caricata nella textarea
 let _logInputDirty = false;   // true solo dopo un input reale dell'utente sulla data attiva
+let _lastSavedAt = null;      // timestamp dell'ultimo autosave riuscito ("salvato · HH:MM")
 function schedulePreviewAndDraft() {
   clearTimeout(_previewTimer);
   clearTimeout(_draftTimer);
+  clearTimeout(_commitTimer);
   _previewTimer = setTimeout(() => { renderLogPreview(); renderHeroStats(); }, 180);
+  _commitTimer  = setTimeout(autosaveCommit, 900);
   _draftTimer   = setTimeout(stashCurrentDraft, 2000);
+}
+
+// Autosave: la sessione è il report. Ogni testo che produce almeno un
+// esercizio o un BW viene consolidato senza bottoni. Il testo che non parsa
+// (riga a metà, solo commenti) resta bozza e non tocca mai i dati salvati.
+// Lo svuotamento NON elimina: l'eliminazione è solo esplicita (bottone).
+function autosaveCommit() {
+  clearTimeout(_commitTimer);
+  if (!_activeDate) return;
+  const date = _activeDate;
+  const raw = document.getElementById('logInput').value.trim();
+  const allLines = parseAllLines(raw);
+  const exercises = allLines.filter(l => l.type === 'exercise');
+  const bwLine = allLines.find(l => l.type === 'bw');
+  if (!exercises.length && !bwLine) return;
+  const session = getSessByDate().get(date);
+  if (session && session.raw === raw) return;
+  updateSessions([
+    ...State.sessions.filter(s => s.date !== date),
+    { date, raw, exercises, bodyWeight: bwLine ? bwLine.weight : null, lines: allLines }
+  ].sort((a, b) => b.date.localeCompare(a.date)));
+  delete State.pendingDrafts[date];
+  persistDrafts();
+  _lastSavedAt = new Date();
+  renderFileStatus();
+  renderNeglected();
 }
 function persistDrafts() {
   return DB.set(CONFIG.DRAFT, { ...State.pendingDrafts }).catch(() => {});
@@ -1829,22 +2106,23 @@ const PATTERN_LABEL = { drop:'drop', diamond:'diamante', mix:'misto' };
 function entryRowHtml(ex, idx, isPR, compact=false) {
   const safeAbbr = escapeHTML(ex.abbr);
   const safeName = State.glossary[ex.abbr] ? escapeHTML(State.glossary[ex.abbr]) : '';
-  const num = String(idx+1).padStart(2, '0');
   const show1RM = ex.estimated1RM && ex.peakWeight && ex.estimated1RM > ex.peakWeight;
   const showVol = ex.volume && ex.isMultiWeight;
   const patternLbl = ex.pattern && PATTERN_LABEL[ex.pattern];
   const showMeta = !compact && (show1RM || showVol || patternLbl);
 
   return `<div class="entry">
-    <span class="entry-no">No.${num}</span>
-    <span class="entry-abbr-wrap">
-      <span class="entry-abbr">${safeAbbr}</span>
+    <span class="entry-abbr">${safeAbbr}</span>
+    <span class="entry-main">
       ${safeName ? `<span class="entry-name">${safeName}</span>` : ''}
+      <span class="entry-segs">${segsToHtml(ex.segments)}</span>
     </span>
-    <span class="entry-segs">${segsToHtml(ex.segments)}</span>
-    ${ex.peakWeight
-      ? `<span class="entry-peak${isPR ? ' pr' : ''}">${escapeHTML(ex.peakWeight)}<span class="pk-u">kg</span></span>`
-      : `<span class="entry-peak" style="opacity:0.3">—</span>`}
+    <span class="entry-right">
+      ${isPR && ex.peakWeight ? '<span class="pr-chip">PR</span>' : ''}
+      ${ex.peakWeight
+        ? `<span class="entry-peak${isPR ? ' pr' : ''}">${escapeHTML(ex.peakWeight)}<span class="pk-u">kg</span></span>`
+        : `<span class="entry-peak" style="opacity:0.3">—</span>`}
+    </span>
     ${showMeta ? `<span class="entry-meta">
         ${patternLbl ? `<span class="m-pattern ${ex.pattern}">${patternLbl}</span>` : ''}
         ${showVol ? `<span class="m-vol">${escapeHTML(ex.volume)} kg·r</span>` : ''}
@@ -1855,12 +2133,11 @@ function entryRowHtml(ex, idx, isPR, compact=false) {
 }
 
 function commentRowHtml(text) {
-  return `<div class="entry"><span class="entry-no">—</span><span class="entry-comment" style="grid-column:2/-1;margin-top:0">${escapeHTML(text)}</span></div>`;
+  return `<div class="entry"><span class="entry-comment solo">${escapeHTML(text)}</span></div>`;
 }
 
 function bwRowHtml(weight) {
   return `<div class="bw-entry">
-    <span class="entry-no">·</span>
     <span class="bw-key">BW</span>
     <span class="bw-tag">peso corporeo</span>
     <span class="bw-val">${escapeHTML(weight)}<span class="pk-u">kg</span></span>
@@ -1925,8 +2202,8 @@ function txtToSessions(txt) {
    6. SVG Chart — minimal editorial
    ─────────────────────────────────────────────────────────────────── */
 function colorForAbbr(abbr) {
-  if (abbr === 'BW') return { line: '#a5cae0', fill: 'rgba(165, 202, 224, 0.10)' };
-  return { line: '#f4ede0', fill: 'rgba(244, 237, 224, 0.05)' };
+  if (abbr === 'BW') return { line: '#56718a', fill: 'rgba(86, 113, 138, 0.08)' };
+  return { line: '#b23b28', fill: 'rgba(178, 59, 40, 0.07)' };
 }
 
 function renderSVGChart(container, pts, color, tooltipUnit) {
@@ -1992,13 +2269,13 @@ function renderSVGChart(container, pts, color, tooltipUnit) {
     const gl = document.createElementNS(NS, 'line');
     gl.setAttribute('x1', P.left); gl.setAttribute('x2', P.left+pw);
     gl.setAttribute('y1', y); gl.setAttribute('y2', y);
-    gl.setAttribute('stroke', 'rgba(244, 237, 224, 0.05)');
+    gl.setAttribute('stroke', 'rgba(34, 27, 17, 0.06)');
     svg.appendChild(gl);
     const t = document.createElementNS(NS, 'text');
     t.setAttribute('x', P.left-8); t.setAttribute('y', +y+4);
     t.setAttribute('text-anchor', 'end');
     t.setAttribute('font-size', '10.5');
-    t.setAttribute('fill', '#6c675e');
+    t.setAttribute('fill', '#6f6650');
     t.setAttribute('font-family', 'Geist Mono, monospace');
     t.setAttribute('font-weight', '400');
     t.setAttribute('letter-spacing', '0.04em');
@@ -2017,7 +2294,7 @@ function renderSVGChart(container, pts, color, tooltipUnit) {
     t.setAttribute('x', x); t.setAttribute('y', H-8);
     t.setAttribute('text-anchor', i===pts.length-1?'end':i===0?'start':'middle');
     t.setAttribute('font-size', '9.5');
-    t.setAttribute('fill', '#54504a');
+    t.setAttribute('fill', '#99907a');
     t.setAttribute('font-family', 'Geist Mono, monospace');
     t.setAttribute('letter-spacing', '0.06em');
     t.textContent = fmtDateChart(p.date).toUpperCase();
@@ -2086,7 +2363,7 @@ function renderSVGChart(container, pts, color, tooltipUnit) {
   maxDot.setAttribute('cx', xs(maxIdx).toFixed(1)); maxDot.setAttribute('cy', ys(maxV).toFixed(1));
   maxDot.setAttribute('r', '5.5');
   maxDot.setAttribute('fill', 'none');
-  maxDot.setAttribute('stroke', '#d8ff4a');
+  maxDot.setAttribute('stroke', '#b23b28');
   maxDot.setAttribute('stroke-width', '1.5');
   svg.appendChild(maxDot);
 
@@ -2137,6 +2414,10 @@ async function importFromText(text, fileName) {
   State.pendingDrafts = {};
   document.getElementById('logInput').value = '';
   _logInputDirty = false;
+  _lastSavedAt = null;
+  _ncDismissed.clear();
+  _arcOpen.clear();
+  stopRestTimer();
   DB.set(CONFIG.GLOSSARY, State.glossary).catch(() => {});
   persistMuscleGroups();
   persistDrafts();
@@ -2240,6 +2521,10 @@ function handleNewFile() {
   State.pendingDrafts = {};
   document.getElementById('logInput').value = '';
   _logInputDirty = false;
+  _lastSavedAt = null;
+  _ncDismissed.clear();
+  _arcOpen.clear();
+  stopRestTimer();
   persistGlossary();
   persistMuscleGroups();
   persistDrafts();
@@ -2314,46 +2599,55 @@ const _fmtMonthYr = new Intl.DateTimeFormat('it-IT', {month: 'long', year: 'nume
 const _fmtShort = new Intl.DateTimeFormat('it-IT', {weekday:'short',day:'numeric',month:'short',year:'numeric'});
 const _fmtSession = new Intl.DateTimeFormat('it-IT', {weekday:'long',day:'numeric',month:'long'});
 const _fmtChart = new Intl.DateTimeFormat('it-IT', {day:'numeric',month:'short'});
-const _fmtMarkDay = new Intl.DateTimeFormat('it-IT', {day:'2-digit', month:'2-digit'});
+const _fmtMonthOnly = new Intl.DateTimeFormat('it-IT', {month: 'long'});
+const _fmtDowShort = new Intl.DateTimeFormat('it-IT', {weekday: 'short'});
 
 // Difensive: dati legacy potrebbero contenere date non valide; mai lasciar
 // lanciare RangeError da Intl.format(Invalid Date) — si ripiega sulla stringa.
 function fmtDateShort(d) { const dt = new Date(d+'T12:00:00'); return isNaN(dt) ? d : _fmtShort.format(dt); }
 function fmtDateSession(d) { const dt = new Date(d+'T12:00:00'); return isNaN(dt) ? d : _fmtSession.format(dt); }
 function fmtDateChart(d) { const dt = new Date(d+'T12:00:00'); return isNaN(dt) ? d : _fmtChart.format(dt); }
+// Volume: sopra la tonnellata si legge meglio in t ("1.84 t" come sul quaderno)
+function fmtTon(v) {
+  return v >= 1000 ? { v: (v/1000).toFixed(v >= 10000 ? 1 : 2), u: 't' } : { v: String(v), u: 'kg' };
+}
 const _reduceMotion = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+const _fmtClock = new Intl.DateTimeFormat('it-IT', {hour: '2-digit', minute: '2-digit'});
 function renderFileStatus() {
   const sub = document.getElementById('headerSub');
+  const at = _lastSavedAt ? ' · ' + _fmtClock.format(_lastSavedAt) : '';
   if (State.fileName) {
     const short = State.fileName.replace(/\.txt$/, '');
-    sub.textContent = '◆ ' + short;
+    sub.textContent = '◆ ' + short + at;
     sub.classList.add('bound');
   } else {
-    sub.textContent = State.sessions.length ? `${State.sessions.length} voci` : 'nuova bozza';
+    sub.textContent = _lastSavedAt ? 'salvato' + at
+      : State.sessions.length ? `${State.sessions.length} voci` : 'nuova bozza';
     sub.classList.remove('bound');
   }
 }
 
+const ZONE_LABEL = { log: 'oggi', storico: 'archivio', trend: 'andamento' };
 function renderTopbarMark() {
-  const d = new Date();
-  const mark = _fmtMarkDay.format(d);
-  document.getElementById('todayMark').textContent = mark;
+  document.getElementById('todayMark').textContent = ZONE_LABEL[State.currentTab] || 'oggi';
 }
 
 function refreshAllViews() {
   initLogTab();
-  if (State.currentTab === 'storico') renderStorico();
+  if (State.currentTab === 'storico') { renderStorico(); if (_nomiOpen) renderGlossario(); }
   if (State.currentTab === 'trend') renderTrend();
-  if (State.currentTab === 'glossario') renderGlossario();
 }
 
 function handleTabSwitch(tab) {
-  clearTimeout(_saveFlashTimer);
   clearTimeout(_searchTimer);
+  // Uscendo da "Oggi" consolida subito quanto scritto: mai lasciare
+  // l'autosave a metà quando si cambia zona.
+  if (State.currentTab === 'log' && tab !== 'log') { autosaveCommit(); stashCurrentDraft(); }
   State.currentTab = tab;
+  renderTopbarMark();
   document.querySelectorAll('.tab-item').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-  ['log','storico','trend','glossario'].forEach(t => {
+  ['log','storico','trend'].forEach(t => {
     const el = document.getElementById('tab-'+t);
     el.classList.toggle('hidden', t !== tab);
     if (t === tab) {
@@ -2363,11 +2657,8 @@ function handleTabSwitch(tab) {
       el.style.animation = '';
     }
   });
-  if (tab==='storico') renderStorico();
+  if (tab==='storico') { renderStorico(); if (_nomiOpen) renderGlossario(); }
   if (tab==='trend') renderTrend();
-  if (tab==='glossario') renderGlossario();
-  // Tornando su "Oggi" ricalcola il CTA: altrimenti resta "✓ Salvato"
-  // disabilitato se si cambia tab durante il flash post-salvataggio.
   if (tab==='log') renderLogPreview();
   window.scrollTo({top: 0, behavior: _reduceMotion() ? 'auto' : 'smooth'});
 }
@@ -2460,11 +2751,11 @@ function renderHeroStats() {
   const totalSets = data.exercises.reduce((a, e) =>
     a + e.segments.reduce((b, s) => b + s.count, 0), 0);
 
-  const fmtVol = v => v >= 10000 ? (v/1000).toFixed(1)+'k' : v >= 1000 ? Math.round(v/100)/10+'k' : String(v);
+  const ton = fmtTon(totalVol);
 
   el.innerHTML = `
     <div class="hstat">
-      <div class="hstat-val">${fmtVol(totalVol)}<span class="u">kg</span></div>
+      <div class="hstat-val">${ton.v}<span class="u">${ton.u}</span></div>
       <div class="hstat-lbl">volume ${data.src === 'draft' ? 'in corso' : (targetDate === todayStr() ? 'oggi' : 'sessione')}</div>
     </div>
     <div class="hstat">
@@ -2574,8 +2865,8 @@ function fillQuickAddAbbr(abbr) {
 }
 
 function handleLogDateChange() {
-  clearTimeout(_saveFlashTimer);
-  stashCurrentDraft();   // salva la bozza della data che si sta lasciando
+  autosaveCommit();      // consolida la data che si sta lasciando
+  stashCurrentDraft();   // e conserva come bozza ciò che non parsa
   const date = document.getElementById('logDateInput').value || todayStr();
   _activeDate = date;
   _logInputDirty = false;
@@ -2602,6 +2893,12 @@ function handleQuickAdd() {
   if (!abbr || !reps) { document.getElementById(abbr ? 'qaReps' : 'qaAbbr').focus(); return; }
 
   const ta = document.getElementById('logInput');
+  // Foglio vuoto ma sessione salvata (e non svuotato dall'utente): si riparte
+  // dal salvato — con l'autosave un append qui non deve MAI sostituire la sessione
+  if (!ta.value.trim() && !_logInputDirty) {
+    const sess = getSessByDate().get(document.getElementById('logDateInput').value || todayStr());
+    if (sess) ta.value = sess.raw;
+  }
   const lines = ta.value ? ta.value.split('\n') : [];
   // Rimuove righe vuote in coda: un newline finale non deve impedire il merge
   // con l'ultima serie ne' creare un buco prima di un nuovo esercizio.
@@ -2637,6 +2934,53 @@ function handleQuickAdd() {
   document.getElementById('qaReps').value = '';
   document.getElementById('qaWeight').value = '';
   document.getElementById('qaReps').focus();
+  // Timer di recupero: solo per l'oggi reale — su una data passata non ha senso
+  if ((document.getElementById('logDateInput').value || todayStr()) === todayStr()) startRestTimer(abbr);
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   9c. Riposo — timer di recupero opzionale
+   Conta il tempo dall'ultima serie aggiunta. Nessuna configurazione,
+   nessuna notifica: un promemoria quieto, che si può ignorare o saltare.
+   ─────────────────────────────────────────────────────────────────── */
+const REST_MAX_MS = 6 * 60 * 1000;   // oltre 6 minuti non è più riposo
+let _restStart = null, _restAbbr = null, _restTick = null;
+
+function startRestTimer(abbr) {
+  _restStart = Date.now();
+  _restAbbr = abbr;
+  clearInterval(_restTick);
+  const el = document.getElementById('restTimer');
+  if (el) el.innerHTML = '';   // forza la ricostruzione del chip (nuova sigla)
+  _restTick = setInterval(renderRestTimer, 1000);
+  renderRestTimer();
+}
+
+function stopRestTimer() {
+  clearInterval(_restTick);
+  _restTick = null; _restStart = null; _restAbbr = null;
+  const el = document.getElementById('restTimer');
+  if (el) el.innerHTML = '';
+}
+
+function renderRestTimer() {
+  const el = document.getElementById('restTimer');
+  if (!el) return;
+  if (!_restStart) { el.innerHTML = ''; return; }
+  const elapsed = Date.now() - _restStart;
+  if (elapsed >= REST_MAX_MS) { stopRestTimer(); return; }
+  const s = Math.floor(elapsed / 1000);
+  const mm = Math.floor(s / 60), ss = String(s % 60).padStart(2, '0');
+  // Ai tick successivi si aggiorna solo il numero: ricostruire il chip
+  // riavvierebbe l'animazione di ingresso a ogni secondo (flicker)
+  const t = el.querySelector('.rc-time');
+  if (t) { t.textContent = mm + ':' + ss; return; }
+  el.innerHTML = `<div class="rest-chip">
+    <svg class="rc-glyph" viewBox="0 0 12 12"><path d="M4 2v8M8 2v8"/></svg>
+    <span>riposo <span class="rc-time">${mm}:${ss}</span></span>
+    <span class="rc-after">dopo ${escapeHTML(_restAbbr)}</span>
+    <button class="rc-skip" type="button" data-action="rest-skip">salta</button>
+  </div>`;
 }
 
 function renderLogPreview() {
@@ -2647,22 +2991,13 @@ function renderLogPreview() {
   const invalidLines = allLines.filter(l => l.type === 'invalid');
   const bwLines = allLines.filter(l => l.type === 'bw');
 
-  const btn = document.getElementById('btnSaveDay');
   const existingSession = getSessByDate().get(targetDate);
   const isEmpty = exercises.length === 0 && bwLines.length === 0;
 
-  btn.classList.remove('saved');
-  if (isEmpty && existingSession && _logInputDirty) {
-    // Solo se è stato l'utente a svuotare il testo: mai proporre l'eliminazione
-    // come stato di riposo (post-save la textarea viene svuotata dal codice)
-    btn.disabled = false; btn.textContent = 'Elimina allenamento'; btn.classList.add('danger');
-  } else if (isEmpty && existingSession) {
-    btn.disabled = true; btn.textContent = 'Salva allenamento'; btn.classList.remove('danger');
-  } else {
-    btn.disabled = isEmpty;
-    btn.textContent = existingSession ? 'Aggiorna allenamento' : 'Salva allenamento';
-    btn.classList.remove('danger');
-  }
+  // Con l'autosave l'eliminazione non è mai implicita: il bottone appare
+  // solo quando è stato l'utente a svuotare il testo di una sessione salvata.
+  document.getElementById('btnDeleteDay').classList.toggle('show',
+    isEmpty && !!existingSession && _logInputDirty);
 
   const warnEl = document.getElementById('invalidWarnings');
   if (invalidLines.length) {
@@ -2672,17 +3007,21 @@ function renderLogPreview() {
 
   const el = document.getElementById('preview');
   const visibleLines = allLines.filter(l => l.type !== 'invalid');
+  let shownExercises = exercises;
   if (!visibleLines.length) {
-    // Show saved entries if any
+    // Il report mostra la sessione salvata quando il foglio è vuoto
     if (existingSession && existingSession.exercises.length) {
-      el.innerHTML = renderPreviewEntries(existingSession.lines || (existingSession.lines = parseAllLines(existingSession.raw)), targetDate, 'Voci salvate · tocca scrivi per modificare');
-      return;
+      el.innerHTML = renderPreviewEntries(existingSession.lines || (existingSession.lines = parseAllLines(existingSession.raw)), targetDate, 'sessione salvata');
+      shownExercises = existingSession.exercises;
+    } else {
+      el.innerHTML = `<div class="section-rule"><h3>Sessione</h3></div>
+        <div class="preview-hint">Nessuna voce — aggiungi una serie qui sotto o scrivi nel foglio. Si salva da solo.</div>`;
+      shownExercises = [];
     }
-    el.innerHTML = '';
-    return;
+  } else {
+    el.innerHTML = renderPreviewEntries(visibleLines, targetDate, `sessione · ${exercises.length} ${exercises.length === 1 ? 'voce' : 'voci'}${bwLines.length ? ' · BW ' + bwLines[0].weight + ' kg' : ''}`);
   }
-
-  el.innerHTML = renderPreviewEntries(visibleLines, targetDate, `${exercises.length} ${exercises.length === 1 ? 'voce' : 'voci'}${bwLines.length ? ' · BW ' + bwLines[0].weight + ' kg' : ''}`);
+  renderNameCard(shownExercises);
 }
 
 function renderPreviewEntries(lines, targetDate, label) {
@@ -2710,48 +3049,88 @@ function renderPreviewEntries(lines, targetDate, label) {
   return html;
 }
 
-function handleSaveDay() {
-  clearTimeout(_previewTimer);
-  clearTimeout(_draftTimer);
+// Eliminazione esplicita: appare solo dopo che l'utente ha svuotato il
+// foglio di una sessione salvata, e chiede sempre conferma.
+function handleDeleteDay() {
   const targetDate = document.getElementById('logDateInput').value || todayStr();
-  const raw = document.getElementById('logInput').value.trim();
-  const allLines = parseAllLines(raw);
-  const exercises = allLines.filter(l => l.type === 'exercise');
-  const bwLine = allLines.find(l => l.type === 'bw');
-  const bodyWeight = bwLine ? bwLine.weight : null;
-  const isEmpty = exercises.length === 0 && !bodyWeight;
-
-  if (isEmpty) {
-    if (!confirm('Eliminare l\'allenamento del ' + fmtDateShort(targetDate) + '?')) return;
-    updateSessions(State.sessions.filter(s => s.date !== targetDate));
-  } else {
-    updateSessions([
-      ...State.sessions.filter(s => s.date !== targetDate),
-      { date: targetDate, raw, exercises, bodyWeight, lines: allLines }
-    ].sort((a, b) => b.date.localeCompare(a.date)));
-  }
+  if (!getSessByDate().get(targetDate)) return;
+  if (!confirm('Eliminare l\'allenamento del ' + fmtDateShort(targetDate) + '?')) return;
+  clearTimeout(_previewTimer);
+  clearTimeout(_commitTimer);
+  clearTimeout(_draftTimer);
+  updateSessions(State.sessions.filter(s => s.date !== targetDate));
   delete State.pendingDrafts[targetDate];
   persistDrafts();
-
-  const btn = document.getElementById('btnSaveDay');
-  btn.textContent = isEmpty ? '✓ Eliminato' : '✓ Salvato';
-  btn.classList.add('saved'); btn.disabled = true;
-  if (isEmpty) btn.classList.remove('danger');
-
   document.getElementById('logInput').value = '';
   _logInputDirty = false;
-  document.getElementById('preview').innerHTML = isEmpty
-    ? '<div class="save-success">— allenamento eliminato —</div>'
-    : '<div class="save-success">— salvato —</div>';
+  renderLogPreview();
   renderHeroStats();
+  renderNeglected();
+  showToast('Allenamento eliminato');
+}
 
-  _saveFlashTimer = setTimeout(() => {
-    btn.disabled = false;
-    btn.classList.remove('saved');
+/* ───────────────────────────────────────────────────────────────────
+   9d. Nome nuovo — battesimo inline delle sigle sconosciute
+   L'app non conosce una sigla? La si battezza qui, una volta sola,
+   senza cambiare schermata. Il glossario completo vive in Archivio › Nomi.
+   ─────────────────────────────────────────────────────────────────── */
+const NC_GROUPS = ['petto', 'schiena', 'spalle', 'gambe', 'braccia', 'altro'];
+const _ncDismissed = new Set();
+let _ncAbbr = null, _ncGroup = null;
+
+function renderNameCard(exercises) {
+  const host = document.getElementById('nameCard');
+  if (!host) return;
+  const unknown = [...new Set((exercises || []).map(e => e.abbr))]
+    .filter(a => !State.glossary[a] && !_ncDismissed.has(a));
+  if (!unknown.length) { host.innerHTML = ''; _ncAbbr = null; return; }
+  const abbr = unknown[0];
+  // Già mostrata per questa sigla: non ricostruire il DOM (perderebbe
+  // il testo che l'utente sta digitando a ogni refresh del report)
+  if (abbr === _ncAbbr && host.firstElementChild) return;
+  _ncAbbr = abbr;
+  _ncGroup = State.muscleGroups[abbr] || null;
+  host.innerHTML = `<div class="name-card">
+    <div class="nc-label">come si chiama <strong>${escapeHTML(abbr)}</strong>? Un nome una volta sola — poi riappare da solo.</div>
+    <input class="nc-input" id="ncInput" type="text" placeholder="es. Pulldown" autocomplete="off" autocorrect="off" spellcheck="false">
+    <div class="nc-chips">${NC_GROUPS.map(g =>
+      `<button class="nc-chip${_ncGroup === g ? ' on' : ''}" type="button" data-group="${g}">${g}</button>`).join('')}</div>
+    <div class="nc-actions">
+      <button class="nc-skip" type="button" data-action="nc-skip">non ora</button>
+      <button class="nc-done" type="button" data-action="nc-done">fatto</button>
+    </div>
+  </div>`;
+}
+
+function handleNameCardClick(e) {
+  const chip = e.target.closest('.nc-chip');
+  if (chip) {
+    _ncGroup = _ncGroup === chip.dataset.group ? null : chip.dataset.group;
+    chip.parentElement.querySelectorAll('.nc-chip').forEach(c =>
+      c.classList.toggle('on', c.dataset.group === _ncGroup));
+    return;
+  }
+  const action = e.target.closest('[data-action]')?.dataset.action;
+  if (!action || !_ncAbbr) return;
+  const abbr = _ncAbbr;
+  if (action === 'nc-skip') {
+    _ncDismissed.add(abbr);
+    _ncAbbr = null;
     renderLogPreview();
-    renderHeroStats();
-    renderNeglected();
-  }, 2000);
+    return;
+  }
+  if (action === 'nc-done') {
+    const name = document.getElementById('ncInput').value.trim();
+    const group = _ncGroup;
+    _ncDismissed.add(abbr);
+    _ncAbbr = null;
+    if (!name && !group) { renderLogPreview(); return; }
+    if (name) State.glossary[abbr] = name;
+    if (group) { State.muscleGroups[abbr] = group; persistMuscleGroups(); }
+    persistGlossary();   // persiste e, se c'è un file collegato, lo riscrive
+    showToast(name ? abbr + ' = ' + name : abbr + ' → ' + group);
+    renderLogPreview();
+  }
 }
 
 /* ───────────────────────────────────────────────────────────────────
@@ -2785,12 +3164,9 @@ function renderHeatmap() {
     weeks.push({ days, monthLabel });
   }
   const totalCount = State.sessions.filter(s => weeks.some(w => w.days.some(d => d.dateStr === s.date))).length;
+  _hmStats = { count: totalCount, weeks: WEEKS };
   el.innerHTML = `
     <div class="heatmap-block">
-      <div class="heatmap-head">
-        <h4>Calendario</h4>
-        <span class="hm-meta">${totalCount} sessioni · ${WEEKS} settimane</span>
-      </div>
       <div class="heatmap">
         <div class="heatmap-inner">
           ${weeks.map(w => `
@@ -2804,12 +3180,57 @@ function renderHeatmap() {
     </div>
   `;
 }
+let _hmStats = { count: 0, weeks: 22 };
 
 /* ───────────────────────────────────────────────────────────────────
-   11. Storico
+   11. Archivio — anno + heatmap + righe compatte per mese
    ─────────────────────────────────────────────────────────────────── */
+const _arcOpen = new Set();   // date con dettaglio espanso
+let _nomiOpen = false;        // vista Nomi (glossario) aperta dentro Archivio
+
+function renderArcHead() {
+  const el = document.getElementById('arcHead');
+  if (!el) return;
+  const year = State.sessions.length ? State.sessions[0].date.slice(0, 4) : String(new Date().getFullYear());
+  el.innerHTML = `<div>
+      <div class="arc-year">${escapeHTML(year)}</div>
+      <div class="arc-meta">${_hmStats.count} ${_hmStats.count === 1 ? 'sessione' : 'sessioni'} · ${_hmStats.weeks} settimane</div>
+    </div>
+    <button class="arc-nomi" type="button" data-action="open-nomi">Nomi ›</button>`;
+}
+
+function sessionDetailHtml(s) {
+  const prMap = getCachedPRs();
+  const lines = s.lines || (s.lines = parseAllLines(s.raw));
+  const historicalPRs = prMap.get(s.date) || {};
+  let body = '<div class="entries">';
+  let idx = 0;
+  lines.forEach(item => {
+    if (item.type === 'exercise') {
+      const isPR = item.peakWeight != null && (historicalPRs[item.abbr] == null || item.peakWeight > historicalPRs[item.abbr]);
+      body += entryRowHtml(item, idx, isPR, true);
+      idx++;
+    } else if (item.type === 'comment') {
+      body += commentRowHtml(item.text);
+    } else if (item.type === 'bw') {
+      body += bwRowHtml(item.weight);
+    }
+  });
+  body += '</div>';
+  return body;
+}
+
+function toggleNomi(open) {
+  _nomiOpen = open;
+  document.getElementById('arcMain').style.display = open ? 'none' : '';
+  document.getElementById('nomiView').hidden = !open;
+  if (open) renderGlossario(); else renderStorico();
+  window.scrollTo({top: 0, behavior: _reduceMotion() ? 'auto' : 'smooth'});
+}
+
 function renderStorico({ skipStats = false } = {}) {
-  if (!skipStats) { renderSummaryStats(); renderHeatmap(); }
+  if (_nomiOpen) return;   // è aperta la vista Nomi: nessuna lista da ridisegnare
+  if (!skipStats) { renderHeatmap(); renderArcHead(); }
   const el = document.getElementById('storicoContent');
   const qRaw = (document.getElementById('storicoSearch')?.value || '').trim().toUpperCase();
   const qDigits = qRaw.replace(/[^0-9]/g, '');
@@ -2835,41 +3256,66 @@ function renderStorico({ skipStats = false } = {}) {
     return;
   }
 
-  const prMap = getCachedPRs();
-  el.innerHTML = filtered.map(s => {
-    const lines = s.lines || (s.lines = parseAllLines(s.raw));
-    const exLines = lines.filter(l => l.type === 'exercise');
-    const historicalPRs = prMap.get(s.date) || {};
-    let body = '<div class="entries">';
-    let idx = 0;
-    lines.forEach(item => {
-      if (item.type === 'exercise') {
-        const isPR = item.peakWeight != null && (historicalPRs[item.abbr] == null || item.peakWeight > historicalPRs[item.abbr]);
-        body += entryRowHtml(item, idx, isPR, true);
-        idx++;
-      } else if (item.type === 'comment') {
-        body += commentRowHtml(item.text);
-      } else if (item.type === 'bw') {
-        body += bwRowHtml(item.weight);
-      }
-    });
-    body += '</div>';
-    const sessFmt = fmtDateSession(s.date);
-    return `<div class="session">
-      <div class="session-head">
-        <div class="session-date">${escapeHTML(sessFmt)}</div>
-        <div class="session-actions">
-          <span class="session-count">${exLines.length} es</span>
-          <button class="session-edit" data-action="edit" data-date="${s.date}" type="button">Modifica</button>
-        </div>
-      </div>${body}
-    </div>`;
-  }).join('');
+  const nowYear = String(new Date().getFullYear());
+  let lastMonthKey = '';
+  let html = '';
+  for (const s of filtered) {
+    const monthKey = s.date.slice(0, 7);
+    if (monthKey !== lastMonthKey) {
+      lastMonthKey = monthKey;
+      const mdt = new Date(s.date + 'T12:00:00');
+      let lbl = isNaN(mdt) ? monthKey : _fmtMonthOnly.format(mdt);
+      if (s.date.slice(0, 4) !== nowYear) lbl += ' ' + s.date.slice(0, 4);
+      html += `<div class="arc-month">${escapeHTML(lbl)}</div>`;
+    }
+    const dt = new Date(s.date + 'T12:00:00');
+    const dow = isNaN(dt) ? '' : _fmtDowShort.format(dt);
+    const abbrs = [...new Set(s.exercises.map(e => e.abbr))];
+    const chips = abbrs.slice(0, 4).map(a => `<span class="arc-chip">${escapeHTML(a)}</span>`).join('')
+      + (abbrs.length > 4 ? `<span class="arc-chip more">+${abbrs.length - 4}</span>` : '')
+      + (!abbrs.length && s.bodyWeight ? '<span class="arc-chip">BW</span>' : '');
+    const vol = s.exercises.reduce((a, e) => a + (e.volume || 0), 0);
+    const ton = fmtTon(vol);
+    const isOpen = _arcOpen.has(s.date);
+    html += `<button class="arc-row${isOpen ? ' open' : ''}" type="button" data-date="${s.date}" aria-expanded="${isOpen}">
+      <span class="arc-daywrap"><span class="arc-day">${s.date.slice(8, 10)}</span><span class="arc-dow">${escapeHTML(dow)}</span></span>
+      <span class="arc-chips">${chips}</span>
+      <span class="arc-right"><span class="arc-vol">${vol ? ton.v : '—'}${vol ? `<span class="u">${ton.u}</span>` : ''}</span>
+        <div class="arc-sub">${s.exercises.length} ${s.exercises.length === 1 ? 'esercizio' : 'esercizi'}</div></span>
+      <span class="arc-chev">›</span>
+    </button>`;
+    if (isOpen) {
+      html += `<div class="arc-detail">${sessionDetailHtml(s)}
+        <div class="arc-detail-actions"><button class="session-edit" data-action="edit" data-date="${s.date}" type="button">Modifica</button></div>
+      </div>`;
+    }
+  }
+  el.innerHTML = html;
 }
 
 /* ───────────────────────────────────────────────────────────────────
-   12. Trend
+   12. Andamento — un esercizio, un numero grande, un grafico
    ─────────────────────────────────────────────────────────────────── */
+const METRIC_LABEL = { peak: 'picco', volume: 'volume', e1rm: '1rm stimato' };
+
+// Numero grande + delta sugli ultimi 3 mesi (o dall'inizio se non bastano)
+function trendBigHtml(pts, unit, metricLbl) {
+  const last = pts[pts.length - 1];
+  const c = new Date(); c.setMonth(c.getMonth() - 3);
+  const cutoffISO = c.getFullYear() + '-' + String(c.getMonth() + 1).padStart(2, '0') + '-' + String(c.getDate()).padStart(2, '0');
+  let base = pts.find(p => p.date >= cutoffISO);
+  let span = 'ultimi 3 mesi';
+  if (!base || base === last) { base = pts[0]; span = 'dall’inizio'; }
+  const delta = +(last.value - base.value).toFixed(1);
+  const cls = delta > 0 ? 'up' : delta < 0 ? 'dn' : '';
+  const deltaHtml = pts.length >= 2 && base !== last && delta !== 0
+    ? `<div class="tb-delta ${cls}"><span class="d-val">${delta > 0 ? '+' : ''}${delta} ${unit}</span> · ${span}</div>` : '';
+  return `<div class="trend-big">
+    <div class="tb-val">${last.value}<span class="u">${unit}${metricLbl ? ' ' + metricLbl : ''}</span></div>
+    ${deltaHtml}
+  </div>`;
+}
+
 function renderTrend({ chartOnly = false } = {}) {
   if (!chartOnly) renderMuscleVolume();
   const allAbbrs = [...new Set(State.sessions.flatMap(s => s.exercises.map(e => e.abbr)))].sort();
@@ -2877,22 +3323,40 @@ function renderTrend({ chartOnly = false } = {}) {
   if (hasBW) allAbbrs.unshift('BW');
 
   const sel = document.getElementById('exSelect');
-  const metricSel = document.getElementById('metricSelect');
+  const seg = document.getElementById('metricSeg');
   const prev = sel.value;
   if (!chartOnly) {
-    const sig = allAbbrs.join('|');
+    // Le option portano anche il nome esteso: "BP · Panca piana"
+    const sig = allAbbrs.map(a => a + '=' + (State.glossary[a] || '')).join('|');
     if (sel.dataset.sig !== sig) {
-      sel.innerHTML = allAbbrs.length ? allAbbrs.map(a => `<option value="${escapeHTML(a)}">${escapeHTML(a)}</option>`).join('') : '<option>—</option>';
+      sel.innerHTML = allAbbrs.length ? allAbbrs.map(a => {
+        const name = a === 'BW' ? 'peso corporeo' : State.glossary[a];
+        return `<option value="${escapeHTML(a)}">${escapeHTML(a)}${name ? ' · ' + escapeHTML(name) : ''}</option>`;
+      }).join('') : '<option>—</option>';
       sel.dataset.sig = sig;
       // prev può non esistere più (es. dopo import): un value senza match
-      // lascerebbe la select vuota con selectedIndex -1
-      sel.value = allAbbrs.includes(prev) ? prev : allAbbrs[0];
+      // lascerebbe la select vuota con selectedIndex -1. Di default si parte
+      // da un esercizio vero, non da BW.
+      sel.value = allAbbrs.includes(prev) ? prev : (allAbbrs.find(a => a !== 'BW') || allAbbrs[0]);
     }
   }
 
   const abbr = sel.value;
   const empty = document.getElementById('trendEmpty');
   const chartWrap = document.getElementById('chartWrap');
+  const bigEl = document.getElementById('trendBig');
+  const grid = document.getElementById('statsGrid');
+  const banner = document.getElementById('stagnationBanner');
+
+  const showGrid = cards => {
+    grid.style.display = cards.length ? '' : 'none';
+    grid.innerHTML = cards.map(({ label, val, u, sub, cls }) => `
+      <div class="stat-cell">
+        <div class="stat-cell-val ${cls || ''}">${val}${u ? `<span class="u">${u}</span>` : ''}</div>
+        <div class="stat-cell-lbl">${label}</div>
+        ${sub ? `<div class="stat-cell-sub ${cls || ''}">${sub}</div>` : ''}
+      </div>`).join('');
+  };
 
   if (!allAbbrs.length) {
     empty.innerHTML = `<div class="empty-state">
@@ -2901,15 +3365,17 @@ function renderTrend({ chartOnly = false } = {}) {
       <div class="es-body">Importa un file .txt o inizia a registrare.</div>
     </div>`;
     chartWrap.style.display = 'none';
-    document.getElementById('statsGrid').innerHTML = '';
-    document.getElementById('stagnationBanner').style.display = 'none';
+    bigEl.innerHTML = '';
+    showGrid([]);
+    banner.style.display = 'none';
     return;
   }
 
   if (abbr === 'BW') {
-    metricSel.style.display = 'none';
-    document.getElementById('stagnationBanner').style.display = 'none';
+    seg.style.display = 'none';
+    banner.style.display = 'none';
     const pts = State.sessions.filter(s => s.bodyWeight).map(s => ({ date: s.date, value: s.bodyWeight })).sort((a, b) => a.date.localeCompare(b.date));
+    bigEl.innerHTML = pts.length ? trendBigHtml(pts, 'kg', '') : '';
     if (pts.length < 2) {
       empty.innerHTML = `<div class="empty-state">
         <div class="es-mark">·</div>
@@ -2917,24 +3383,24 @@ function renderTrend({ chartOnly = false } = {}) {
         <div class="es-body">${pts.length === 1 ? 'per mostrare il grafico BW.' : 'Aggiungi <code>BW 78.5</code> al log.'}</div>
       </div>`;
       chartWrap.style.display = 'none';
-      document.getElementById('statsGrid').innerHTML = '';
+      showGrid([]);
       return;
     }
     const minBW = Math.min(...pts.map(p => p.value)), maxBW = Math.max(...pts.map(p => p.value));
     const delta = +(pts[pts.length - 1].value - pts[0].value).toFixed(1);
-    document.getElementById('statsGrid').style.gridTemplateColumns = 'repeat(3, 1fr)';
-    document.getElementById('statsGrid').innerHTML = [
+    showGrid([
       { label: 'rilevazioni', val: pts.length, u: '', cls: '' },
       { label: 'range', val: minBW + '–' + maxBW, u: 'kg', cls: '' },
       { label: 'variazione', val: (delta > 0 ? '+' : '') + delta, u: 'kg', cls: delta < 0 ? 'up' : delta > 0 ? 'dn' : '' }
-    ].map(({ label, val, u, cls }) => `<div class="stat-cell"><div class="stat-cell-val ${cls}">${val}${u ? `<span class="u">${u}</span>` : ''}</div><div class="stat-cell-lbl">${label}</div></div>`).join('');
+    ]);
     empty.innerHTML = ''; chartWrap.style.display = '';
     renderSVGChart(chartWrap, pts, colorForAbbr('BW'), ' kg');
     return;
   }
 
-  metricSel.style.display = '';
-  const metric = metricSel.value;
+  seg.style.display = '';
+  const metric = State.trendMetric;
+  seg.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('on', b.dataset.metric === metric));
   const pts = State.sessions
     .filter(s => s.exercises.some(e => e.abbr === abbr))
     .map(s => { const ex = s.exercises.find(e => e.abbr === abbr); return { date: s.date, value: metric === 'peak' ? (ex.peakWeight || 0) : metric === 'volume' ? (ex.volume || 0) : (ex.estimated1RM || 0) }; })
@@ -2945,32 +3411,32 @@ function renderTrend({ chartOnly = false } = {}) {
   for (let i = pts.length - 1; i >= 1; i--) { if (pts[i].value === pts[i - 1].value) sc++; else break; }
   const last3 = pts.slice(-3);
   const volTrendDown = last3.length === 3 && last3[2].value < last3[0].value;
-  const banner = document.getElementById('stagnationBanner');
   if (sc >= 2) { banner.textContent = '◇ Valore identico per ' + (sc + 1) + ' sessioni consecutive — stagnazione.'; banner.style.display = ''; }
   else if (volTrendDown && metric === 'volume') { banner.textContent = '◇ Volume in calo nelle ultime 3 sessioni.'; banner.style.display = ''; }
   else banner.style.display = 'none';
 
   const allEx = State.sessions.filter(s => s.exercises.some(e => e.abbr === abbr)).map(s => s.exercises.find(e => e.abbr === abbr));
-  const maxP = allEx.length ? Math.max(...allEx.map(e => e.peakWeight || 0)) : 0;
   const maxE1RM = allEx.length ? Math.max(...allEx.map(e => e.estimated1RM || 0)) : 0;
-  const delta = pts.length >= 2 ? +(pts[pts.length - 1].value - pts[0].value).toFixed(1) : 0;
-  const pct = pts.length && pts[0].value ? Math.round((delta / pts[0].value) * 100) : 0;
+  const totVol = allEx.reduce((a, e) => a + (e.volume || 0), 0);
+
+  // Frequenza: sessioni/settimana sull'arco di vita dell'esercizio
+  const exDates = State.sessions.filter(s => s.exercises.some(e => e.abbr === abbr)).map(s => s.date).sort();
+  let freq = '';
+  if (exDates.length >= 2) {
+    const spanDays = (new Date(exDates[exDates.length - 1] + 'T12:00:00') - new Date(exDates[0] + 'T12:00:00')) / 86400000;
+    freq = (exDates.length / Math.max(1, spanDays / 7)).toFixed(1);
+  }
 
   const unit = metric === 'volume' ? 'kg·r' : 'kg';
-  const statsCards = [
-    { label: 'sessioni', val: allEx.length, u: '', cls: '' },
-    { label: 'picco max', val: maxP, u: 'kg', cls: '' },
-    { label: delta >= 0 ? 'progresso' : 'variazione', val: (delta > 0 ? '+' : '') + delta, u: unit, sub: pts.length >= 2 ? (pct > 0 ? '+' : '') + pct + '%' : '', cls: delta > 0 ? 'up' : delta < 0 ? 'dn' : '' },
-  ];
-  if (maxE1RM > 0) statsCards.push({ label: '1rm stimato', val: '~' + maxE1RM, u: 'kg', cls: '' });
+  bigEl.innerHTML = pts.length ? trendBigHtml(pts, unit, METRIC_LABEL[metric]) : '';
 
-  document.getElementById('statsGrid').style.gridTemplateColumns = `repeat(${statsCards.length}, 1fr)`;
-  document.getElementById('statsGrid').innerHTML = statsCards.map(({ label, val, u, sub, cls }) => `
-    <div class="stat-cell">
-      <div class="stat-cell-val ${cls}">${val}${u ? `<span class="u">${u}</span>` : ''}</div>
-      <div class="stat-cell-lbl">${label}</div>
-      ${sub ? `<div class="stat-cell-sub ${cls}">${sub}</div>` : ''}
-    </div>`).join('');
+  const tonTot = fmtTon(totVol);
+  showGrid([
+    ...(maxE1RM > 0 ? [{ label: '1rm stimato', val: '~' + maxE1RM, u: 'kg' }] : []),
+    { label: 'sessioni', val: allEx.length, u: '' },
+    ...(totVol > 0 ? [{ label: 'volume tot', val: tonTot.v, u: tonTot.u }] : []),
+    ...(freq ? [{ label: 'frequenza', val: freq, u: '/sett' }] : []),
+  ]);
 
   if (pts.length < 2) {
     const noWeight = pts.length === 0 && allEx.length > 0;
@@ -3053,54 +3519,11 @@ function handleAddGlossaryEntry() {
 }
 
 /* ───────────────────────────────────────────────────────────────────
-   14. Summary stats (Storico)
-   ─────────────────────────────────────────────────────────────────── */
-function renderSummaryStats() {
-  const el = document.getElementById('summaryRow');
-  if (!el) return;
-  if (!State.sessions.length) { el.innerHTML = ''; return; }
-  const now = new Date();
-  const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-  const prevD = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const prevMonth = prevD.getFullYear() + '-' + String(prevD.getMonth() + 1).padStart(2, '0');
-  const sessThis = State.sessions.filter(s => s.date.startsWith(thisMonth)).length;
-  const sessPrev = State.sessions.filter(s => s.date.startsWith(prevMonth)).length;
-  const sessDelta = sessThis - sessPrev;
-  const volThis = State.sessions.filter(s => s.date.startsWith(thisMonth))
-    .reduce((a, s) => a + s.exercises.reduce((b, e) => b + (e.volume || 0), 0), 0);
-  const volPrev = State.sessions.filter(s => s.date.startsWith(prevMonth))
-    .reduce((a, s) => a + s.exercises.reduce((b, e) => b + (e.volume || 0), 0), 0);
-  const volDeltaPct = volPrev ? Math.round(((volThis - volPrev) / volPrev) * 100) : null;
-  const fmtVol = v => v >= 10000 ? (v/1000).toFixed(1)+'k' : v >= 1000 ? Math.round(v/100)/10+'k' : String(v);
-  const sessSign = sessDelta > 0 ? '+' : '';
-  const sessDeltaHtml = sessPrev > 0 || sessDelta !== 0
-    ? `<div class="sum-delta ${sessDelta > 0 ? 'up' : sessDelta < 0 ? 'dn' : ''}">${sessDelta > 0 ? '↗' : sessDelta < 0 ? '↘' : '—'} ${sessSign}${sessDelta} vs mese scorso</div>` : '';
-  const volDeltaHtml = volDeltaPct !== null
-    ? `<div class="sum-delta ${volDeltaPct > 0 ? 'up' : volDeltaPct < 0 ? 'dn' : ''}">${volDeltaPct > 0 ? '↗' : volDeltaPct < 0 ? '↘' : '—'} ${Math.abs(volDeltaPct)}% vs mese scorso</div>` : '';
-  el.innerHTML = `<div class="summary-strip">
-    <div class="sum-item">
-      <div class="sum-val">${sessThis}</div>
-      <div class="sum-lbl">sessioni · mese</div>
-      ${sessDeltaHtml}
-    </div>
-    <div class="sum-item">
-      <div class="sum-val">${fmtVol(volThis)}<span class="u">kg</span></div>
-      <div class="sum-lbl">volume · mese</div>
-      ${volDeltaHtml}
-    </div>
-  </div>`;
-}
-
-/* ───────────────────────────────────────────────────────────────────
    15. Muscle volume
    ─────────────────────────────────────────────────────────────────── */
 function renderMuscleVolume() {
   const el = document.getElementById('muscleVolumeSection');
   if (!el) return;
-  const COLORS = {
-    schiena: '#a5cae0', spalle: '#f0c674', petto: '#f0997b',
-    gambe: '#d8ff4a', braccia: '#c8a2e0', altro: '#aea89c'
-  };
 
   if (!State.sessions.length) { el.innerHTML = ''; return; }
 
@@ -3139,14 +3562,14 @@ function renderMuscleVolume() {
 
   const entries = Object.entries(grouped).sort((a, b) => b[1] - a[1]);
   if (!entries.length) {
-    el.innerHTML = header + `<div class="muscle-hint">Nessun dato nel periodo. Assegna i gruppi muscolari nella tab <strong style="color:var(--ink-2)">Nomi</strong>.</div></div>`;
+    el.innerHTML = header + `<div class="muscle-hint">Nessun dato nel periodo. Assegna i gruppi muscolari in <strong style="color:var(--ink-2)">Archivio › Nomi</strong>, o al volo quando registri una sigla nuova.</div></div>`;
     return;
   }
 
   const maxSets = entries[0][1];
   el.innerHTML = header + entries.map(([g, v]) => `<div class="muscle-row">
     <div class="muscle-name">${escapeHTML(g.charAt(0).toUpperCase() + g.slice(1))}</div>
-    <div class="muscle-bar"><div class="muscle-fill" style="width:${Math.round((v / maxSets) * 100)}%;background:${COLORS[g] || COLORS.altro}"></div></div>
+    <div class="muscle-bar"><div class="muscle-fill" style="width:${Math.round((v / maxSets) * 100)}%"></div></div>
     <div class="muscle-val">${v} set</div>
   </div>`).join('') + '</div>';
 }
@@ -3169,7 +3592,7 @@ function setupDatePickerTrigger() {
 /* ───────────────────────────────────────────────────────────────────
    17. Swipe between tabs
    ─────────────────────────────────────────────────────────────────── */
-const TABS = ['log', 'storico', 'trend', 'glossario'];
+const TABS = ['log', 'storico', 'trend'];
 function setupSwipeGesture() {
   let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
   document.addEventListener('touchstart', e => {
@@ -3224,27 +3647,54 @@ function attachGlobalListeners() {
   });
   document.getElementById('logDateInput').addEventListener('change', handleLogDateChange);
   document.getElementById('logInput').addEventListener('input', () => { _logInputDirty = true; schedulePreviewAndDraft(); });
-  // iOS può killare la PWA in background in qualsiasi momento: flush immediato della bozza
+  // iOS può killare la PWA in background in qualsiasi momento: consolida
+  // l'autosave e la bozza subito, prima di perdere il processo
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') stashCurrentDraft();
+    if (document.visibilityState === 'hidden') { autosaveCommit(); stashCurrentDraft(); }
     else handleAppResume();
   });
-  window.addEventListener('pagehide', () => { stashCurrentDraft(); });
-  document.getElementById('btnSaveDay').addEventListener('click', handleSaveDay);
+  window.addEventListener('pagehide', () => { autosaveCommit(); stashCurrentDraft(); });
+  document.getElementById('btnDeleteDay').addEventListener('click', handleDeleteDay);
   document.getElementById('btnQaAdd').addEventListener('click', handleQuickAdd);
   document.getElementById('qaAbbr').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase(); updateQaHint(); });
   document.getElementById('qaWeight').addEventListener('keydown', e => { if (e.key === 'Enter') handleQuickAdd(); });
   document.getElementById('qaReps').addEventListener('keydown', e => { if (e.key === 'Enter') handleQuickAdd(); });
-  document.getElementById('storicoContent').addEventListener('click', e => {
-    if (e.target.dataset.action === 'edit') handleEditSession(e.target.dataset.date);
+  document.getElementById('restTimer').addEventListener('click', e => {
+    if (e.target.closest('[data-action="rest-skip"]')) stopRestTimer();
   });
+  document.getElementById('nameCard').addEventListener('click', handleNameCardClick);
+  document.getElementById('nameCard').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.id === 'ncInput') {
+      e.preventDefault();
+      handleNameCardClick({ target: e.target.closest('.name-card').querySelector('[data-action="nc-done"]') });
+    }
+  });
+  document.getElementById('storicoContent').addEventListener('click', e => {
+    const editBtn = e.target.closest('[data-action="edit"]');
+    if (editBtn) { handleEditSession(editBtn.dataset.date); return; }
+    const row = e.target.closest('.arc-row');
+    if (row) {
+      const d = row.dataset.date;
+      if (_arcOpen.has(d)) _arcOpen.delete(d); else _arcOpen.add(d);
+      renderStorico({ skipStats: true });
+    }
+  });
+  document.getElementById('arcHead').addEventListener('click', e => {
+    if (e.target.closest('[data-action="open-nomi"]')) toggleNomi(true);
+  });
+  document.getElementById('btnNomiBack').addEventListener('click', () => toggleNomi(false));
   document.getElementById('neglectedWrap').addEventListener('click', handleNeglectedClick);
   document.getElementById('storicoSearch').addEventListener('input', () => {
     clearTimeout(_searchTimer);
     _searchTimer = setTimeout(() => renderStorico({ skipStats: true }), 180);
   });
   document.getElementById('exSelect').addEventListener('change', () => renderTrend());
-  document.getElementById('metricSelect').addEventListener('change', () => renderTrend({ chartOnly: true }));
+  document.getElementById('metricSeg').addEventListener('click', e => {
+    const btn = e.target.closest('.seg-btn');
+    if (!btn) return;
+    State.trendMetric = btn.dataset.metric;
+    renderTrend({ chartOnly: true });
+  });
   document.getElementById('muscleVolumeSection').addEventListener('change', e => {
     if (e.target.id === 'muscleRangeSel') renderMuscleVolume();
   });
