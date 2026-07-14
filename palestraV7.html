@@ -285,7 +285,9 @@ const DB = (() => {
   async function open() {
     if (_db) return _db;
     return new Promise((resolve, reject) => {
-      const req = indexedDB.open('workout_log_v1', 1);
+      // Archivio isolato: questa pagina legacy non deve mai riscrivere o
+      // cancellare bozze dell'app corrente, dato che IndexedDB e' origin-wide.
+      const req = indexedDB.open('workout_log_v7_archive', 1);
       req.onupgradeneeded = e => { e.target.result.createObjectStore('kv'); };
       req.onsuccess = e => { _db = e.target.result; resolve(_db); };
       req.onerror = () => reject(req.error);
@@ -707,7 +709,8 @@ async function handleOpenFile() {
       State.fileName = file.name;
       const parsed = txtToSessions(await file.text());
       State.glossary = parsed.glossary;
-      if (Object.keys(parsed.muscleGroups).length) { State.muscleGroups = parsed.muscleGroups; persistMuscleGroups(); }
+      State.muscleGroups = parsed.muscleGroups;
+      persistMuscleGroups();
       updateSessions(parsed.sessions, { skipFs: true });
       refreshAllViews();
       showToast('Importato: '+file.name);
@@ -720,7 +723,8 @@ async function handleOpenFile() {
       State.fileName = f.name;
       const parsed = txtToSessions(await f.text());
       State.glossary = parsed.glossary;
-      if (Object.keys(parsed.muscleGroups).length) { State.muscleGroups = parsed.muscleGroups; persistMuscleGroups(); }
+      State.muscleGroups = parsed.muscleGroups;
+      persistMuscleGroups();
       updateSessions(parsed.sessions, { skipFs: true });
       refreshAllViews();
       showToast('Importato: '+f.name);
@@ -1373,8 +1377,8 @@ async function initApp() {
         await DB.set(CONFIG.SESSIONS, JSON.parse(lsS));
         if (lsG) await DB.set(CONFIG.GLOSSARY, JSON.parse(lsG));
       }
-      localStorage.removeItem('workout_log_sessions');
-      localStorage.removeItem('workout_log_glossary');
+      // La copia legacy resta disponibile all'app corrente: questa pagina di
+      // archivio non deve consumare o cancellare una migrazione condivisa.
     }
   } catch(e) {}
 
@@ -1402,8 +1406,9 @@ async function initApp() {
   renderFileStatus();
 
   if ('serviceWorker' in navigator) {
-    ('requestIdleCallback' in window ? requestIdleCallback : setTimeout)(
-      () => navigator.serviceWorker.register('./sw.js').catch(() => {}), 1);
+    const register = () => navigator.serviceWorker.register('./sw.js').catch(() => {});
+    if ('requestIdleCallback' in window) requestIdleCallback(register, { timeout: 1500 });
+    else setTimeout(register, 0);
   }
 }
 

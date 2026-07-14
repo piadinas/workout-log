@@ -1,0 +1,14 @@
+## BP = Panca piana
+## SQ = Squat
+### BP = petto
+### SQ = gambe
+
+# 2026-05-04
+BW 78.5
+BP 3x10 @60 // pausa corta
+SQ 2x5@100 + 1x5@90
+// giornata buona
+
+# 2026-05-01
+BP 10@57,5
+OHP 3x8 @40
