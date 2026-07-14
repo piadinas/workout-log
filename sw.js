@@ -1,55 +1,98 @@
-const CACHE = 'workout-v8-daylight';
-const SHELL = ['./', './index.html', './manifest.json', './icon.png'];
-const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
+const CACHE = 'ledger-workout-v9-instant';
+const LEGACY_CACHES = new Set([
+  'workout-v8-daylight',
+  'workout-v7-debug-fixes',
+  'workout-v7',
+]);
+const FONT_HOSTS = new Set(['fonts.googleapis.com', 'fonts.gstatic.com']);
+const SCOPE_URL = new URL(self.registration.scope);
+const INDEX_URL = new URL('index.html', SCOPE_URL).href;
+const PRECACHE_URLS = [
+  INDEX_URL,
+  new URL('manifest.json', SCOPE_URL).href,
+  new URL('icon.png', SCOPE_URL).href,
+];
 
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
-  // Niente skipWaiting: il nuovo SW aspetta la prossima apertura
-  // così evita reload forzati mentre l'app è in uso
+function isCanonicalDocument(url) {
+  return url.origin === SCOPE_URL.origin &&
+    (url.pathname === SCOPE_URL.pathname || url.pathname === new URL(INDEX_URL).pathname);
+}
+
+async function fetchFreshShell() {
+  const response = await fetch(new Request(INDEX_URL, {
+    cache: 'no-cache',
+    credentials: 'same-origin',
+  }));
+  const finalUrl = new URL(response.url);
+  if (!response.ok || response.type !== 'basic' || response.redirected || !isCanonicalDocument(finalUrl)) {
+    throw new Error('Risposta shell non valida');
+  }
+  const cache = await caches.open(CACHE);
+  await cache.put(INDEX_URL, response.clone());
+  return response;
+}
+
+self.addEventListener('install', event => {
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    await cache.addAll(PRECACHE_URLS.map(url => new Request(url, { cache: 'reload' })));
+    await self.skipWaiting();
+  })());
 });
 
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    )
-  );
-  // Niente clients.claim(): evita il flash/ricarica alla prima attivazione
+self.addEventListener('activate', event => {
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys
+      .filter(key => key !== CACHE && (LEGACY_CACHES.has(key) || key.startsWith('ledger-workout-')))
+      .map(key => caches.delete(key)));
+  })());
+  // Niente clients.claim(): l'apertura corrente non viene ricaricata a meta' input.
 });
 
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
+self.addEventListener('fetch', event => {
+  const request = event.request;
+  if (request.method !== 'GET') return;
+  const url = new URL(request.url);
+  const isDocument = request.mode === 'navigate' || request.destination === 'document';
 
-  const url = new URL(e.request.url);
-  // Cross-origin: passa solo per i font (cache-first sotto), il resto bypassa
-  if (url.origin !== self.location.origin && !FONT_HOSTS.includes(url.hostname)) return;
+  if (isDocument) {
+    // Solo la root dell'app e index.html sono la shell. Audit, archivi o pagine
+    // legacy non possono piu' avvelenare il fallback offline.
+    if (!isCanonicalDocument(url)) return;
 
-  if (e.request.mode === 'navigate' || e.request.destination === 'document') {
-    e.respondWith(
-      fetch(e.request)
-        .then(response => {
-          // Mai sovrascrivere lo shell con 404/500/redirect/captive portal:
-          // offline verrebbe servita quella pagina al posto dell'app
-          if (response.ok && response.type === 'basic') {
-            const copy = response.clone();
-            caches.open(CACHE).then(c => c.put('./index.html', copy));
-          }
-          return response;
-        })
-        .catch(() => caches.match('./index.html').then(r => r || caches.match('./')))
-    );
+    const refresh = fetchFreshShell();
+    event.waitUntil(refresh.catch(() => undefined));
+    event.respondWith((async () => {
+      const shellCache = await caches.open(CACHE);
+      const cached = await shellCache.match(INDEX_URL);
+      if (cached) return cached;
+      try {
+        return await refresh;
+      } catch {
+        return new Response('Ledger non e ancora disponibile offline.', {
+          status: 503,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+        });
+      }
+    })());
     return;
   }
 
-  e.respondWith(
-    caches.match(e.request).then(cached =>
-      cached || fetch(e.request).then(response => {
-        if (response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE).then(c => c.put(e.request, copy));
-        }
-        return response;
-      }).catch(() => Response.error())
-    )
-  );
+  const cacheableOrigin = url.origin === SCOPE_URL.origin || FONT_HOSTS.has(url.hostname);
+  if (!cacheableOrigin) return;
+  event.respondWith((async () => {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    try {
+      const response = await fetch(request);
+      if (response.ok || response.type === 'opaque') {
+        const cache = await caches.open(CACHE);
+        await cache.put(request, response.clone());
+      }
+      return response;
+    } catch {
+      return Response.error();
+    }
+  })());
 });

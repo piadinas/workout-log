@@ -16,7 +16,9 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@200..700&family=Geist+Mono:wght@300..600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@200..700&family=Geist+Mono:wght@300..600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&display=swap"
+      rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Geist:wght@200..700&family=Geist+Mono:wght@300..600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&display=swap" rel="stylesheet"></noscript>
 
 <style>
 /* ─────────────────────────────────────────────────────────────────
@@ -329,7 +331,6 @@ input, textarea, select {
 /* ─── Page wrapper ──────────────────────────────────────────────── */
 .page {
   padding: 0 var(--space-edge);
-  animation: pageIn 420ms var(--ease-out) both;
 }
 .page.hidden { display: none; }
 
@@ -396,6 +397,7 @@ input, textarea, select {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  min-height: 44px;
 }
 .hero-meta button.date-trigger:active {
   color: var(--brick); border-color: var(--brick); background: var(--brick-wash);
@@ -609,7 +611,7 @@ input, textarea, select {
   transition: background var(--t-fast);
   min-width: 0;
 }
-.qa-input::placeholder { color: var(--ink-4); font-weight: 400; }
+.qa-input::placeholder { color: var(--ink-3); font-weight: 400; }
 .qa-input:focus { background: var(--sheet); }
 .qa-abbr { text-transform: uppercase; font-weight: 600; letter-spacing: 0.04em; }
 .qa-sym {
@@ -715,7 +717,7 @@ input, textarea, select {
   transition: border-color var(--t-fast);
 }
 .nc-input:focus { border-color: var(--brick); }
-.nc-input::placeholder { color: var(--ink-4); }
+.nc-input::placeholder { color: var(--ink-3); }
 .nc-chips {
   display: flex;
   flex-wrap: wrap;
@@ -784,7 +786,7 @@ input, textarea, select {
   transition: border-color var(--t-fast), background var(--t-fast);
 }
 .freetext:focus { border-color: var(--rule-2); }
-.freetext::placeholder { color: var(--ink-4); font-weight: 400; line-height: 2; }
+.freetext::placeholder { color: var(--ink-3); font-weight: 400; line-height: 2; }
 
 details.help {
   margin-top: 10px;
@@ -1139,7 +1141,7 @@ details.help code {
   transition: border-color var(--t-fast);
 }
 .search:focus { border-bottom-color: var(--ink-2); }
-.search::placeholder { color: var(--ink-4); }
+.search::placeholder { color: var(--ink-3); }
 
 .arc-month {
   font-family: var(--mono);
@@ -1608,7 +1610,7 @@ details.help code {
   transition: background var(--t-fast);
 }
 .gl-name:focus { background: var(--sheet); padding: 4px 8px; }
-.gl-name::placeholder { color: var(--ink-4); }
+.gl-name::placeholder { color: var(--ink-3); }
 
 .gl-group {
   font-family: var(--mono);
@@ -1625,7 +1627,7 @@ details.help code {
   transition: border-color var(--t-fast);
 }
 .gl-group:focus { border-color: var(--rule-2); }
-.gl-group::placeholder { color: var(--ink-4); }
+.gl-group::placeholder { color: var(--ink-3); }
 
 .glossary-new {
   margin-top: 22px;
@@ -1660,7 +1662,7 @@ details.help code {
   color: var(--ink);
   letter-spacing: -0.005em;
 }
-.gl-new-name::placeholder { color: var(--ink-4); }
+.gl-new-name::placeholder { color: var(--ink-3); }
 .gl-new-add {
   width: 44px;
   height: 44px;
@@ -1716,7 +1718,7 @@ details.help code {
   font-size: 9px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--ink-4);
+  color: var(--ink-3);
   transition: color var(--t-fast);
   position: relative;
 }
@@ -1768,11 +1770,8 @@ details.help code {
   transform: translateX(-50%) translateY(0);
 }
 
-/* ─── Boot animation stagger ────────────────────────────────────── */
-.stagger-1 { animation: pageIn 480ms 30ms var(--ease-out) both; }
-.stagger-2 { animation: pageIn 480ms 80ms var(--ease-out) both; }
-.stagger-3 { animation: pageIn 480ms 140ms var(--ease-out) both; }
-.stagger-4 { animation: pageIn 480ms 200ms var(--ease-out) both; }
+/* Il foglio di input deve essere visibile al primo frame. */
+.stagger-1, .stagger-2, .stagger-3, .stagger-4 { animation: none; }
 
 /* ─── Print/extra safety ───────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
@@ -1849,34 +1848,21 @@ details.help code {
       <div class="hero-stats stagger-3" id="heroStats"></div>
     </section>
 
-    <details class="neg-fold" id="neglectedFold" style="display:none">
-      <summary class="neg-summary">
-        <span class="neg-sum-glyph"></span>
-        <span class="neg-sum-lbl">Da riprendere</span>
-        <span class="neg-sum-meta" id="neglectedMeta"></span>
-      </summary>
-      <div id="neglectedWrap" class="neg-list"></div>
-    </details>
-
-    <div id="preview"></div>
-    <div id="restTimer"></div>
-    <div id="nameCard"></div>
-
     <div class="section-rule"><h3>Aggiungi</h3></div>
 
     <div class="quickadd">
-      <input class="qa-input qa-abbr" id="qaAbbr" maxlength="6" placeholder="ABBR" autocorrect="off" autocapitalize="characters" spellcheck="false">
-      <input class="qa-input qa-reps" id="qaReps" type="number" min="1" max="99" placeholder="reps" inputmode="numeric">
+      <input class="qa-input qa-abbr" id="qaAbbr" maxlength="6" placeholder="ABBR" aria-label="Esercizio" autocorrect="off" autocapitalize="characters" spellcheck="false">
+      <input class="qa-input qa-reps" id="qaReps" type="number" min="1" max="99" placeholder="reps" aria-label="Ripetizioni" inputmode="numeric">
       <span class="qa-sym">×</span>
-      <input class="qa-input qa-weight" id="qaWeight" type="number" min="0" step="2.5" placeholder="kg" inputmode="decimal">
+      <input class="qa-input qa-weight" id="qaWeight" type="number" min="0.1" step="any" placeholder="kg" aria-label="Peso in kg" inputmode="decimal">
       <button class="qa-add" id="btnQaAdd" type="button" aria-label="Aggiungi">+</button>
-      <input class="qa-input qa-sets" id="qaSets" type="number" min="1" max="20" placeholder="set" inputmode="numeric" style="display:none">
+      <input class="qa-input qa-sets" id="qaSets" type="number" min="1" max="20" placeholder="set" aria-label="Numero di set" inputmode="numeric" style="display:none">
     </div>
     <div id="qaHint" class="qa-hint" style="display:none"></div>
 
     <div class="section-rule"><h3>oppure scrivi</h3></div>
 
-    <textarea class="freetext" id="logInput" placeholder="BP 3x10 @60&#10;SQ 4x8 @100&#10;OHP 3x10 @40&#10;DL 3x5 @120&#10;// nota libera"></textarea>
+    <textarea class="freetext" id="logInput" aria-label="Allenamento del giorno" placeholder="BP 3x10 @60&#10;SQ 4x8 @100&#10;OHP 3x10 @40&#10;DL 3x5 @120&#10;// nota libera"></textarea>
 
     <details class="help">
       <summary>Sintassi</summary>
@@ -1893,6 +1879,19 @@ details.help code {
     <div id="invalidWarnings" class="warning-box" style="display:none"></div>
 
     <button class="delete-day" id="btnDeleteDay" type="button">Elimina l'allenamento del giorno</button>
+
+    <div id="restTimer"></div>
+    <div id="preview"></div>
+    <div id="nameCard"></div>
+
+    <details class="neg-fold" id="neglectedFold" style="display:none">
+      <summary class="neg-summary">
+        <span class="neg-sum-glyph"></span>
+        <span class="neg-sum-lbl">Da riprendere</span>
+        <span class="neg-sum-meta" id="neglectedMeta"></span>
+      </summary>
+      <div id="neglectedWrap" class="neg-list"></div>
+    </details>
   </main>
 
   <!-- ─── ARCHIVIO ─────────────────────────────────────────────── -->
@@ -1924,9 +1923,9 @@ details.help code {
     <div class="trend-controls">
       <select class="select-pill" id="exSelect" aria-label="Esercizio"></select>
       <div class="seg" id="metricSeg" role="tablist" aria-label="Metrica">
-        <button class="seg-btn on" data-metric="peak" type="button">Picco</button>
-        <button class="seg-btn" data-metric="volume" type="button">Volume</button>
-        <button class="seg-btn" data-metric="e1rm" type="button">1RM</button>
+        <button class="seg-btn on" data-metric="peak" role="tab" aria-selected="true" type="button">Picco</button>
+        <button class="seg-btn" data-metric="volume" role="tab" aria-selected="false" type="button">Volume</button>
+        <button class="seg-btn" data-metric="e1rm" role="tab" aria-selected="false" type="button">1RM</button>
       </div>
     </div>
     <div id="trendBig"></div>
@@ -1940,16 +1939,16 @@ details.help code {
   </div><!-- /.scroller -->
 
   <!-- ─── Bottom tabbar ───────────────────────────────────────── -->
-  <nav class="tabbar" id="tabContainer">
-    <button class="tab-item active" data-tab="log" type="button">
+  <nav class="tabbar" id="tabContainer" role="tablist" aria-label="Sezioni">
+    <button class="tab-item active" data-tab="log" role="tab" aria-selected="true" type="button">
       <svg class="ti-glyph" viewBox="0 0 24 24"><path d="M6.5 6.5h11M6.5 12h11M6.5 17.5h7"/></svg>
       Oggi
     </button>
-    <button class="tab-item" data-tab="storico" type="button">
+    <button class="tab-item" data-tab="storico" role="tab" aria-selected="false" type="button">
       <svg class="ti-glyph" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 9h16M9 5V3M15 5V3"/></svg>
       Archivio
     </button>
-    <button class="tab-item" data-tab="trend" type="button">
+    <button class="tab-item" data-tab="trend" role="tab" aria-selected="false" type="button">
       <svg class="ti-glyph" viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>
       Andamento
     </button>
@@ -1964,32 +1963,206 @@ details.help code {
    ─────────────────────────────────────────────────────────────────── */
 const DB = (() => {
   let _db = null;
-  async function open() {
-    if (_db) return _db;
-    return new Promise((resolve, reject) => {
+  let _openPromise = null;
+
+  function open() {
+    if (_db) return Promise.resolve(_db);
+    if (_openPromise) return _openPromise;
+    _openPromise = new Promise((resolve, reject) => {
       const req = indexedDB.open('workout_log_v1', 1);
-      req.onupgradeneeded = e => { e.target.result.createObjectStore('kv'); };
-      req.onsuccess = e => { _db = e.target.result; resolve(_db); };
-      req.onerror = () => reject(req.error);
+      req.onupgradeneeded = e => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains('kv')) db.createObjectStore('kv');
+      };
+      req.onsuccess = e => {
+        _db = e.target.result;
+        _db.onversionchange = () => {
+          _db.close();
+          _db = null;
+          _openPromise = null;
+        };
+        resolve(_db);
+      };
+      req.onerror = () => {
+        _openPromise = null;
+        reject(req.error || new Error('Apertura archivio locale non riuscita'));
+      };
+      req.onblocked = () => console.warn('Archivio locale bloccato da un’altra scheda');
+    });
+    return _openPromise;
+  }
+
+  async function getMany(keys) {
+    const db = await open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('kv', 'readonly');
+      const store = tx.objectStore('kv');
+      const values = {};
+      keys.forEach(key => {
+        const req = store.get(key);
+        req.onsuccess = () => { values[key] = req.result ?? null; };
+      });
+      tx.oncomplete = () => resolve(values);
+      tx.onerror = () => reject(tx.error || new Error('Lettura archivio locale non riuscita'));
+      tx.onabort = () => reject(tx.error || new Error('Lettura archivio locale interrotta'));
     });
   }
+
   async function get(key) {
+    const values = await getMany([key]);
+    return values[key];
+  }
+
+  async function setMany(values) {
     const db = await open();
     return new Promise((resolve, reject) => {
-      const req = db.transaction('kv', 'readonly').objectStore('kv').get(key);
-      req.onsuccess = () => resolve(req.result ?? null);
-      req.onerror = () => reject(req.error);
+      const tx = db.transaction('kv', 'readwrite');
+      const store = tx.objectStore('kv');
+      Object.entries(values).forEach(([key, value]) => store.put(value, key));
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error || new Error('Scrittura archivio locale non riuscita'));
+      tx.onabort = () => reject(tx.error || new Error('Scrittura archivio locale interrotta'));
     });
   }
+
   async function set(key, value) {
+    return setMany({ [key]: value });
+  }
+
+  // Aggiorna una sola data con read-modify-write dentro la stessa transazione.
+  // Così una scheda con State obsoleto non può riscrivere l'intero archivio e
+  // cancellare le altre giornate. Sessione e bozza cambiano atomicamente.
+  async function mutateWorkout(date, session, draftRaw, options = {}) {
     const db = await open();
     return new Promise((resolve, reject) => {
-      const req = db.transaction('kv', 'readwrite').objectStore('kv').put(value, key);
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject(req.error);
+      const tx = db.transaction('kv', 'readwrite');
+      const store = tx.objectStore('kv');
+      const sessionsReq = store.get(CONFIG.SESSIONS);
+      const draftReq = store.get(CONFIG.DRAFT);
+      let sessionsReady = false, draftReady = false, result = null;
+
+      const apply = () => {
+        if (!sessionsReady || !draftReady || result) return;
+        try {
+          const storedSessions = sessionsReq.result;
+          if (storedSessions != null && !Array.isArray(storedSessions)) {
+            throw new Error('Archivio sessioni non valido');
+          }
+          let sessions = (storedSessions || []).slice();
+          const storedDraft = draftReq.result;
+          let drafts = {};
+          if (storedDraft && typeof storedDraft === 'object') {
+            if (typeof storedDraft.date === 'string' && typeof storedDraft.raw === 'string') {
+              drafts[storedDraft.date] = storedDraft.raw;
+            } else {
+              drafts = Object.fromEntries(Object.entries(storedDraft)
+                .filter(([d, raw]) => /^\d{4}-\d{2}-\d{2}$/.test(d) && typeof raw === 'string' && raw.trim()));
+            }
+          }
+
+          let nextSession = session;
+          let nextDraftRaw = draftRaw;
+          let merged = false, conflicted = false;
+          let draftMerged = false, draftPreserved = false;
+          if (session && options.protectConcurrent) {
+            const candidateRaw = String(session.raw || '').trim();
+            const currentSession = sessions.find(item => item && item.date === date);
+            const currentSessionRaw = String(currentSession?.raw || '').trim();
+            const currentDraftRaw = String(drafts[date] || '').trim();
+            const recoveryBase = options.recoveryEntry?.baseKnown === true
+              ? String(options.recoveryEntry.baseRaw || '').trim() : null;
+            const draftContainsSession = !currentSessionRaw ||
+              (`\n${currentDraftRaw}\n`).includes(`\n${currentSessionRaw}\n`);
+            const sessionBaseKnown = options.recoveryEntry?.sessionBaseKnown === true;
+            const sessionBaseMatches = sessionBaseKnown
+              ? currentSessionRaw === String(options.recoveryEntry.sessionBaseRaw || '').trim()
+              : draftContainsSession;
+            const resolvingKnownDraft = !!currentDraftRaw && recoveryBase === currentDraftRaw &&
+              sessionBaseMatches;
+            let durableRaw = resolvingKnownDraft ? currentDraftRaw : currentSessionRaw;
+            if (!resolvingKnownDraft && currentDraftRaw &&
+                currentDraftRaw !== candidateRaw && currentDraftRaw !== currentSessionRaw) {
+              durableRaw = mergeWithoutDataLoss(durableRaw, currentDraftRaw, null).raw;
+            }
+            const reconciled = mergeConcurrentWorkoutRaw(
+              durableRaw,
+              candidateRaw,
+              options.recoveryEntry || null,
+            );
+            const reconciledRaw = reconciled.raw.trim();
+            if (reconciledRaw !== candidateRaw) {
+              const lines = parseAllLines(reconciledRaw);
+              const bodyWeights = lines.filter(line => line.type === 'bw');
+              const exercises = lines.filter(line => line.type === 'exercise');
+              const canCommitMerged = reconciled.safeToCommit !== false &&
+                !lines.some(line => line.type === 'invalid') &&
+                bodyWeights.length <= 1 && (exercises.length > 0 || bodyWeights.length === 1);
+              merged = true;
+              if (canCommitMerged) {
+                nextSession = {
+                  date,
+                  raw: reconciledRaw,
+                  exercises,
+                  bodyWeight: bodyWeights[0]?.weight ?? null,
+                };
+                nextDraftRaw = null;
+              } else {
+                // Due versioni entrambe importanti ma non combinabili (per
+                // esempio due pesi corporei): la sessione corrente resta e
+                // l'unione viene conservata come bozza da risolvere.
+                nextSession = undefined;
+                nextDraftRaw = reconciledRaw;
+                conflicted = true;
+              }
+            }
+          }
+
+          if (nextSession !== undefined) {
+            sessions = sessions.filter(item => item && item.date !== date);
+            if (nextSession !== null) sessions.push(nextSession);
+            sessions.sort((a, b) => b.date.localeCompare(a.date));
+          }
+          if (nextDraftRaw !== undefined) {
+            const currentDraftRaw = typeof drafts[date] === 'string' ? drafts[date] : '';
+            if (typeof nextDraftRaw === 'string' && nextDraftRaw.trim()) {
+              if (options.protectDraft && currentDraftRaw.trim() !== nextDraftRaw.trim()) {
+                const reconciledDraft = mergeWithoutDataLoss(
+                  currentDraftRaw,
+                  nextDraftRaw,
+                  options.recoveryEntry || null,
+                );
+                nextDraftRaw = reconciledDraft.raw;
+                draftMerged = reconciledDraft.merged || nextDraftRaw.trim() !== String(draftRaw || '').trim();
+              }
+              drafts[date] = nextDraftRaw;
+            } else if (Object.hasOwn(options, 'expectedDraftRaw')) {
+              const expected = typeof options.expectedDraftRaw === 'string'
+                ? options.expectedDraftRaw.trim() : '';
+              if (currentDraftRaw.trim() === expected) delete drafts[date];
+              else draftPreserved = true;
+            } else {
+              delete drafts[date];
+            }
+          }
+
+          store.put(sessions, CONFIG.SESSIONS);
+          store.put(drafts, CONFIG.DRAFT);
+          result = { sessions, drafts, merged, conflicted, draftMerged, draftPreserved };
+        } catch (error) {
+          try { tx.abort(); } catch {}
+          reject(error);
+        }
+      };
+
+      sessionsReq.onsuccess = () => { sessionsReady = true; apply(); };
+      draftReq.onsuccess = () => { draftReady = true; apply(); };
+      tx.oncomplete = () => resolve(result);
+      tx.onerror = () => reject(tx.error || new Error('Salvataggio allenamento non riuscito'));
+      tx.onabort = () => reject(tx.error || new Error('Salvataggio allenamento interrotto'));
     });
   }
-  return { get, set };
+
+  return { open, get, getMany, set, setMany, mutateWorkout };
 })();
 
 /* ───────────────────────────────────────────────────────────────────
@@ -2007,6 +2180,388 @@ const State = {
   currentTab: 'log',
   trendMetric: 'peak',
 };
+
+// Journal sincrono: IndexedDB su iOS può essere sospeso prima che una promise
+// termini. Ogni battuta viene quindi specchiata subito in localStorage e il
+// journal viene cancellato soltanto dopo tx.oncomplete su IndexedDB.
+const RECOVERY_KEY = 'workout_log_recovery_v1';
+const RECOVERY_PREFIX = RECOVERY_KEY + ':';
+let _recoveryJournal = null;
+let _hydrationState = 'loading'; // loading | ready | error
+let _hydrationPromise = null;
+let _inputRevision = 0;
+const _inputRevisionByDate = new Map();
+const _inputBaseRawByDate = new Map();
+const _durableDraftRawByDate = new Map();
+let _localWriteChain = Promise.resolve();
+let _journalAvailable = true;
+let _journalErrorShown = false;
+const _durableRawByDate = new Map();
+
+function getRecoveryJournal() {
+  if (_recoveryJournal) return _recoveryJournal;
+  _recoveryJournal = {};
+  try {
+    if (typeof localStorage === 'undefined') return _recoveryJournal;
+    const addEntry = (date, entry) => {
+      const raw = typeof entry === 'string' ? entry : entry?.raw;
+      const updatedAt = typeof entry === 'object' && Number.isFinite(entry?.updatedAt) ? entry.updatedAt : 0;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(date) && typeof raw === 'string' && raw.trim()) {
+        const baseKnown = typeof entry === 'object' && entry?.baseKnown === true && typeof entry?.baseRaw === 'string';
+        const sessionBaseKnown = typeof entry === 'object' && entry?.sessionBaseKnown === true &&
+          typeof entry?.sessionBaseRaw === 'string';
+        const normalized = {
+          raw,
+          updatedAt,
+          baseKnown,
+          ...(baseKnown ? { baseRaw: entry.baseRaw } : {}),
+          sessionBaseKnown,
+          ...(sessionBaseKnown ? { sessionBaseRaw: entry.sessionBaseRaw } : {}),
+        };
+        if (!_recoveryJournal[date] || updatedAt >= _recoveryJournal[date].updatedAt) {
+          _recoveryJournal[date] = normalized;
+        }
+      }
+    };
+
+    // Formato legacy a oggetto unico, letto soltanto per migrazione.
+    const parsed = JSON.parse(localStorage.getItem(RECOVERY_KEY) || '{}');
+    if (parsed && typeof parsed === 'object') {
+      for (const [date, entry] of Object.entries(parsed)) addEntry(date, entry);
+    }
+    // Una chiave per data evita che due schede si cancellino reciprocamente
+    // il journal facendo read-modify-write dello stesso oggetto globale.
+    if (Number.isInteger(localStorage.length) && typeof localStorage.key === 'function') {
+      for (let index = 0; index < localStorage.length; index++) {
+        const key = localStorage.key(index);
+        if (!key?.startsWith(RECOVERY_PREFIX)) continue;
+        const date = key.slice(RECOVERY_PREFIX.length);
+        try { addEntry(date, JSON.parse(localStorage.getItem(key) || 'null')); } catch {}
+      }
+    }
+    // Materializza il vecchio oggetto aggregato una volta sola. Ogni chiave
+    // viene confrontata singolarmente, così la migrazione non riscrive mai
+    // le altre date con uno snapshot obsoleto.
+    if (parsed && typeof parsed === 'object' && Object.keys(parsed).length) {
+      for (const [date, entry] of Object.entries(_recoveryJournal)) {
+        let current = null;
+        try { current = JSON.parse(localStorage.getItem(RECOVERY_PREFIX + date) || 'null'); } catch {}
+        const currentAt = Number.isFinite(current?.updatedAt) ? current.updatedAt : -1;
+        if (currentAt < entry.updatedAt) {
+          localStorage.setItem(RECOVERY_PREFIX + date, JSON.stringify(entry));
+        }
+      }
+      localStorage.removeItem(RECOVERY_KEY);
+    }
+  } catch { _journalAvailable = false; }
+  return _recoveryJournal;
+}
+
+function writeRecoveryDate(date, entry) {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      if (entry) localStorage.setItem(RECOVERY_PREFIX + date, JSON.stringify(entry));
+      else localStorage.removeItem(RECOVERY_PREFIX + date);
+      _journalAvailable = true;
+      return true;
+    }
+  } catch { _journalAvailable = false; }
+  _journalAvailable = false;
+  return false;
+}
+
+function refreshRecoveryJournalBeforeMutation() {
+  // localStorage e' condiviso tra schede: se l'ultima scrittura locale era
+  // riuscita, si riparte sempre dal valore piu' fresco prima del merge.
+  if (_journalAvailable && typeof localStorage !== 'undefined') {
+    _recoveryJournal = null;
+  }
+  return getRecoveryJournal();
+}
+
+function journalDraft(date, raw) {
+  if (!date) return false;
+  const journal = refreshRecoveryJournalBeforeMutation();
+  if (typeof raw === 'string' && raw.trim()) {
+    const baseKnown = _inputBaseRawByDate.has(date);
+    const sessionBaseKnown = _hydrationState === 'ready';
+    journal[date] = {
+      raw,
+      updatedAt: Date.now(),
+      baseKnown,
+      ...(baseKnown ? { baseRaw: _inputBaseRawByDate.get(date) } : {}),
+      sessionBaseKnown,
+      ...(sessionBaseKnown ? { sessionBaseRaw: _durableRawByDate.get(date) || '' } : {}),
+    };
+  }
+  else {
+    delete journal[date];
+  }
+  return writeRecoveryDate(date, journal[date] || null);
+}
+
+function clearRecoveryDraft(date, expectedRaw) {
+  const journal = refreshRecoveryJournalBeforeMutation();
+  if (!journal[date]) return;
+  if (expectedRaw !== undefined && journal[date].raw !== expectedRaw) return;
+  delete journal[date];
+  writeRecoveryDate(date, null);
+}
+
+function clearRecoveryJournal() {
+  const dates = Object.keys(getRecoveryJournal());
+  _recoveryJournal = {};
+  try {
+    dates.forEach(date => localStorage.removeItem(RECOVERY_PREFIX + date));
+    if (Number.isInteger(localStorage.length) && typeof localStorage.key === 'function') {
+      const keys = [];
+      for (let index = 0; index < localStorage.length; index++) {
+        const key = localStorage.key(index);
+        if (key?.startsWith(RECOVERY_PREFIX)) keys.push(key);
+      }
+      keys.forEach(key => localStorage.removeItem(key));
+    }
+    localStorage.removeItem(RECOVERY_KEY);
+    _journalAvailable = true;
+  } catch { _journalAvailable = false; }
+}
+
+function recoveryDrafts() {
+  return Object.fromEntries(Object.entries(getRecoveryJournal()).map(([date, entry]) => [date, entry.raw]));
+}
+
+function recoveryMetadataForDate(date) {
+  const journalEntry = getRecoveryJournal()[date];
+  if (journalEntry) return { ...journalEntry };
+  const baseKnown = _inputBaseRawByDate.has(date);
+  const sessionBaseKnown = _hydrationState === 'ready';
+  return {
+    baseKnown,
+    ...(baseKnown ? { baseRaw: _inputBaseRawByDate.get(date) } : {}),
+    sessionBaseKnown,
+    ...(sessionBaseKnown ? { sessionBaseRaw: _durableRawByDate.get(date) || '' } : {}),
+  };
+}
+
+function mergeWithoutDataLoss(baseRaw, candidateRaw, recoveryEntry) {
+  const base = typeof baseRaw === 'string' ? baseRaw.trim() : '';
+  const candidate = typeof candidateRaw === 'string' ? candidateRaw.trim() : '';
+  if (!base) return { raw: candidateRaw || '', merged: false };
+  if (!candidate || candidate === base) return { raw: baseRaw, merged: false };
+  const basedOnCurrent = recoveryEntry?.baseKnown === true && recoveryEntry.baseRaw?.trim() === base;
+  if (basedOnCurrent || candidate.startsWith(base)) return { raw: candidateRaw, merged: false };
+  if (base.includes(candidate)) return { raw: baseRaw, merged: false };
+  return { raw: base + '\n' + candidate, merged: true };
+}
+
+function mergeConcurrentWorkoutRaw(currentRaw, candidateRaw, recoveryEntry) {
+  const current = String(currentRaw || '').trim();
+  const candidate = String(candidateRaw || '').trim();
+  const base = recoveryEntry?.baseKnown === true
+    ? String(recoveryEntry.baseRaw || '').trim() : null;
+  const appendSuffix = raw => {
+    if (base === null) return null;
+    if (raw === base) return '';
+    return raw.startsWith(base + '\n') ? raw.slice(base.length + 1).trim() : null;
+  };
+  const currentSuffix = appendSuffix(current);
+  const candidateSuffix = appendSuffix(candidate);
+  if (base !== null && currentSuffix !== null && candidateSuffix !== null) {
+    const currentLines = currentSuffix ? currentSuffix.split('\n') : [];
+    const candidateLines = candidateSuffix ? candidateSuffix.split('\n') : [];
+    let commonCount = 0;
+    while (commonCount < currentLines.length && commonCount < candidateLines.length &&
+           currentLines[commonCount] === candidateLines[commonCount]) {
+      commonCount++;
+    }
+    const commonSuffix = currentLines.slice(0, commonCount).join('\n');
+    const currentTail = currentLines.slice(commonCount).join('\n');
+    const candidateTail = candidateLines.slice(commonCount).join('\n');
+    const mergedTail = mergeWithoutDataLoss(currentTail, candidateTail, null).raw.trim();
+    const mergedSuffix = [commonSuffix, mergedTail].filter(Boolean).join('\n');
+    const raw = [base, mergedSuffix].filter(Boolean).join('\n');
+    return { raw, merged: raw !== candidate, safeToCommit: true };
+  }
+  const fallback = mergeWithoutDataLoss(current, candidate, recoveryEntry);
+  return { ...fallback, safeToCommit: !fallback.merged };
+}
+
+function queueLocalWrite(operation) {
+  const run = _localWriteChain.catch(() => {}).then(operation);
+  _localWriteChain = run.catch(() => {});
+  return run;
+}
+
+function replaceSessionsInMemory(sessions) {
+  State.sessions = Array.isArray(sessions) ? sessions : [];
+  _prCacheVer++;
+}
+
+function sessionForStorage(session) {
+  if (!session) return session;
+  const { date, raw, exercises, bodyWeight } = session;
+  return { date, raw, exercises, bodyWeight };
+}
+
+function hasUserData() {
+  return State.sessions.length > 0 ||
+    Object.keys(State.pendingDrafts).length > 0 ||
+    Object.keys(State.glossary).length > 0 ||
+    Object.keys(State.muscleGroups).length > 0 ||
+    !!document.getElementById('logInput')?.value.trim() ||
+    Object.keys(getRecoveryJournal()).length > 0;
+}
+
+let _datasetBusy = false;
+function datasetMutationBlocked() {
+  if (!_datasetBusy) return false;
+  showToast('Operazione già in corso');
+  return true;
+}
+
+function setDatasetBusy(busy) {
+  _datasetBusy = busy;
+  document.getElementById('tab-log')?.setAttribute('aria-busy', String(busy));
+  document.querySelectorAll([
+    '.fm-item', '#btnDeleteDay',
+    '.gl-name', '.gl-group', '#glNewAbbr', '#glNewName', '#btnAddGlossary',
+    '#ncInput', '.nc-chip', '.nc-done', '.nc-skip',
+  ].join(',')).forEach(control => { control.disabled = busy; });
+}
+
+function beginDatasetMutation() {
+  const hadGlossaryDebounce = _glossaryDebounce !== null;
+  const hadMuscleGroupsDebounce = _muscleGroupsDebounce !== null;
+  clearTimeout(_previewTimer);
+  clearTimeout(_commitTimer);
+  clearTimeout(_draftTimer);
+  clearTimeout(_glossaryDebounce);
+  clearTimeout(_muscleGroupsDebounce);
+  _glossaryDebounce = null;
+  _muscleGroupsDebounce = null;
+  setDatasetBusy(true);
+  return {
+    revision: _inputRevision,
+    revisions: new Map(_inputRevisionByDate),
+    date: _activeDate || document.getElementById('logDateInput')?.value || todayStr(),
+    raw: document.getElementById('logInput')?.value || '',
+    journal: Object.fromEntries(Object.entries(getRecoveryJournal()).map(([date, entry]) => [date, entry.raw])),
+    hadGlossaryDebounce,
+    hadMuscleGroupsDebounce,
+  };
+}
+
+async function resumeAuxiliaryPersistence(operation) {
+  const jobs = [];
+  if (operation?.hadGlossaryDebounce) jobs.push(persistGlossary());
+  if (operation?.hadMuscleGroupsDebounce) jobs.push(persistMuscleGroups());
+  if (!jobs.length) return true;
+  const results = await Promise.all(jobs);
+  return results.every(Boolean);
+}
+
+function resumePendingWorkoutPersistence() {
+  const journal = getRecoveryJournal();
+  const dates = new Set([...Object.keys(State.pendingDrafts), ...Object.keys(journal)]);
+  const currentDate = _activeDate || document.getElementById('logDateInput')?.value || todayStr();
+  const currentRaw = document.getElementById('logInput')?.value || '';
+  const durableRaw = _durableRawByDate.get(currentDate) || '';
+  if (_logInputDirty || currentRaw.trim() !== durableRaw.trim() ||
+      State.pendingDrafts[currentDate] !== undefined || journal[currentDate] !== undefined) {
+    dates.add(currentDate);
+  }
+  dates.forEach(scheduleAutosaveRetry);
+}
+
+function collectConcurrentEdits(operation) {
+  const currentDate = _activeDate || document.getElementById('logDateInput')?.value || todayStr();
+  const journal = getRecoveryJournal();
+  const edits = {};
+  for (const [date, revision] of _inputRevisionByDate) {
+    if (revision === (operation.revisions.get(date) || 0)) continue;
+    const raw = date === currentDate
+      ? (document.getElementById('logInput')?.value || '')
+      : (State.pendingDrafts[date] ?? journal[date]?.raw ?? '');
+    edits[date] = { raw, recoveryEntry: journal[date] ? { ...journal[date] } : null };
+  }
+  return { currentDate, edits };
+}
+
+function clearOperationJournal(operation, onlyDate = null) {
+  for (const [date, raw] of Object.entries(operation.journal)) {
+    if (onlyDate && date !== onlyDate) continue;
+    clearRecoveryDraft(date, raw);
+  }
+}
+
+function reconcileConcurrentEdits(concurrent) {
+  let merged = false;
+  const draftDates = [];
+  for (const [date, edit] of Object.entries(concurrent.edits)) {
+    const baseRaw = _durableDraftRawByDate.has(date)
+      ? _durableDraftRawByDate.get(date) : (_durableRawByDate.get(date) || '');
+    _inputBaseRawByDate.set(date, baseRaw);
+    const result = mergeWithoutDataLoss(baseRaw, edit.raw, edit.recoveryEntry);
+    merged ||= result.merged;
+    if (result.raw.trim() && result.raw.trim() !== baseRaw.trim()) {
+      State.pendingDrafts[date] = result.raw;
+      draftDates.push(date);
+      journalDraft(date, result.raw);
+    }
+  }
+
+  const dateInput = document.getElementById('logDateInput');
+  const date = concurrent.currentDate || todayStr();
+  dateInput.value = date;
+  _activeDate = date;
+  const session = getSessByDate().get(date);
+  const draft = State.pendingDrafts[date];
+  document.getElementById('logInput').value = draft !== undefined ? draft : (session?.raw || '');
+  _inputBaseRawByDate.set(date, _durableDraftRawByDate.has(date)
+    ? _durableDraftRawByDate.get(date) : (session?.raw || ''));
+  _logInputDirty = draft !== undefined;
+  return { merged, draftDates, hasCurrentDraft: draft !== undefined };
+}
+
+async function persistConcurrentDrafts(dates, currentDate) {
+  let allSaved = true;
+  for (const date of dates) {
+    if (date === currentDate) continue;
+    const raw = State.pendingDrafts[date];
+    if (typeof raw !== 'string' || !raw.trim()) continue;
+    try {
+      const recoveryEntry = recoveryMetadataForDate(date);
+      const committed = await queueLocalWrite(() => DB.mutateWorkout(date, undefined, raw, {
+        protectDraft: true,
+        recoveryEntry,
+      }));
+      const savedDraft = normalizeStoredDrafts(committed?.drafts || {})[date] || raw;
+      State.pendingDrafts[date] = savedDraft;
+      _durableDraftRawByDate.set(date, savedDraft);
+      _inputBaseRawByDate.set(date, savedDraft);
+      clearRecoveryDraft(date, raw);
+      if (committed?.draftMerged) showToast('Bozze concorrenti conservate insieme');
+    } catch (error) {
+      console.error('Concurrent draft save failed', error);
+      allSaved = false;
+    }
+  }
+  if (!allSaved) {
+    _saveState = 'error';
+    renderFileStatus();
+  }
+  return allSaved;
+}
+
+function renderAfterDatasetMutation() {
+  renderHero();
+  renderHeroStats();
+  renderLogPreview();
+  renderNeglected();
+  renderFileStatus();
+  if (State.currentTab === 'storico') { renderStorico(); if (_nomiOpen) renderGlossario(); }
+  if (State.currentTab === 'trend') renderTrend();
+}
 
 let _prCacheVer = 0, _prCache = null, _prCachedVer = -1;
 let _sessByDate = null, _sessByDateVer = -1;
@@ -2035,9 +2590,144 @@ function getCachedPRs() {
 }
 
 let _previewTimer = null, _draftTimer = null, _commitTimer = null, _searchTimer = null;
+const _retryTimers = new Map(), _retryDelays = new Map();
 let _activeDate = null;       // data attualmente caricata nella textarea
 let _logInputDirty = false;   // true solo dopo un input reale dell'utente sulla data attiva
 let _lastSavedAt = null;      // timestamp dell'ultimo autosave riuscito ("salvato · HH:MM")
+let _saveState = 'loading';   // loading | dirty | saving | saved | error
+function captureCurrentDraftSync() {
+  const date = _activeDate || document.getElementById('logDateInput')?.value || todayStr();
+  const input = document.getElementById('logInput');
+  if (!date || !input) return;
+  const raw = input.value;
+  _inputRevision++;
+  _inputRevisionByDate.set(date, (_inputRevisionByDate.get(date) || 0) + 1);
+  _logInputDirty = true;
+  if (raw.trim()) State.pendingDrafts[date] = raw;
+  else delete State.pendingDrafts[date];
+  const journaled = journalDraft(date, raw);
+  _saveState = raw.trim() && !journaled ? 'error' : (_datasetBusy ? 'saving' : 'dirty');
+  renderFileStatus();
+  if (raw.trim() && !journaled && !_journalErrorShown) {
+    _journalErrorShown = true;
+    showToast('⚠ Modifica non ancora protetta');
+  }
+}
+
+function clearAutosaveRetry(date) {
+  if (!date) return;
+  clearTimeout(_retryTimers.get(date));
+  _retryTimers.delete(date);
+  _retryDelays.delete(date);
+}
+
+function isCommittableWorkout(raw) {
+  const lines = parseAllLines(String(raw || '').trim());
+  const bodyWeights = lines.filter(line => line.type === 'bw');
+  const valid = !lines.some(line => line.type === 'invalid') && bodyWeights.length <= 1;
+  return {
+    valid: valid && (lines.some(line => line.type === 'exercise') || bodyWeights.length === 1),
+    lines,
+    bodyWeight: bodyWeights[0],
+  };
+}
+
+async function retryInactiveDate(date) {
+  const journal = getRecoveryJournal();
+  const raw = State.pendingDrafts[date] ?? journal[date]?.raw;
+  if (typeof raw !== 'string' || !raw.trim()) {
+    clearAutosaveRetry(date);
+    return true;
+  }
+
+  const parsed = isCommittableWorkout(raw);
+  try {
+    let committed;
+    if (parsed.valid) {
+      const trimmed = raw.trim();
+      const nextSession = sessionForStorage({
+        date,
+        raw: trimmed,
+        exercises: parsed.lines.filter(line => line.type === 'exercise'),
+        bodyWeight: parsed.bodyWeight ? parsed.bodyWeight.weight : null,
+      });
+      committed = await queueLocalWrite(() => DB.mutateWorkout(date, nextSession, null, {
+        protectConcurrent: true,
+        recoveryEntry: recoveryMetadataForDate(date),
+      }));
+    } else {
+      committed = await queueLocalWrite(() => DB.mutateWorkout(date, undefined, raw, {
+        protectDraft: true,
+        recoveryEntry: recoveryMetadataForDate(date),
+      }));
+    }
+    const committedSessions = normalizeStoredSessions(committed?.sessions || State.sessions);
+    const committedDrafts = normalizeStoredDrafts(committed?.drafts || {});
+    replaceSessionsInMemory(committedSessions);
+    _durableRawByDate.clear();
+    committedSessions.forEach(item => _durableRawByDate.set(item.date, item.raw.trim()));
+    const savedSessionRaw = committedSessions.find(item => item.date === date)?.raw || '';
+    const savedDraftRaw = committedDrafts[date];
+    if (savedDraftRaw !== undefined) {
+      State.pendingDrafts[date] = savedDraftRaw;
+      _durableDraftRawByDate.set(date, savedDraftRaw);
+      _inputBaseRawByDate.set(date, savedDraftRaw);
+    } else {
+      if (parsed.valid && State.pendingDrafts[date] === raw) delete State.pendingDrafts[date];
+      _durableDraftRawByDate.delete(date);
+      _inputBaseRawByDate.set(date, savedSessionRaw);
+    }
+    clearRecoveryDraft(date, raw);
+    clearAutosaveRetry(date);
+    if (committed?.merged) {
+      showToast(committed.conflicted
+        ? 'Modifiche concorrenti conservate in bozza'
+        : 'Modifiche concorrenti unite senza perdere dati');
+    }
+    return true;
+  } catch (error) {
+    console.error('Background autosave retry failed', error);
+    _saveState = 'error';
+    renderFileStatus();
+    return false;
+  }
+}
+
+function scheduleAutosaveRetry(date) {
+  if (!date) return;
+  clearTimeout(_retryTimers.get(date));
+  const delay = _retryDelays.get(date) || 2500;
+  const timer = setTimeout(async () => {
+    _retryTimers.delete(date);
+    if (_hydrationState !== 'ready' || _datasetBusy) {
+      scheduleAutosaveRetry(date);
+      return;
+    }
+
+    let saved = false;
+    if (_activeDate === date) {
+      const raw = document.getElementById('logInput').value;
+      const parsed = isCommittableWorkout(raw);
+      saved = await autosaveCommit();
+      if (!saved) {
+        const stashed = await stashCurrentDraft();
+        // Una bozza non valida ha raggiunto il suo stato durevole; un
+        // allenamento valido continua invece a ritentare il commit completo.
+        if (stashed && !parsed.valid) {
+          clearAutosaveRetry(date);
+          return;
+        }
+      }
+    } else {
+      saved = await retryInactiveDate(date);
+    }
+    if (saved) clearAutosaveRetry(date);
+    else if (!_retryTimers.has(date)) scheduleAutosaveRetry(date);
+  }, delay);
+  _retryTimers.set(date, timer);
+  _retryDelays.set(date, Math.min(delay * 2, 30000));
+}
+
 function schedulePreviewAndDraft() {
   clearTimeout(_previewTimer);
   clearTimeout(_draftTimer);
@@ -2051,30 +2741,175 @@ function schedulePreviewAndDraft() {
 // esercizio o un BW viene consolidato senza bottoni. Il testo che non parsa
 // (riga a metà, solo commenti) resta bozza e non tocca mai i dati salvati.
 // Lo svuotamento NON elimina: l'eliminazione è solo esplicita (bottone).
-function autosaveCommit() {
+async function autosaveCommit() {
   clearTimeout(_commitTimer);
-  if (!_activeDate) return;
+  if (!_activeDate) return false;
   const date = _activeDate;
   const raw = document.getElementById('logInput').value.trim();
+  const journaled = journalDraft(date, raw);
+  if (_datasetBusy) {
+    if (raw) State.pendingDrafts[date] = raw;
+    return false;
+  }
   const allLines = parseAllLines(raw);
   const exercises = allLines.filter(l => l.type === 'exercise');
-  const bwLine = allLines.find(l => l.type === 'bw');
-  if (!exercises.length && !bwLine) return;
+  const bwLines = allLines.filter(l => l.type === 'bw');
+  const bwLine = bwLines[0];
+  if (allLines.some(line => line.type === 'invalid') || bwLines.length > 1) return false;
+  if (!exercises.length && !bwLine) return false;
+
+  // Prima del caricamento completo non si deve MAI riscrivere sessions_v1:
+  // State potrebbe essere vuoto/obsoleto. Il journal sincrono conserva il raw
+  // e il commit verrà ritentato appena l'idratazione termina.
+  if (_hydrationState !== 'ready') {
+    State.pendingDrafts[date] = raw;
+    _saveState = raw && !journaled ? 'error' : 'dirty';
+    renderFileStatus();
+    return false;
+  }
+
   const session = getSessByDate().get(date);
-  if (session && session.raw === raw) return;
-  updateSessions([
+  if (session && session.raw === raw && _durableRawByDate.get(date) === raw) {
+    const needsDraftCleanup = State.pendingDrafts[date] !== undefined || getRecoveryJournal()[date] !== undefined;
+    try {
+      let cleanup = null;
+      if (needsDraftCleanup) {
+        const expectedDraftRaw = _durableDraftRawByDate.has(date)
+          ? _durableDraftRawByDate.get(date) : '';
+        cleanup = await queueLocalWrite(() => DB.mutateWorkout(date, undefined, null, {
+          expectedDraftRaw,
+        }));
+      }
+      const currentRaw = _activeDate === date ? document.getElementById('logInput').value.trim() : null;
+      const preservedDraft = cleanup
+        ? normalizeStoredDrafts(cleanup.drafts || {})[date]
+        : undefined;
+      if (preservedDraft !== undefined) {
+        _durableDraftRawByDate.set(date, preservedDraft);
+        _inputBaseRawByDate.set(date, preservedDraft);
+        clearRecoveryDraft(date, raw);
+        if (currentRaw === raw) {
+          State.pendingDrafts[date] = preservedDraft;
+          document.getElementById('logInput').value = preservedDraft;
+          _logInputDirty = true;
+        } else if (_activeDate !== date) {
+          State.pendingDrafts[date] = preservedDraft;
+        }
+        _saveState = 'dirty';
+        clearAutosaveRetry(date);
+        renderFileStatus();
+        try { renderLogPreview(); } catch (renderError) {
+          console.error('Draft-preserve render failed', renderError);
+        }
+        return true;
+      }
+      if (State.pendingDrafts[date]?.trim() === raw) delete State.pendingDrafts[date];
+      clearRecoveryDraft(date, raw);
+      _inputBaseRawByDate.set(date, raw);
+      _durableDraftRawByDate.delete(date);
+      if (currentRaw === raw) _logInputDirty = false;
+      _saveState = currentRaw === raw ? 'saved' : 'dirty';
+      clearAutosaveRetry(date);
+      renderFileStatus();
+      return true;
+    } catch (error) {
+      _saveState = 'error';
+      renderFileStatus();
+      scheduleAutosaveRetry(date);
+      return false;
+    }
+  }
+
+  const nextSession = { date, raw, exercises, bodyWeight: bwLine ? bwLine.weight : null, lines: allLines };
+  replaceSessionsInMemory([
     ...State.sessions.filter(s => s.date !== date),
-    { date, raw, exercises, bodyWeight: bwLine ? bwLine.weight : null, lines: allLines }
+    nextSession,
   ].sort((a, b) => b.date.localeCompare(a.date)));
-  delete State.pendingDrafts[date];
-  persistDrafts();
-  _lastSavedAt = new Date();
+  State.pendingDrafts[date] = raw;
+  _saveState = 'saving';
   renderFileStatus();
-  renderNeglected();
+  const recoveryEntry = recoveryMetadataForDate(date);
+  try {
+    const committed = await queueLocalWrite(() => DB.mutateWorkout(
+      date,
+      sessionForStorage(nextSession),
+      null,
+      { protectConcurrent: true, recoveryEntry },
+    ));
+    const committedSessions = normalizeStoredSessions(committed?.sessions || []);
+    const committedDrafts = normalizeStoredDrafts(committed?.drafts || {});
+    replaceSessionsInMemory(committedSessions);
+    _durableRawByDate.clear();
+    committedSessions.forEach(item => _durableRawByDate.set(item.date, item.raw.trim()));
+    const savedSessionRaw = committedSessions.find(item => item.date === date)?.raw || '';
+    const savedDraftRaw = committedDrafts[date];
+    const currentRaw = _activeDate === date ? document.getElementById('logInput').value.trim() : null;
+    clearRecoveryDraft(date, raw);
+    if (savedDraftRaw !== undefined) {
+      _durableDraftRawByDate.set(date, savedDraftRaw);
+      _inputBaseRawByDate.set(date, savedDraftRaw);
+      if (_activeDate !== date) {
+        State.pendingDrafts[date] = savedDraftRaw;
+      } else if (currentRaw === raw) {
+        State.pendingDrafts[date] = savedDraftRaw;
+        document.getElementById('logInput').value = savedDraftRaw;
+      } else {
+        const latestRaw = document.getElementById('logInput').value;
+        const latestEntry = getRecoveryJournal()[date];
+        const mergedDraft = mergeWithoutDataLoss(savedDraftRaw, latestRaw, latestEntry).raw;
+        State.pendingDrafts[date] = mergedDraft;
+        journalDraft(date, mergedDraft);
+      }
+      if (_activeDate === date) _logInputDirty = true;
+    } else {
+      _durableDraftRawByDate.delete(date);
+      _inputBaseRawByDate.set(date, savedSessionRaw);
+      if (State.pendingDrafts[date]?.trim() === raw) delete State.pendingDrafts[date];
+      if (currentRaw === raw) {
+        if (savedSessionRaw && savedSessionRaw.trim() !== raw) {
+          document.getElementById('logInput').value = savedSessionRaw;
+        }
+        _logInputDirty = false;
+      }
+    }
+    _lastSavedAt = new Date();
+    _saveState = savedDraftRaw === undefined && currentRaw === raw ? 'saved' : 'dirty';
+    _persistErrorShown = false;
+    _journalErrorShown = false;
+    clearAutosaveRetry(date);
+    renderFileStatus();
+    if (committed?.merged) {
+      showToast(committed.conflicted
+        ? 'Modifiche concorrenti conservate in bozza'
+        : 'Modifiche concorrenti unite senza perdere dati');
+    }
+    // Un errore puramente visivo non deve trasformare una transazione già
+    // completata in un falso errore di salvataggio.
+    try {
+      renderLogPreview();
+      renderHeroStats();
+      renderNeglected();
+    } catch (renderError) {
+      console.error('Post-save render failed', renderError);
+    }
+    if (State.fileHandle && savedDraftRaw === undefined) queueFsSave();
+    return true;
+  } catch (error) {
+    // Lo State ottimistico non è prova di durata: il journal resta presente e
+    // il confronto con _durableRawByDate consentirà un vero retry.
+    State.pendingDrafts[date] = raw;
+    journalDraft(date, raw);
+    _saveState = 'error';
+    renderFileStatus();
+    if (!_persistErrorShown) {
+      _persistErrorShown = true;
+      showToast('⚠ Allenamento non salvato — riprovo automaticamente');
+    }
+    scheduleAutosaveRetry(date);
+    return false;
+  }
 }
-function persistDrafts() {
-  return DB.set(CONFIG.DRAFT, { ...State.pendingDrafts }).catch(() => {});
-}
+
 // Allinea pendingDrafts alla textarea e persiste l'intera mappa su IDB.
 // La bozza esiste solo se non vuota e diversa dalla sessione salvata; lo
 // svuotamento cancella la bozza solo se è stato l'utente a farlo (dirty).
@@ -2084,13 +2919,69 @@ function stashCurrentDraft() {
   const date = _activeDate;
   const raw = document.getElementById('logInput').value;
   const trimmed = raw.trim();
-  const session = getSessByDate().get(date);
-  if (trimmed && (!session || session.raw !== trimmed)) {
+  journalDraft(date, raw);
+  const recoveryEntry = recoveryMetadataForDate(date);
+  const durableRaw = _durableRawByDate.get(date);
+  const knownDraftAtStart = _durableDraftRawByDate.has(date)
+    ? _durableDraftRawByDate.get(date) : '';
+  if (trimmed && durableRaw !== trimmed) {
     State.pendingDrafts[date] = raw;
-  } else if (_logInputDirty || (session && session.raw === trimmed)) {
+  } else if (_logInputDirty || durableRaw === trimmed) {
     delete State.pendingDrafts[date];
   }
-  return persistDrafts();
+  if (_datasetBusy) return Promise.resolve(false);
+  if (_hydrationState !== 'ready') return Promise.resolve(false);
+  let draftCommitted = null;
+  return queueLocalWrite(() => {
+    // Calcolato quando arriva il nostro turno nella coda: un autosave appena
+    // concluso potrebbe avere gia' reso questa bozza identica alla sessione.
+    draftCommitted = trimmed && _durableRawByDate.get(date) !== trimmed ? raw : null;
+    if (draftCommitted === null) {
+      return DB.mutateWorkout(date, undefined, null, { expectedDraftRaw: knownDraftAtStart });
+    }
+    return DB.mutateWorkout(date, undefined, draftCommitted, {
+      protectDraft: true,
+      recoveryEntry,
+    });
+  })
+    .then(committed => {
+      const committedSessions = normalizeStoredSessions(committed?.sessions || State.sessions);
+      const committedDrafts = normalizeStoredDrafts(committed?.drafts || {});
+      replaceSessionsInMemory(committedSessions);
+      _durableRawByDate.clear();
+      committedSessions.forEach(item => _durableRawByDate.set(item.date, item.raw.trim()));
+      const savedDraft = committedDrafts[date];
+      const stillShowingRaw = _activeDate === date &&
+        document.getElementById('logInput').value === raw;
+      if (savedDraft !== undefined) {
+        _durableDraftRawByDate.set(date, savedDraft);
+        _inputBaseRawByDate.set(date, savedDraft);
+        if (State.pendingDrafts[date] === raw || stillShowingRaw) {
+          State.pendingDrafts[date] = savedDraft;
+        }
+        if (stillShowingRaw && savedDraft !== raw) {
+          document.getElementById('logInput').value = savedDraft;
+          _logInputDirty = true;
+        }
+        if (committed?.draftMerged || committed?.draftPreserved) {
+          _saveState = 'dirty';
+          renderFileStatus();
+        }
+      } else {
+        if (State.pendingDrafts[date]?.trim() === trimmed) delete State.pendingDrafts[date];
+        _durableDraftRawByDate.delete(date);
+        _inputBaseRawByDate.set(date, _durableRawByDate.get(date) || '');
+      }
+      clearRecoveryDraft(date, raw);
+      if (committed?.draftMerged) showToast('Bozze concorrenti conservate insieme');
+      return true;
+    })
+    .catch(() => {
+      _saveState = 'error';
+      renderFileStatus();
+      scheduleAutosaveRetry(date);
+      return false;
+    });
 }
 
 /* ───────────────────────────────────────────────────────────────────
@@ -2121,7 +3012,11 @@ function parseWorkoutLine(line) {
     globalWeight = parseFloat(trailingW[2].replace(',', '.'));
   }
 
-  const segments = rest.split(/\s*\+\s*/).map(p => {
+  const parts = rest.split(/\s*\+\s*/);
+  // Una riga e' atomica: se anche un solo segmento e' incompleto o invalido,
+  // non salviamo silenziosamente soltanto la parte che precede l'errore.
+  if (parts.some(p => !p.trim())) return null;
+  const segments = parts.map(p => {
     p = p.trim();
     const m = p.match(/^(\d+)[xX×](\d+)(?:\s*@\s*(\d+(?:[.,]\d+)?)\s*k?g?)?$/i);
     if (m) {
@@ -2132,9 +3027,14 @@ function parseWorkoutLine(line) {
     const m3 = p.match(/^(\d+)\s*@\s*(\d+(?:[.,]\d+)?)\s*k?g?$/i);
     if (m3) return { count: 1, reps: +m3[1], weight: parseFloat(m3[2].replace(',','.')) };
     return null;
-  }).filter(Boolean);
+  });
 
-  if (!segments.length) return null;
+  if (!segments.length || segments.some(segment => !segment)) return null;
+  if (globalWeight !== null && (!Number.isFinite(globalWeight) || globalWeight <= 0)) return null;
+  if (segments.some(segment =>
+    !Number.isInteger(segment.count) || segment.count <= 0 ||
+    !Number.isInteger(segment.reps) || segment.reps <= 0 ||
+    (segment.weight !== null && (!Number.isFinite(segment.weight) || segment.weight <= 0)))) return null;
 
   const weights = segments.map(s => s.weight || 0).filter(w => w > 0);
   const peakWeight = weights.length ? Math.max(...weights) : null;
@@ -2173,7 +3073,10 @@ function parseAllLines(text) {
     const cleanLine = inlineMatch ? inlineMatch[1].trim() : line;
     const inlineComment = inlineMatch ? inlineMatch[2].trim() : null;
     const bwMatch = cleanLine.match(/^BW\s+(\d+(?:[.,]\d+)?)\s*k?g?\s*$/i);
-    if (bwMatch) return { type:'bw', weight:parseFloat(bwMatch[1].replace(',','.')) };
+    if (bwMatch) {
+      const weight = parseFloat(bwMatch[1].replace(',','.'));
+      return weight > 0 ? { type:'bw', weight } : { type:'invalid', text:line };
+    }
     const ex = parseWorkoutLine(cleanLine);
     if (ex) {
       if (inlineComment) ex.comment = inlineComment;
@@ -2195,6 +3098,25 @@ function buildRunningPRs(sessions) {
   }
   map.latest = {...running};
   return map;
+}
+
+// Una sessione puo' contenere la stessa sigla su piu' righe. Per i grafici
+// sono una sola osservazione giornaliera: picco/1RM prendono il massimo,
+// mentre il volume somma tutte le righe.
+function aggregateSessionExercise(session, abbr) {
+  const matches = (session?.exercises || []).filter(exercise => exercise.abbr === abbr);
+  if (!matches.length) return null;
+  const segments = matches.flatMap(exercise => exercise.segments || []);
+  const peaks = matches.map(exercise => exercise.peakWeight).filter(value => Number.isFinite(value) && value > 0);
+  const estimates = matches.map(exercise => exercise.estimated1RM).filter(value => Number.isFinite(value) && value > 0);
+  const volume = matches.reduce((sum, exercise) => sum + (Number.isFinite(exercise.volume) ? exercise.volume : 0), 0);
+  return {
+    abbr,
+    segments,
+    peakWeight: peaks.length ? Math.max(...peaks) : null,
+    volume: volume > 0 ? volume : null,
+    estimated1RM: estimates.length ? Math.max(...estimates) : null,
+  };
 }
 
 /* ───────────────────────────────────────────────────────────────────
@@ -2303,17 +3225,25 @@ function txtToSessions(txt) {
     if (m) newGlossary[m[1].trim()] = m[2].trim();
   });
   const newSessions = [];
+  const seenDates = new Set();
   const blocks = txt.split(/\n(?=#\s*\d{4}-\d{2}-\d{2})/);
   for (const block of blocks) {
     const lines = block.trim().split('\n');
     const dm = lines[0].match(/^#\s*(\d{4}-\d{2}-\d{2})/);
     if (!dm || !isRealISODate(dm[1])) continue;
+    const date = dm[1];
+    if (seenDates.has(date)) throw new Error('Data duplicata: ' + date);
+    seenDates.add(date);
     const raw = lines.slice(1).join('\n').trim();
     const parsedLines = parseAllLines(raw);
+    const invalid = parsedLines.find(line => line.type === 'invalid');
+    if (invalid) throw new Error('Riga non valida (' + date + '): ' + invalid.text);
     const exercises = parsedLines.filter(l=>l.type==='exercise');
-    const bwLine = parsedLines.find(l=>l.type==='bw');
+    const bwLines = parsedLines.filter(l=>l.type==='bw');
+    if (bwLines.length > 1) throw new Error('BW duplicato: ' + date);
+    const bwLine = bwLines[0];
     const bodyWeight = bwLine ? bwLine.weight : null;
-    if (exercises.length || bodyWeight) newSessions.push({ date:dm[1], raw, exercises, bodyWeight, lines:parsedLines });
+    if (exercises.length || bodyWeight) newSessions.push({ date, raw, exercises, bodyWeight, lines:parsedLines });
   }
   return { sessions: newSessions.sort((a,b)=>b.date.localeCompare(a.date)), glossary: newGlossary, muscleGroups: newMuscleGroups };
 }
@@ -2510,45 +3440,84 @@ function renderSVGChart(container, pts, color, tooltipUnit) {
    7. File operations
    ─────────────────────────────────────────────────────────────────── */
 async function importFromText(text, fileName) {
+  if (datasetMutationBlocked()) return false;
   let parsed;
   try {
     parsed = txtToSessions(text);
   } catch (e) {
     console.error('Parse error', e);
-    showToast('File non valido');
+    showToast(e?.message || 'File non valido');
     return false;
   }
   if (!parsed.sessions.length && !Object.keys(parsed.glossary).length) {
     showToast('Nessuna sessione trovata');
     return false;
   }
-  if (State.sessions.length &&
-      !confirm(`Sostituire le ${State.sessions.length} sessioni attuali con "${fileName}" (${parsed.sessions.length} sessioni)?`)) {
+  if (!(await hydrateApp()) || _hydrationState !== 'ready') {
+    showToast('Archivio non disponibile: import annullato');
     return false;
   }
+  if (datasetMutationBlocked()) return false;
+  if (hasUserData() &&
+      !confirm(`Sostituire dati, bozze e ${State.sessions.length} sessioni attuali con "${fileName}" (${parsed.sessions.length} sessioni)?`)) {
+    return false;
+  }
+  const operation = beginDatasetMutation();
+  const storedSessions = parsed.sessions.map(sessionForStorage);
+  _saveState = 'saving';
+  renderFileStatus();
+  try {
+    await queueLocalWrite(() => DB.setMany({
+      [CONFIG.SESSIONS]: storedSessions,
+      [CONFIG.GLOSSARY]: parsed.glossary,
+      [CONFIG.MUSCLE_GROUPS]: parsed.muscleGroups,
+      [CONFIG.DRAFT]: {},
+    }));
+  } catch (error) {
+    console.error('Import commit failed', error);
+    setDatasetBusy(false);
+    _saveState = 'error';
+    renderFileStatus();
+    await resumeAuxiliaryPersistence(operation);
+    showToast('Import non salvato: dati attuali intatti');
+    resumePendingWorkoutPersistence();
+    return false;
+  }
+
+  const concurrent = collectConcurrentEdits(operation);
+  State.fileHandle = null;
   State.fileName = fileName;
-  State.glossary = parsed.glossary;
-  State.muscleGroups = parsed.muscleGroups;
-  // Le bozze del vecchio dataset non hanno più senso; svuotare anche la
-  // textarea, altrimenti lo stash del refresh la ri-salverebbe come bozza
+  replaceSessionsInMemory(parsed.sessions);
+  State.glossary = { ...parsed.glossary };
+  State.muscleGroups = { ...parsed.muscleGroups };
   State.pendingDrafts = {};
-  document.getElementById('logInput').value = '';
-  _logInputDirty = false;
-  _lastSavedAt = null;
+  _durableRawByDate.clear();
+  parsed.sessions.forEach(session => _durableRawByDate.set(session.date, session.raw.trim()));
+  _durableDraftRawByDate.clear();
+  _inputBaseRawByDate.clear();
+  clearOperationJournal(operation);
+  const reconciled = reconcileConcurrentEdits(concurrent);
+  setDatasetBusy(false);
+  _lastSavedAt = new Date();
+  _saveState = Object.keys(State.pendingDrafts).length ? 'dirty' : 'saved';
+  _persistErrorShown = false;
   _ncDismissed.clear();
   _arcOpen.clear();
   stopRestTimer();
-  DB.set(CONFIG.GLOSSARY, State.glossary).catch(() => {});
-  persistMuscleGroups();
-  persistDrafts();
-  updateSessions(parsed.sessions, { skipFs: true });
-  refreshAllViews();
+  renderAfterDatasetMutation();
+  let currentSaved = true;
+  if (reconciled.hasCurrentDraft) {
+    if (!(await autosaveCommit())) currentSaved = await stashCurrentDraft();
+  }
+  const otherDraftsSaved = await persistConcurrentDrafts(reconciled.draftDates, concurrent.currentDate);
   const n = parsed.sessions.length;
-  showToast(`Importate ${n} ${n === 1 ? 'sessione' : 'sessioni'}`);
+  const draftWarning = currentSaved && otherDraftsSaved ? '' : ' · ⚠ bozza nel recupero';
+  showToast(`Importate ${n} ${n === 1 ? 'sessione' : 'sessioni'}${reconciled.merged ? ' · testo in corso unito' : ''}${draftWarning}`);
   return true;
 }
 
 function handleOpenFile() {
+  if (datasetMutationBlocked()) return;
   // File System Access API (desktop Chrome/Edge): consente "Salva" diretto sul file scelto
   if ('showOpenFilePicker' in window) {
     (async () => {
@@ -2559,7 +3528,10 @@ function handleOpenFile() {
         const file = await h.getFile();
         const text = await file.text();
         // Adotta l'handle solo a import riuscito: mai bindare l'autosave a un file non valido
-        if (await importFromText(text, file.name)) State.fileHandle = h;
+        if (await importFromText(text, file.name)) {
+          State.fileHandle = h;
+          renderFileStatus();
+        }
       } catch (e) {
         if (e.name !== 'AbortError') {
           console.error('showOpenFilePicker failed', e);
@@ -2597,6 +3569,10 @@ async function handleHiddenFileChange(e) {
 }
 
 async function handleSaveToFs({ silent = false } = {}) {
+  if (_hydrationState !== 'ready' && !(await hydrateApp())) {
+    if (!silent) showToast('Archivio non disponibile');
+    return false;
+  }
   if (!State.fileHandle) {
     if ('showSaveFilePicker' in window) {
       try {
@@ -2628,6 +3604,10 @@ async function rebindFile() {
 }
 
 async function handleDownloadFile() {
+  if (_hydrationState !== 'ready' && !(await hydrateApp())) {
+    showToast('Archivio non disponibile: export annullato');
+    return;
+  }
   const content = sessionsToTxt(State.sessions, State.glossary, State.muscleGroups);
   const fileName = State.fileName||'workout_log.txt';
   const file = new File([content], fileName, {type:'text/plain'});
@@ -2643,68 +3623,131 @@ async function handleDownloadFile() {
   showToast('Esportato ✓');
 }
 
-function handleNewFile() {
-  if (State.sessions.length && !confirm('Nuovo file? I dati non salvati andranno persi.')) return;
+async function handleNewFile() {
+  if (datasetMutationBlocked()) return;
+  if (!(await hydrateApp()) || _hydrationState !== 'ready') {
+    showToast('Archivio non disponibile: reset annullato');
+    return;
+  }
+  if (datasetMutationBlocked()) return;
+  if (hasUserData() && !confirm('Nuovo archivio? Sessioni e bozze attuali verranno eliminate.')) return;
+  const operation = beginDatasetMutation();
+  _saveState = 'saving';
+  renderFileStatus();
+  try {
+    await queueLocalWrite(() => DB.setMany({
+      [CONFIG.SESSIONS]: [],
+      [CONFIG.GLOSSARY]: {},
+      [CONFIG.MUSCLE_GROUPS]: {},
+      [CONFIG.DRAFT]: {},
+    }));
+  } catch (error) {
+    console.error('Reset failed', error);
+    setDatasetBusy(false);
+    _saveState = 'error';
+    renderFileStatus();
+    await resumeAuxiliaryPersistence(operation);
+    showToast('Reset non riuscito: dati intatti');
+    resumePendingWorkoutPersistence();
+    return;
+  }
+
+  const concurrent = collectConcurrentEdits(operation);
+  if (_inputRevision === operation.revision && concurrent.currentDate === operation.date) {
+    concurrent.currentDate = todayStr();
+  }
   State.fileHandle = null; State.fileName = null;
+  replaceSessionsInMemory([]);
   State.glossary = {};
   State.muscleGroups = {};
   State.pendingDrafts = {};
-  document.getElementById('logInput').value = '';
-  _logInputDirty = false;
-  _lastSavedAt = null;
+  _durableRawByDate.clear();
+  _durableDraftRawByDate.clear();
+  _inputBaseRawByDate.clear();
+  clearOperationJournal(operation);
+  const reconciled = reconcileConcurrentEdits(concurrent);
+  setDatasetBusy(false);
+  _lastSavedAt = new Date();
+  _saveState = Object.keys(State.pendingDrafts).length ? 'dirty' : 'saved';
   _ncDismissed.clear();
   _arcOpen.clear();
   stopRestTimer();
-  persistGlossary();
-  persistMuscleGroups();
-  persistDrafts();
-  updateSessions([]);
-  document.getElementById('logDateInput').value = todayStr();
-  refreshAllViews();
+  renderAfterDatasetMutation();
+  let currentSaved = true;
+  if (reconciled.hasCurrentDraft) {
+    if (!(await autosaveCommit())) currentSaved = await stashCurrentDraft();
+  }
+  const otherDraftsSaved = await persistConcurrentDrafts(reconciled.draftDates, concurrent.currentDate);
+  const draftWarning = currentSaved && otherDraftsSaved ? '' : ' · ⚠ bozza nel recupero';
+  showToast('Nuovo archivio creato' + (reconciled.merged ? ' · testo in corso unito' : '') + draftWarning);
 }
 
 /* ───────────────────────────────────────────────────────────────────
    8. Storage
    ─────────────────────────────────────────────────────────────────── */
-function updateSessions(newSessions, { skipFs = false } = {}) {
-  State.sessions = newSessions;
-  _prCacheVer++;
-  persistData();
-  if (!skipFs && State.fileHandle) queueFsSave();
-  renderFileStatus();
-}
-
 let _persistErrorShown = false;
-async function persistData() {
-  const toSave = State.sessions.map(({date,raw,exercises,bodyWeight})=>({date,raw,exercises,bodyWeight}));
-  try { await DB.set(CONFIG.SESSIONS, toSave); } catch(e) {
-    // mai confermare "✓ Salvato" inghiottendo per sempre i fallimenti di scrittura
-    if (!_persistErrorShown) { _persistErrorShown = true; showToast('⚠ Salvataggio locale non riuscito'); }
+async function persistGlossary() {
+  if (_datasetBusy) {
+    persistGlossaryDebounced(_glossaryRetryDelay);
+    return false;
+  }
+  const pending = { ...State.glossary };
+  if (_hydrationState !== 'ready' && !(await hydrateApp())) return false;
+  State.glossary = { ...State.glossary, ...pending };
+  try {
+    await queueLocalWrite(() => DB.set(CONFIG.GLOSSARY, { ...State.glossary }));
+    _glossaryRetryDelay = 2500;
+    if (State.fileHandle) queueFsSave();
+    return true;
+  } catch (error) {
+    _saveState = 'error';
+    renderFileStatus();
+    const delay = _glossaryRetryDelay;
+    _glossaryRetryDelay = Math.min(delay * 2, 30000);
+    persistGlossaryDebounced(delay);
+    if (!_persistErrorShown) { _persistErrorShown = true; showToast('⚠ Nomi non salvati'); }
+    return false;
   }
 }
 
-async function persistGlossary() {
-  try { await DB.set(CONFIG.GLOSSARY, State.glossary); } catch(e) {}
-  if (State.fileHandle) queueFsSave();
-}
-
 let _glossaryDebounce = null, _muscleGroupsDebounce = null;
-function persistGlossaryDebounced() {
+let _glossaryRetryDelay = 2500, _muscleGroupsRetryDelay = 2500;
+function persistGlossaryDebounced(delay = 600) {
   clearTimeout(_glossaryDebounce);
   _glossaryDebounce = setTimeout(() => {
-    DB.set(CONFIG.GLOSSARY, State.glossary).catch(() => {});
-    if (State.fileHandle) queueFsSave();
-  }, 600);
+    _glossaryDebounce = null;
+    persistGlossary();
+  }, delay);
 }
-function persistMuscleGroupsDebounced() {
+function persistMuscleGroupsDebounced(delay = 600) {
   clearTimeout(_muscleGroupsDebounce);
   _muscleGroupsDebounce = setTimeout(() => {
-    DB.set(CONFIG.MUSCLE_GROUPS, State.muscleGroups).catch(() => {});
-    if (State.fileHandle) queueFsSave();
-  }, 600);
+    _muscleGroupsDebounce = null;
+    persistMuscleGroups();
+  }, delay);
 }
 async function persistMuscleGroups() {
-  try { await DB.set(CONFIG.MUSCLE_GROUPS, State.muscleGroups); } catch(e) {}
+  if (_datasetBusy) {
+    persistMuscleGroupsDebounced(_muscleGroupsRetryDelay);
+    return false;
+  }
+  const pending = { ...State.muscleGroups };
+  if (_hydrationState !== 'ready' && !(await hydrateApp())) return false;
+  State.muscleGroups = { ...State.muscleGroups, ...pending };
+  try {
+    await queueLocalWrite(() => DB.set(CONFIG.MUSCLE_GROUPS, { ...State.muscleGroups }));
+    _muscleGroupsRetryDelay = 2500;
+    if (State.fileHandle) queueFsSave();
+    return true;
+  } catch (error) {
+    _saveState = 'error';
+    renderFileStatus();
+    const delay = _muscleGroupsRetryDelay;
+    _muscleGroupsRetryDelay = Math.min(delay * 2, 30000);
+    persistMuscleGroupsDebounced(delay);
+    if (!_persistErrorShown) { _persistErrorShown = true; showToast('⚠ Gruppi non salvati'); }
+    return false;
+  }
 }
 
 /* ───────────────────────────────────────────────────────────────────
@@ -2747,15 +3790,18 @@ const _fmtClock = new Intl.DateTimeFormat('it-IT', {hour: '2-digit', minute: '2-
 function renderFileStatus() {
   const sub = document.getElementById('headerSub');
   const at = _lastSavedAt ? ' · ' + _fmtClock.format(_lastSavedAt) : '';
-  if (State.fileName) {
-    const short = State.fileName.replace(/\.txt$/, '');
-    sub.textContent = '◆ ' + short + at;
-    sub.classList.add('bound');
-  } else {
-    sub.textContent = _lastSavedAt ? 'salvato' + at
-      : State.sessions.length ? `${State.sessions.length} voci` : 'nuova bozza';
-    sub.classList.remove('bound');
-  }
+  const short = State.fileName ? State.fileName.replace(/\.txt$/, '') : '';
+  const where = short ? '◆ ' + short : 'dispositivo';
+  if (_saveState === 'error') sub.textContent = _journalAvailable && Object.keys(getRecoveryJournal()).length
+    ? '⚠ non salvato · recupero attivo' : '⚠ modifica non protetta';
+  else if (_saveState === 'loading') sub.textContent = Object.keys(getRecoveryJournal()).length
+    ? 'bozza recuperata · carico archivio' : 'pronto · carico archivio';
+  else if (_saveState === 'saving') sub.textContent = where + ' · salvataggio…';
+  else if (_saveState === 'dirty') sub.textContent = where + ' · bozza protetta';
+  else if (short) sub.textContent = where + at;
+  else sub.textContent = _lastSavedAt ? 'salvato' + at
+    : State.sessions.length ? `${State.sessions.length} ${State.sessions.length === 1 ? 'voce' : 'voci'}` : 'nuova bozza';
+  sub.classList.toggle('bound', !!State.fileName && _saveState !== 'error');
   // Il puntino sul tasto menù segnala il collegamento vivo a un file
   const trigger = document.getElementById('btnFileMenu');
   if (trigger) trigger.classList.toggle('bound', !!State.fileHandle);
@@ -2813,16 +3859,14 @@ function handleTabSwitch(tab) {
   if (State.currentTab === 'log' && tab !== 'log') { autosaveCommit(); stashCurrentDraft(); }
   State.currentTab = tab;
   renderTopbarMark();
-  document.querySelectorAll('.tab-item').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.tab-item').forEach(b => {
+    const selected = b.dataset.tab === tab;
+    b.classList.toggle('active', selected);
+    b.setAttribute('aria-selected', String(selected));
+  });
   ['log','storico','trend'].forEach(t => {
     const el = document.getElementById('tab-'+t);
     el.classList.toggle('hidden', t !== tab);
-    if (t === tab) {
-      // Trigger re-animation
-      el.style.animation = 'none';
-      el.offsetHeight; // reflow
-      el.style.animation = '';
-    }
   });
   if (tab==='storico') { renderStorico(); if (_nomiOpen) renderGlossario(); }
   if (tab==='trend') renderTrend();
@@ -2844,6 +3888,7 @@ function initLogTab() {
 // Al ritorno in foreground si riallineano data attiva, topbar e viste.
 let _lastSeenToday = todayStr();
 function handleAppResume() {
+  if (_hydrationState === 'error') hydrateApp();
   const today = todayStr();
   if (today === _lastSeenToday) return;
   const wasToday = _lastSeenToday;
@@ -3038,10 +4083,15 @@ function handleLogDateChange() {
   stashCurrentDraft();   // e conserva come bozza ciò che non parsa
   const date = document.getElementById('logDateInput').value || todayStr();
   _activeDate = date;
-  _logInputDirty = false;
   const draft = State.pendingDrafts[date];
   const session = getSessByDate().get(date);
-  document.getElementById('logInput').value = draft !== undefined ? draft : (session ? session.raw : '');
+  const shownRaw = draft !== undefined ? draft : (session ? session.raw : '');
+  document.getElementById('logInput').value = shownRaw;
+  _logInputDirty = draft !== undefined;
+  if (_hydrationState === 'ready') {
+    _inputBaseRawByDate.set(date, _durableDraftRawByDate.has(date)
+      ? _durableDraftRawByDate.get(date) : (session?.raw || ''));
+  }
   renderHero();
   renderHeroStats();
   renderLogPreview();
@@ -3056,10 +4106,27 @@ function handleEditSession(date) {
 function handleQuickAdd() {
   const abbr = document.getElementById('qaAbbr').value.trim().toUpperCase();
   const setsEl = document.getElementById('qaSets');
-  const sets = parseInt(setsEl?.value) || 1;
-  const reps = document.getElementById('qaReps').value.trim();
-  const weight = document.getElementById('qaWeight').value.trim().replace(',', '.');
-  if (!abbr || !reps) { document.getElementById(abbr ? 'qaReps' : 'qaAbbr').focus(); return; }
+  const setsRaw = setsEl?.value?.trim() || '';
+  const sets = setsRaw ? Number(setsRaw) : 1;
+  const repsRaw = document.getElementById('qaReps').value.trim();
+  const reps = Number(repsRaw);
+  const weightRaw = document.getElementById('qaWeight').value.trim().replace(',', '.');
+  const weight = weightRaw ? Number(weightRaw) : null;
+  if (!/^[A-Z]{1,6}$/.test(abbr)) {
+    showToast('Sigla: 1–6 lettere');
+    document.getElementById('qaAbbr').focus();
+    return;
+  }
+  if (!Number.isInteger(sets) || sets < 1 || sets > 20 || !Number.isInteger(reps) || reps < 1 || reps > 99) {
+    showToast('Set e ripetizioni devono essere positivi');
+    document.getElementById('qaReps').focus();
+    return;
+  }
+  if (weight !== null && (!Number.isFinite(weight) || weight <= 0)) {
+    showToast('Il peso deve essere maggiore di zero');
+    document.getElementById('qaWeight').focus();
+    return;
+  }
 
   const ta = document.getElementById('logInput');
   // Foglio vuoto ma sessione salvata (e non svuotato dall'utente): si riparte
@@ -3082,7 +4149,7 @@ function handleQuickAdd() {
   const parsedLast = parseWorkoutLine(lastBody);
 
   const segStr = s => (s.count > 1 ? s.count + 'x' : '') + s.reps + (s.weight ? '@' + s.weight : '');
-  const newSeg = { count: sets, reps: +reps, weight: weight ? parseFloat(weight) : null };
+  const newSeg = { count: sets, reps, weight };
 
   if (parsedLast && parsedLast.abbr === abbr) {
     const segs = parsedLast.segments.map(s => ({ ...s }));
@@ -3098,7 +4165,7 @@ function handleQuickAdd() {
   }
 
   ta.value = lines.join('\n');
-  _logInputDirty = true;
+  captureCurrentDraftSync();
   schedulePreviewAndDraft();
   document.getElementById('qaReps').value = '';
   document.getElementById('qaWeight').value = '';
@@ -3169,8 +4236,10 @@ function renderLogPreview() {
     isEmpty && !!existingSession && _logInputDirty);
 
   const warnEl = document.getElementById('invalidWarnings');
-  if (invalidLines.length) {
-    warnEl.innerHTML = '<strong>righe non riconosciute</strong>' + invalidLines.map(l => `<br><code>${escapeHTML(l.text)}</code>`).join('');
+  if (invalidLines.length || bwLines.length > 1) {
+    warnEl.innerHTML = '<strong>sessione in bozza — correggi prima del salvataggio</strong>'
+      + invalidLines.map(l => `<br><code>${escapeHTML(l.text)}</code>`).join('')
+      + (bwLines.length > 1 ? '<br><code>BW può comparire una sola volta</code>' : '');
     warnEl.style.display = '';
   } else { warnEl.style.display = 'none'; }
 
@@ -3220,22 +4289,56 @@ function renderPreviewEntries(lines, targetDate, label) {
 
 // Eliminazione esplicita: appare solo dopo che l'utente ha svuotato il
 // foglio di una sessione salvata, e chiede sempre conferma.
-function handleDeleteDay() {
+async function handleDeleteDay() {
+  if (datasetMutationBlocked()) return;
   const targetDate = document.getElementById('logDateInput').value || todayStr();
   if (!getSessByDate().get(targetDate)) return;
   if (!confirm('Eliminare l\'allenamento del ' + fmtDateShort(targetDate) + '?')) return;
-  clearTimeout(_previewTimer);
-  clearTimeout(_commitTimer);
-  clearTimeout(_draftTimer);
-  updateSessions(State.sessions.filter(s => s.date !== targetDate));
-  delete State.pendingDrafts[targetDate];
-  persistDrafts();
-  document.getElementById('logInput').value = '';
-  _logInputDirty = false;
-  renderLogPreview();
-  renderHeroStats();
-  renderNeglected();
-  showToast('Allenamento eliminato');
+  if (_hydrationState !== 'ready' && !(await hydrateApp())) {
+    showToast('Archivio non disponibile: eliminazione annullata');
+    return;
+  }
+  if (datasetMutationBlocked()) return;
+  const operation = beginDatasetMutation();
+  _saveState = 'saving';
+  renderFileStatus();
+  let committed;
+  try {
+    committed = await queueLocalWrite(() => DB.mutateWorkout(targetDate, null, null));
+  } catch (error) {
+    console.error('Delete failed', error);
+    setDatasetBusy(false);
+    _saveState = 'error';
+    renderFileStatus();
+    await resumeAuxiliaryPersistence(operation);
+    showToast('Eliminazione non riuscita: sessione conservata');
+    resumePendingWorkoutPersistence();
+    return;
+  }
+  const concurrent = collectConcurrentEdits(operation);
+  const committedSessions = normalizeStoredSessions(committed.sessions);
+  const committedDrafts = normalizeStoredDrafts(committed.drafts);
+  replaceSessionsInMemory(committedSessions);
+  _durableRawByDate.clear();
+  committedSessions.forEach(session => _durableRawByDate.set(session.date, session.raw.trim()));
+  _durableDraftRawByDate.clear();
+  Object.entries(committedDrafts).forEach(([date, raw]) => _durableDraftRawByDate.set(date, raw));
+  clearOperationJournal(operation, targetDate);
+  State.pendingDrafts = { ...committedDrafts, ...recoveryDrafts() };
+  const reconciled = reconcileConcurrentEdits(concurrent);
+  setDatasetBusy(false);
+  _lastSavedAt = new Date();
+  _saveState = Object.keys(State.pendingDrafts).length ? 'dirty' : 'saved';
+  renderAfterDatasetMutation();
+  const auxiliarySaved = await resumeAuxiliaryPersistence(operation);
+  let currentSaved = true;
+  if (reconciled.hasCurrentDraft) {
+    if (!(await autosaveCommit())) currentSaved = await stashCurrentDraft();
+  }
+  const otherDraftsSaved = await persistConcurrentDrafts(reconciled.draftDates, concurrent.currentDate);
+  if (State.fileHandle) queueFsSave();
+  const draftWarning = currentSaved && otherDraftsSaved && auxiliarySaved ? '' : ' · ⚠ dati nel recupero';
+  showToast('Allenamento eliminato' + (reconciled.merged ? ' · nuovo testo conservato' : '') + draftWarning);
 }
 
 /* ───────────────────────────────────────────────────────────────────
@@ -3272,6 +4375,7 @@ function renderNameCard(exercises) {
 }
 
 function handleNameCardClick(e) {
+  if (datasetMutationBlocked()) return;
   const chip = e.target.closest('.nc-chip');
   if (chip) {
     _ncGroup = _ncGroup === chip.dataset.group ? null : chip.dataset.group;
@@ -3569,10 +4673,17 @@ function renderTrend({ chartOnly = false } = {}) {
 
   seg.style.display = '';
   const metric = State.trendMetric;
-  seg.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('on', b.dataset.metric === metric));
+  seg.querySelectorAll('.seg-btn').forEach(b => {
+    const selected = b.dataset.metric === metric;
+    b.classList.toggle('on', selected);
+    b.setAttribute('aria-selected', String(selected));
+  });
   const pts = State.sessions
     .filter(s => s.exercises.some(e => e.abbr === abbr))
-    .map(s => { const ex = s.exercises.find(e => e.abbr === abbr); return { date: s.date, value: metric === 'peak' ? (ex.peakWeight || 0) : metric === 'volume' ? (ex.volume || 0) : (ex.estimated1RM || 0) }; })
+    .map(s => {
+      const ex = aggregateSessionExercise(s, abbr);
+      return { date: s.date, value: metric === 'peak' ? (ex.peakWeight || 0) : metric === 'volume' ? (ex.volume || 0) : (ex.estimated1RM || 0) };
+    })
     .sort((a, b) => a.date.localeCompare(b.date))
     .filter(p => p.value > 0);
 
@@ -3584,7 +4695,7 @@ function renderTrend({ chartOnly = false } = {}) {
   else if (volTrendDown && metric === 'volume') { banner.textContent = '◇ Volume in calo nelle ultime 3 sessioni.'; banner.style.display = ''; }
   else banner.style.display = 'none';
 
-  const allEx = State.sessions.filter(s => s.exercises.some(e => e.abbr === abbr)).map(s => s.exercises.find(e => e.abbr === abbr));
+  const allEx = State.sessions.map(s => aggregateSessionExercise(s, abbr)).filter(Boolean);
   const maxE1RM = allEx.length ? Math.max(...allEx.map(e => e.estimated1RM || 0)) : 0;
   const totVol = allEx.reduce((a, e) => a + (e.volume || 0), 0);
 
@@ -3648,15 +4759,27 @@ function renderGlossario() {
     input.addEventListener('change', e => {
       // lowercase come all'import: 'Petto' e 'petto' diventerebbero due gruppi
       const abbr = e.target.dataset.abbr, g = e.target.value.trim().toLowerCase();
+      if (_datasetBusy) {
+        e.target.value = State.muscleGroups[abbr] || '';
+        showToast('Operazione già in corso');
+        return;
+      }
       e.target.value = g;
       if (g) State.muscleGroups[abbr] = g; else delete State.muscleGroups[abbr];
       persistMuscleGroupsDebounced();
     });
   });
+  if (_datasetBusy) setDatasetBusy(true);
 }
 
 function handleGlossaryInputUpdate(e) {
-  const abbr = e.target.dataset.abbr, name = e.target.value.trim();
+  const abbr = e.target.dataset.abbr;
+  if (_datasetBusy) {
+    e.target.value = State.glossary[abbr] || '';
+    showToast('Operazione già in corso');
+    return;
+  }
+  const name = e.target.value.trim();
   if (name) State.glossary[abbr] = name; else delete State.glossary[abbr];
   persistGlossaryDebounced();
 }
@@ -3668,13 +4791,14 @@ function updateQaHint() {
   const targetDate = document.getElementById('logDateInput').value || todayStr();
   const prev = State.sessions.find(s => s.date !== targetDate && s.exercises.some(e => e.abbr === abbr));
   if (!prev) { hintEl.style.display = 'none'; return; }
-  const ex = prev.exercises.find(e => e.abbr === abbr);
+  const ex = aggregateSessionExercise(prev, abbr);
   const segs = ex.segments.map(sg => sg.count + '×' + sg.reps + (sg.weight ? '@' + sg.weight : '')).join(' + ');
   hintEl.innerHTML = `<span class="qh-date">${fmtDateChart(prev.date)}</span> — ${segs}`;
   hintEl.style.display = '';
 }
 
 function handleAddGlossaryEntry() {
+  if (datasetMutationBlocked()) return;
   const abbrEl = document.getElementById('glNewAbbr'), nameEl = document.getElementById('glNewName');
   const abbr = abbrEl.value.trim().toUpperCase(), name = nameEl.value.trim();
   if (!abbr) { abbrEl.focus(); return; }
@@ -3841,6 +4965,9 @@ function setupKeyboardHeal() {
    19. Init
    ─────────────────────────────────────────────────────────────────── */
 function attachGlobalListeners() {
+  window.addEventListener('storage', event => {
+    if (event.key === RECOVERY_KEY || event.key?.startsWith(RECOVERY_PREFIX)) _recoveryJournal = null;
+  });
   document.getElementById('btnFileMenu').addEventListener('click', () => toggleFileMenu());
   document.getElementById('fileMenuBackdrop').addEventListener('click', () => toggleFileMenu(false));
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && _fileMenuOpen) toggleFileMenu(false); });
@@ -3861,7 +4988,10 @@ function attachGlobalListeners() {
     if (btn) handleTabSwitch(btn.dataset.tab);
   });
   document.getElementById('logDateInput').addEventListener('change', handleLogDateChange);
-  document.getElementById('logInput').addEventListener('input', () => { _logInputDirty = true; schedulePreviewAndDraft(); });
+  document.getElementById('logInput').addEventListener('input', () => {
+    captureCurrentDraftSync();
+    schedulePreviewAndDraft();
+  });
   // iOS può killare la PWA in background in qualsiasi momento: consolida
   // l'autosave e la bozza subito, prima di perdere il processo
   document.addEventListener('visibilitychange', () => {
@@ -3925,65 +5055,257 @@ function attachGlobalListeners() {
   setupKeyboardHeal();
 }
 
-async function initApp() {
-  // Listener subito: se IndexedDB è lento (o appeso, noto bug WebKit)
-  // l'app resta comunque interattiva invece di nascere morta
-  renderTopbarMark();
-  attachGlobalListeners();
-
-  // Migrazione da localStorage — try separati: un JSON corrotto non deve
-  // né bloccare l'altra chiave né lasciare un retry-loop a ogni boot
-  try {
-    const lsS = localStorage.getItem('workout_log_sessions');
-    if (lsS) {
-      try {
-        const parsed = JSON.parse(lsS);
-        if (!(await DB.get(CONFIG.SESSIONS))) await DB.set(CONFIG.SESSIONS, parsed);
-      } catch(e) {}
-      localStorage.removeItem('workout_log_sessions');
+function normalizeStoredSessions(value) {
+  if (value == null) return [];
+  if (!Array.isArray(value)) throw new Error('Archivio sessioni non valido');
+  const seen = new Set();
+  return value.map(session => {
+    if (!session || !isRealISODate(session.date) || typeof session.raw !== 'string') {
+      throw new Error('Sessione locale non valida');
     }
-    const lsG = localStorage.getItem('workout_log_glossary');
-    if (lsG) {
-      try {
-        const parsed = JSON.parse(lsG);
-        if (!(await DB.get(CONFIG.GLOSSARY))) await DB.set(CONFIG.GLOSSARY, parsed);
-      } catch(e) {}
-      localStorage.removeItem('workout_log_glossary');
-    }
-  } catch(e) {}
+    if (seen.has(session.date)) throw new Error('Data locale duplicata: ' + session.date);
+    seen.add(session.date);
+    const lines = parseAllLines(session.raw);
+    const exercises = Array.isArray(session.exercises)
+      ? session.exercises
+      : lines.filter(line => line.type === 'exercise');
+    const bw = lines.find(line => line.type === 'bw');
+    return {
+      ...session,
+      exercises,
+      bodyWeight: session.bodyWeight ?? (bw ? bw.weight : null),
+      lines,
+    };
+  }).sort((a, b) => b.date.localeCompare(a.date));
+}
 
-  const [sessions, glossary, muscleGroups, draft] = await Promise.all([
-    DB.get(CONFIG.SESSIONS).catch(() => null),
-    DB.get(CONFIG.GLOSSARY).catch(() => null),
-    DB.get(CONFIG.MUSCLE_GROUPS).catch(() => null),
-    DB.get(CONFIG.DRAFT).catch(() => null),
-  ]);
+function normalizeStoredDrafts(value) {
+  if (!value || typeof value !== 'object') return {};
+  if (typeof value.date === 'string' && typeof value.raw === 'string') {
+    return isRealISODate(value.date) && value.raw.trim() ? { [value.date]: value.raw } : {};
+  }
+  return Object.fromEntries(Object.entries(value).filter(([date, raw]) =>
+    isRealISODate(date) && typeof raw === 'string' && raw.trim()));
+}
 
-  if (sessions) State.sessions = sessions.map(sess => ({
-    ...sess,
-    exercises: sess.exercises || [],
-    bodyWeight: sess.bodyWeight ?? null,
-  }));
-  if (glossary) State.glossary = glossary;
-  if (muscleGroups) State.muscleGroups = Object.fromEntries(
-    Object.entries(muscleGroups).map(([k, v]) => [k, String(v).toLowerCase()]));
-  if (draft) {
-    if (typeof draft.date === 'string' && typeof draft.raw === 'string') {
-      State.pendingDrafts[draft.date] = draft.raw;   // formato legacy a slot singolo
-    } else {
-      for (const [d, r] of Object.entries(draft)) {
-        if (typeof r === 'string' && r.trim()) State.pendingDrafts[d] = r;
+function normalizeObject(value, label) {
+  if (value == null) return {};
+  if (typeof value !== 'object' || Array.isArray(value)) throw new Error(label + ' non valido');
+  return value;
+}
+
+async function migrateLegacyStorage() {
+  if (typeof localStorage === 'undefined') return;
+  const candidates = [];
+  const rawSessions = localStorage.getItem('workout_log_sessions');
+  const rawGlossary = localStorage.getItem('workout_log_glossary');
+  if (rawSessions != null) {
+    try {
+      const value = JSON.parse(rawSessions);
+      if (!Array.isArray(value)) throw new Error('sessioni legacy non valide');
+      candidates.push({ legacyKey: 'workout_log_sessions', key: CONFIG.SESSIONS, value });
+    } catch (error) { console.warn('Migrazione sessioni legacy ignorata', error); }
+  }
+  if (rawGlossary != null) {
+    try {
+      const value = JSON.parse(rawGlossary);
+      if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('glossario legacy non valido');
+      candidates.push({ legacyKey: 'workout_log_glossary', key: CONFIG.GLOSSARY, value });
+    } catch (error) { console.warn('Migrazione glossario legacy ignorata', error); }
+  }
+  if (!candidates.length) return;
+
+  const current = await DB.getMany(candidates.map(item => item.key));
+  const writes = {};
+  for (const item of candidates) {
+    if (current[item.key] == null) writes[item.key] = item.value;
+  }
+  if (Object.keys(writes).length) await queueLocalWrite(() => DB.setMany(writes));
+  // Si elimina la copia legacy solo dopo il completamento della transazione.
+  candidates.forEach(item => localStorage.removeItem(item.legacyKey));
+}
+
+function initializeLogUIImmediately() {
+  const dateInput = document.getElementById('logDateInput');
+  const logInput = document.getElementById('logInput');
+  const today = todayStr();
+  dateInput.max = today;
+  if (!dateInput.value) dateInput.value = today;
+  _activeDate = dateInput.value;
+
+  const recovered = recoveryDrafts();
+  State.pendingDrafts = { ...State.pendingDrafts, ...recovered };
+  if (recovered[_activeDate] !== undefined) {
+    const entry = getRecoveryJournal()[_activeDate];
+    if (entry?.baseKnown) _inputBaseRawByDate.set(_activeDate, entry.baseRaw);
+    logInput.value = recovered[_activeDate];
+    _logInputDirty = true;
+    _saveState = 'dirty';
+  } else {
+    _saveState = 'loading';
+  }
+
+  renderHero();
+  renderHeroStats();
+  renderLogPreview();
+  renderNeglected();
+  renderFileStatus();
+}
+
+function scheduleServiceWorkerRegistration() {
+  if (!('serviceWorker' in navigator)) return;
+  const register = () => navigator.serviceWorker.register('./sw.js').catch(error =>
+    console.warn('Service worker non registrato', error));
+  if ('requestIdleCallback' in window) requestIdleCallback(register, { timeout: 1500 });
+  else setTimeout(register, 0);
+}
+
+function requestDurableStorage() {
+  if (navigator.storage?.persist) {
+    setTimeout(() => navigator.storage.persist().catch(() => {}), 0);
+  }
+}
+
+function hydrateApp() {
+  if (_hydrationState === 'ready') return Promise.resolve(true);
+  if (_hydrationPromise) return _hydrationPromise;
+
+  const revisionsAtStart = new Map(_inputRevisionByDate);
+  const draftsAtStart = { ...State.pendingDrafts };
+  _hydrationState = 'loading';
+
+  const work = (async () => {
+    await migrateLegacyStorage();
+    // Una sola transazione di lettura: o arrivano tutte le chiavi, oppure non
+    // si considera l'archivio vuoto e non si abilita alcun autosave distruttivo.
+    const values = await DB.getMany([
+      CONFIG.SESSIONS,
+      CONFIG.GLOSSARY,
+      CONFIG.MUSCLE_GROUPS,
+      CONFIG.DRAFT,
+    ]);
+    const sessions = normalizeStoredSessions(values[CONFIG.SESSIONS]);
+    const glossary = normalizeObject(values[CONFIG.GLOSSARY], 'Glossario');
+    const muscleGroups = normalizeObject(values[CONFIG.MUSCLE_GROUPS], 'Gruppi muscolari');
+    const storedDrafts = normalizeStoredDrafts(values[CONFIG.DRAFT]);
+
+    const currentDate = _activeDate || document.getElementById('logDateInput').value || todayStr();
+    const currentRaw = document.getElementById('logInput').value;
+    const preserveCurrentInput = _logInputDirty ||
+      (_inputRevisionByDate.get(currentDate) || 0) !== (revisionsAtStart.get(currentDate) || 0);
+
+    replaceSessionsInMemory(sessions);
+    _durableRawByDate.clear();
+    sessions.forEach(session => _durableRawByDate.set(session.date, session.raw.trim()));
+    _durableDraftRawByDate.clear();
+    Object.entries(storedDrafts).forEach(([date, raw]) => _durableDraftRawByDate.set(date, raw));
+    State.glossary = { ...glossary };
+    State.muscleGroups = Object.fromEntries(
+      Object.entries(muscleGroups).map(([key, value]) => [key, String(value).toLowerCase()]));
+
+    const sessionByDate = new Map(sessions.map(session => [session.date, session]));
+    const liveDrafts = { ...draftsAtStart, ...State.pendingDrafts };
+    const journal = getRecoveryJournal();
+    if (preserveCurrentInput) liveDrafts[currentDate] = currentRaw;
+    const dates = new Set([
+      ...Object.keys(storedDrafts),
+      ...Object.keys(liveDrafts),
+      ...Object.keys(journal),
+    ]);
+    const pending = {};
+    let reconciledAny = false;
+    for (const date of dates) {
+      const sessionRaw = sessionByDate.get(date)?.raw || '';
+      const durableDraft = storedDrafts[date];
+      const baseRaw = durableDraft !== undefined ? durableDraft : sessionRaw;
+      const hasTransient = Object.hasOwn(liveDrafts, date) || journal[date] !== undefined;
+      const candidateRaw = Object.hasOwn(liveDrafts, date) ? liveDrafts[date]
+        : journal[date]?.raw;
+
+      _inputBaseRawByDate.set(date, baseRaw);
+      if (!hasTransient || !String(candidateRaw || '').trim()) {
+        if (durableDraft !== undefined) pending[date] = durableDraft;
+        continue;
+      }
+
+      const reconciled = mergeWithoutDataLoss(baseRaw, candidateRaw, journal[date]);
+      const equalsDurableSession = durableDraft === undefined &&
+        reconciled.raw.trim() === sessionRaw.trim();
+      const equalsDurableDraft = durableDraft !== undefined &&
+        reconciled.raw.trim() === durableDraft.trim();
+      if (!equalsDurableSession && reconciled.raw.trim()) pending[date] = reconciled.raw;
+      if (reconciled.merged) reconciledAny = true;
+
+      if (equalsDurableSession || equalsDurableDraft) {
+        if (journal[date]) clearRecoveryDraft(date, journal[date].raw);
+      } else if (reconciled.raw !== durableDraft) {
+        journalDraft(date, reconciled.raw);
       }
     }
-  }
+    State.pendingDrafts = pending;
+    _hydrationState = 'ready';
+    const currentSession = getSessByDate().get(currentDate);
+    const currentDraft = pending[currentDate];
+    document.getElementById('logInput').value = currentDraft !== undefined
+      ? currentDraft : (currentSession ? currentSession.raw : '');
+    _inputBaseRawByDate.set(currentDate, _durableDraftRawByDate.has(currentDate)
+      ? _durableDraftRawByDate.get(currentDate) : (currentSession?.raw || ''));
+    _logInputDirty = currentDraft !== undefined;
+    _saveState = State.pendingDrafts[currentDate] !== undefined || _logInputDirty ? 'dirty' : 'saved';
 
-  refreshAllViews();
-  renderFileStatus();
+    renderHero();
+    renderHeroStats();
+    renderLogPreview();
+    renderNeglected();
+    renderFileStatus();
+    if (State.currentTab === 'storico') { renderStorico(); if (_nomiOpen) renderGlossario(); }
+    if (State.currentTab === 'trend') renderTrend();
+    if (reconciledAny) showToast('Vecchio e nuovo testo conservati insieme');
 
-  if ('serviceWorker' in navigator) {
-    ('requestIdleCallback' in window ? requestIdleCallback : setTimeout)(
-      () => navigator.serviceWorker.register('./sw.js').catch(() => {}), 1);
-  }
+    const activeRaw = document.getElementById('logInput').value;
+    if (activeRaw.trim()) {
+      const parsed = parseAllLines(activeRaw);
+      if (parsed.some(line => line.type === 'exercise' || line.type === 'bw')) {
+        if (!(await autosaveCommit())) await stashCurrentDraft();
+      } else await stashCurrentDraft();
+    }
+    return true;
+  })().catch(error => {
+    console.error('Caricamento archivio locale non riuscito', error);
+    _hydrationState = 'error';
+    _saveState = 'error';
+    const date = _activeDate || document.getElementById('logDateInput')?.value;
+    const raw = document.getElementById('logInput')?.value || '';
+    const journaled = date ? journalDraft(date, raw) : false;
+    renderFileStatus();
+    const toast = document.getElementById('toast');
+    if (toast) showToast(journaled
+      ? '⚠ Archivio non disponibile — recupero attivo'
+      : '⚠ Archivio e recupero non disponibili');
+    return false;
+  });
+
+  _hydrationPromise = work.finally(() => {
+    if (_hydrationState === 'error') _hydrationPromise = null;
+  });
+  return _hydrationPromise;
+}
+
+async function initApp() {
+  // Nessun await prima dell'interfaccia: anche con IndexedDB bloccato la
+  // schermata d'input e i listener esistono nel primo frame.
+  renderTopbarMark();
+  attachGlobalListeners();
+  initializeLogUIImmediately();
+  scheduleServiceWorkerRegistration();
+  requestDurableStorage();
+  // Cede davvero un frame al browser prima di parsing/migrazione legacy.
+  await new Promise(resolve => {
+    if ('requestAnimationFrame' in window) {
+      window.requestAnimationFrame(() => setTimeout(resolve, 0));
+    } else setTimeout(resolve, 0);
+  });
+  return hydrateApp();
 }
 
 document.addEventListener('DOMContentLoaded', initApp);
