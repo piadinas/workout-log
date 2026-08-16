@@ -55,32 +55,46 @@ function deferred() {
 
 const flushTasks = () => new Promise(resolve => setImmediate(resolve));
 
-test('canonical navigation returns the cached shell immediately and refreshes it in the background', async () => {
-  const cachedShell = { source: 'cache' };
-  const refreshedClone = { source: 'network-clone' };
-  const network = deferred();
-  const puts = [];
+test('install precaches the complete first-frame shell', async () => {
+  const added = [];
   const caches = {
-    async match(request) {
-      assert.equal(request, INDEX);
-      return cachedShell;
+    async open(cacheName) {
+      assert.equal(cacheName, 'ledger-workout-v10-first-frame');
+      return {
+        async addAll(requests) { added.push(...requests); },
+      };
     },
-    async open() {
+  };
+  const listeners = loadWorker({ caches });
+  const waits = [];
+  listeners.get('install')({ waitUntil(value) { waits.push(Promise.resolve(value)); } });
+  await Promise.all(waits);
+
+  assert.deepEqual(added.map(request => request.url), [
+    INDEX,
+    new URL('app.js', SCOPE).href,
+    new URL('manifest.json', SCOPE).href,
+    new URL('icon.png', SCOPE).href,
+  ]);
+});
+
+test('canonical navigation returns the cached shell without starting network work', async () => {
+  const cachedShell = { source: 'cache' };
+  let fetchCalls = 0;
+  const caches = {
+    async open(cacheName) {
+      assert.equal(cacheName, 'ledger-workout-v10-first-frame');
       return {
         async match(request) {
           assert.equal(request, INDEX);
           return cachedShell;
         },
-        async put(request, response) { puts.push([request, response]); },
       };
     },
   };
   const listeners = loadWorker({
     caches,
-    fetchImpl(request) {
-      assert.equal(request.url, INDEX);
-      return network.promise;
-    },
+    fetchImpl: async () => { fetchCalls += 1; throw new Error('unexpected fetch'); },
   });
   const dispatched = fetchEvent({
     method: 'GET',
@@ -91,19 +105,48 @@ test('canonical navigation returns the cached shell immediately and refreshes it
 
   listeners.get('fetch')(dispatched.event);
   assert.ok(dispatched.response, 'the canonical document must be intercepted');
-  assert.equal(dispatched.waits.length, 1, 'the network refresh must extend the fetch event lifetime');
   assert.equal(await dispatched.response, cachedShell, 'the cache must win without waiting for the network');
+  assert.equal(dispatched.waits.length, 0, 'a warm launch must not keep the worker alive for a refresh');
+  assert.equal(fetchCalls, 0, 'a warm launch must not compete with app startup for the network');
+});
 
+test('canonical navigation repairs a missing cached shell from the network', async () => {
+  const cachedResponses = [];
+  const freshClone = { source: 'network-clone' };
   const freshShell = {
     ok: true,
     type: 'basic',
     redirected: false,
     url: INDEX,
-    clone() { return refreshedClone; },
+    clone() { return freshClone; },
   };
-  network.resolve(freshShell);
-  await Promise.all(dispatched.waits);
-  assert.deepEqual(puts, [[INDEX, refreshedClone]], 'the background response must replace the canonical shell');
+  const caches = {
+    async open(cacheName) {
+      assert.equal(cacheName, 'ledger-workout-v10-first-frame');
+      return {
+        async match() { return undefined; },
+        async put(request, response) { cachedResponses.push([request, response]); },
+      };
+    },
+  };
+  const listeners = loadWorker({
+    caches,
+    fetchImpl: async request => {
+      assert.equal(request.url, INDEX);
+      assert.equal(request.cache, 'no-cache');
+      return freshShell;
+    },
+  });
+  const dispatched = fetchEvent({
+    method: 'GET',
+    url: SCOPE,
+    mode: 'navigate',
+    destination: 'document',
+  });
+
+  listeners.get('fetch')(dispatched.event);
+  assert.equal(await dispatched.response, freshShell);
+  assert.deepEqual(cachedResponses, [[INDEX, freshClone]]);
 });
 
 test('non-canonical documents bypass the app-shell handler', () => {
@@ -132,7 +175,7 @@ test('non-canonical documents bypass the app-shell handler', () => {
 });
 
 test('activation removes only this app\'s obsolete caches', async () => {
-  const current = 'ledger-workout-v9-instant';
+  const current = 'ledger-workout-v10-first-frame';
   const deleted = [];
   const caches = {
     async keys() {
