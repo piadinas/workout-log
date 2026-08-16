@@ -1,4 +1,4 @@
-const CACHE = 'ledger-workout-v9-instant';
+const CACHE = 'ledger-workout-v10-first-frame';
 const LEGACY_CACHES = new Set([
   'workout-v8-daylight',
   'workout-v7-debug-fixes',
@@ -9,6 +9,7 @@ const SCOPE_URL = new URL(self.registration.scope);
 const INDEX_URL = new URL('index.html', SCOPE_URL).href;
 const PRECACHE_URLS = [
   INDEX_URL,
+  new URL('app.js', SCOPE_URL).href,
   new URL('manifest.json', SCOPE_URL).href,
   new URL('icon.png', SCOPE_URL).href,
 ];
@@ -61,14 +62,12 @@ self.addEventListener('fetch', event => {
     // legacy non possono piu' avvelenare il fallback offline.
     if (!isCanonicalDocument(url)) return;
 
-    const refresh = fetchFreshShell();
-    event.waitUntil(refresh.catch(() => undefined));
     event.respondWith((async () => {
       const shellCache = await caches.open(CACHE);
       const cached = await shellCache.match(INDEX_URL);
       if (cached) return cached;
       try {
-        return await refresh;
+        return await fetchFreshShell();
       } catch {
         return new Response('Ledger non e ancora disponibile offline.', {
           status: 503,
