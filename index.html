@@ -591,8 +591,8 @@ input, textarea, select {
 /* ─── Quick-add ─────────────────────────────────────────────────── */
 .quickadd {
   display: grid;
-  grid-template-columns: 78px 1fr 50px 1fr 48px;
-  gap: 8px;
+  grid-template-columns: 64px 1fr 24px 1fr 44px 44px;
+  gap: 6px;
   align-items: center;
   padding: 12px 4px;
   border-top: 1px solid var(--rule);
@@ -637,6 +637,16 @@ input, textarea, select {
   font-family: var(--display);
 }
 .qa-add:active { transform: scale(0.88); }
+
+/* La matita rossa segna il cedimento: "+!" aggiunge la serie e la marca */
+.qa-bang {
+  background: var(--brick);
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.qa-bang:active { background: var(--brick-deep); }
 
 .qa-hint {
   font-family: var(--mono);
@@ -992,6 +1002,48 @@ details.help code {
 }
 .entry-comment::before { content: '— '; color: var(--ink-4); }
 .entry-comment.solo { grid-column: 1 / -1; margin-top: 0; }
+
+/* ─── Marcatori set (riscaldamento · coda drop · cedimento) ─────── */
+.segpart { white-space: nowrap; }
+.segpart.dim { opacity: 0.45; }
+.set-tag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 8.5px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  padding: 2px 4px;
+  border-radius: 4px;
+  margin-left: 3px;
+  vertical-align: 2px;
+}
+.set-tag.warm { color: var(--ink-4); border: 1px solid var(--rule-2); background: transparent; }
+.set-tag.drop { color: var(--ochre); background: rgba(150, 105, 15, 0.10); }
+.set-tag.bang { color: var(--paper); background: var(--brick); letter-spacing: -0.06em; }
+
+/* Riga SFA sotto la voce: quanto "conta" la serie, muscolo per muscolo */
+.entry-sfa {
+  grid-column: 2 / -1;
+  margin-top: -4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+}
+.entry-sfa .sfa-m { font-weight: 600; }
+.entry-sfa .sfa-u { font-size: 8.5px; letter-spacing: 0.08em; color: var(--ink-4); text-transform: uppercase; }
+.entry-sfa.muted { color: var(--ink-4); font-style: italic; }
+.entry-sfa .sfa-link {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-3);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 0;
+}
 
 .bw-entry {
   display: grid;
@@ -1581,14 +1633,86 @@ details.help code {
   padding: 14px 0;
 }
 
+/* ─── SFA per muscolo (Andamento) ───────────────────────────────── */
+.sfa-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  color: var(--ink-3);
+  line-height: 1.8;
+  margin-bottom: 12px;
+}
+.sfa-conf { color: var(--ochre); }
+.sfa-conf.good { color: var(--ink-2); font-weight: 600; }
+.sfa-row {
+  display: grid;
+  grid-template-columns: 96px 1fr 50px;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 0;
+}
+.sfa-name { min-width: 0; }
+.sfa-name-t {
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sfa-sub {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  color: var(--ink-4);
+  letter-spacing: 0.03em;
+  margin-top: 1px;
+  font-variant-numeric: tabular-nums;
+}
+.sfa-warn { color: var(--ochre); font-size: 9px; }
+.sfa-track {
+  position: relative;
+  height: 12px;
+  background: var(--paper-3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.sfa-target {
+  position: absolute;
+  top: 0; bottom: 0;
+  background: rgba(34, 27, 17, 0.07);
+  border-left: 1px dashed var(--rule-2);
+  border-right: 1px dashed var(--rule-2);
+}
+.sfa-band { position: absolute; top: 0; bottom: 0; opacity: 0.30; }
+.sfa-fill { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 3px 0 0 3px; }
+.sfa-tick { position: absolute; top: -1px; bottom: -1px; width: 2px; background: var(--ink); transform: translateX(-1px); }
+.sfa-val { text-align: right; }
+.sfa-num {
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.sfa-note {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-3);
+  line-height: 1.7;
+  margin-top: 12px;
+}
+.sfa-note.warn { color: var(--ochre); }
+.sfa-note code { background: var(--paper-2); padding: 1px 5px; border-radius: 4px; }
+
 /* ─── Glossary ──────────────────────────────────────────────────── */
 .glossary-row {
   display: grid;
-  grid-template-columns: 46px 1fr 96px;
+  grid-template-columns: 46px 1fr;
   gap: 10px;
   align-items: center;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--rule);
+  padding: 14px 0 6px;
 }
 .gl-abbr {
   font-family: var(--mono);
@@ -1612,22 +1736,57 @@ details.help code {
 .gl-name:focus { background: var(--sheet); padding: 4px 8px; }
 .gl-name::placeholder { color: var(--ink-3); }
 
-.gl-group {
+/* Chip muscoli: matite colorate sul quaderno. Tocco: spento → 1 → ½ → spento */
+.gl-muscles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--rule);
+}
+.mchip {
   font-family: var(--mono);
-  font-size: 16px; /* >=16px: evita l'auto-zoom iOS al focus */
-  min-width: 0; /* rispetta la colonna 84px invece di sfondarla a 16px */
-  padding: 6px 10px;
-  color: var(--ink-2);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--rule-2);
+  background: transparent;
+  color: var(--ink-3);
+  line-height: 1.3;
+  transition: color var(--t-fast), border-color var(--t-fast), background var(--t-fast);
+}
+.mchip:active { background: var(--paper-2); }
+.mchip.full { font-weight: 700; }
+.mchip-w { font-weight: 700; opacity: 0.75; margin-left: 2px; }
+.mchip.add { color: var(--ink-3); border-style: dashed; min-width: 30px; }
+.mchip.add.open { border-style: solid; color: var(--ink); border-color: var(--ink-2); }
+.mchip.sugg { color: var(--brick); border-color: var(--brick); border-style: dashed; background: var(--brick-wash); }
+.gl-nomusc { font-family: var(--mono); font-size: 10px; color: var(--ink-4); font-style: italic; }
+.gl-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 10px;
+  margin: 10px 0 4px;
   background: var(--sheet);
   border: 1px solid var(--rule);
-  border-radius: 8px;
-  text-align: center;
-  letter-spacing: 0.03em;
-  text-transform: lowercase;
-  transition: border-color var(--t-fast);
+  border-radius: 12px;
 }
-.gl-group:focus { border-color: var(--rule-2); }
-.gl-group::placeholder { color: var(--ink-3); }
+.gl-banner {
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--ochre);
+  background: rgba(150, 105, 15, 0.08);
+  border: 1px solid var(--ochre);
+  border-radius: 10px;
+  padding: 11px 13px;
+  margin: 12px 0 4px;
+}
+.gl-banner strong { display: block; margin-bottom: 2px; text-transform: uppercase; font-size: 10px; letter-spacing: 0.06em; }
 
 .glossary-new {
   margin-top: 22px;
@@ -1856,13 +2015,14 @@ details.help code {
       <span class="qa-sym">×</span>
       <input class="qa-input qa-weight" id="qaWeight" type="number" min="0.1" step="any" placeholder="kg" aria-label="Peso in kg" inputmode="decimal">
       <button class="qa-add" id="btnQaAdd" type="button" aria-label="Aggiungi">+</button>
+      <button class="qa-add qa-bang" id="btnQaAddBang" type="button" aria-label="Aggiungi e segna a cedimento" title="serie portata a cedimento">+!</button>
       <input class="qa-input qa-sets" id="qaSets" type="number" min="1" max="20" placeholder="set" aria-label="Numero di set" inputmode="numeric" style="display:none">
     </div>
     <div id="qaHint" class="qa-hint" style="display:none"></div>
 
     <div class="section-rule"><h3>oppure scrivi</h3></div>
 
-    <textarea class="freetext" id="logInput" aria-label="Allenamento del giorno" placeholder="BP 3x10 @60&#10;SQ 4x8 @100&#10;OHP 3x10 @40&#10;DL 3x5 @120&#10;// nota libera"></textarea>
+    <textarea class="freetext" id="logInput" aria-label="Allenamento del giorno" placeholder="BP 3x10 @60&#10;SQ 4x8 @100!&#10;OHP 3x10 @40&#10;DL 3x5 @120&#10;// nota libera"></textarea>
 
     <details class="help">
       <summary>Sintassi</summary>
@@ -1871,6 +2031,9 @@ details.help code {
         <div><code>BP 10@60</code> — 1×10</div>
         <div><code>BP 2x10@60 + 1x8@55</code> — multi-segmento</div>
         <div><code>BP 1x10@60 + 1x8@50 + 1x6@40</code> — drop set</div>
+        <div><code>BP 3x10@60!</code> — ultimo set a cedimento</div>
+        <div><code>BP 3x10@60!!</code> — tutti i set a cedimento</div>
+        <div><code>BP 12@30w</code> — riscaldamento (di norma è automatico)</div>
         <div><code>BW 78.5</code> — peso corporeo</div>
         <div><code>// nota</code> — commento</div>
       </div>
@@ -1908,7 +2071,7 @@ details.help code {
         <button class="sub-back" id="btnNomiBack" type="button">‹ archivio</button>
         <span class="sub-title">Nomi</span>
       </div>
-      <div class="gl-note" style="margin-top:4px">Ogni sigla usata nel diario appare qui. Il nome esteso e il gruppo muscolare (petto, gambe, …) alimentano Andamento.</div>
+      <div class="gl-note" style="margin-top:4px">Ogni sigla usata nel diario appare qui. Il nome esteso e i muscoli assegnati (pieno = 1, mezzo = ½) alimentano gli SFA in Andamento.</div>
       <div id="glossarioContent" style="margin-top:10px"></div>
       <div class="glossary-new">
         <input class="gl-new-abbr" id="glNewAbbr" maxlength="6" placeholder="ABBR">
@@ -2168,13 +2331,16 @@ const DB = (() => {
 /* ───────────────────────────────────────────────────────────────────
    2. Stato
    ─────────────────────────────────────────────────────────────────── */
-const CONFIG = { SESSIONS: 'sessions_v1', GLOSSARY: 'glossary_v1', MUSCLE_GROUPS: 'musclegroups_v1', DRAFT: 'draft_v1' };
+// MUSCLE_GROUPS v2: mappa frazionaria per esercizio ({BP:{petto:1,tricipiti:.5}}).
+// La v1 (stringa piatta "petto") resta solo come sorgente di migrazione.
+const CONFIG = { SESSIONS: 'sessions_v1', GLOSSARY: 'glossary_v1', MUSCLE_GROUPS: 'musclegroups_v2', MUSCLE_GROUPS_V1: 'musclegroups_v1', DRAFT: 'draft_v1' };
 
 const State = {
   sessions: [],
   glossary: {},
   muscleGroups: {},
   pendingDrafts: {},
+  palette: null,            // sigla con la tavolozza muscoli aperta (vista Nomi)
   fileHandle: null,
   fileName: null,
   currentTab: 'log',
@@ -2424,7 +2590,7 @@ function setDatasetBusy(busy) {
   document.getElementById('tab-log')?.setAttribute('aria-busy', String(busy));
   document.querySelectorAll([
     '.fm-item', '#btnDeleteDay',
-    '.gl-name', '.gl-group', '#glNewAbbr', '#glNewName', '#btnAddGlossary',
+    '.gl-name', '.mchip', '#glNewAbbr', '#glNewName', '#btnAddGlossary',
     '#ncInput', '.nc-chip', '.nc-done', '.nc-skip',
   ].join(',')).forEach(control => { control.disabled = busy; });
 }
@@ -3005,11 +3171,15 @@ function parseWorkoutLine(line) {
   const abbr = abbrMatch[1].toUpperCase();
   let rest = abbrMatch[2].trim();
 
-  let globalWeight = null;
-  const trailingW = rest.match(/^(.*?)\s*@\s*(\d+(?:[.,]\d+)?)\s*k?g?\s*$/i);
+  // Marcatori: 'w' = riscaldamento forzato, '!' = ultimo set del blocco a
+  // cedimento, '!!' = tutti. Il '!' scritto dopo il peso globale (BP 3x10 @60!)
+  // appartiene all'ultimo set della riga.
+  let globalWeight = null, globalBang = null;
+  const trailingW = rest.match(/^(.*?)\s*@\s*(\d+(?:[.,]\d+)?)\s*k?g?\s*(!{1,2})?\s*$/i);
   if (trailingW && !trailingW[1].includes('@')) {
     rest = trailingW[1].trim();
     globalWeight = parseFloat(trailingW[2].replace(',', '.'));
+    globalBang = trailingW[3] || null;
   }
 
   const parts = rest.split(/\s*\+\s*/);
@@ -3018,14 +3188,16 @@ function parseWorkoutLine(line) {
   if (parts.some(p => !p.trim())) return null;
   const segments = parts.map(p => {
     p = p.trim();
-    const m = p.match(/^(\d+)[xX×](\d+)(?:\s*@\s*(\d+(?:[.,]\d+)?)\s*k?g?)?$/i);
+    const m = p.match(/^(\d+)[xX×](\d+)(?:\s*@\s*(\d+(?:[.,]\d+)?)\s*k?g?)?\s*(w)?\s*(!{1,2})?$/i);
     if (m) {
-      return { count: +m[1], reps: +m[2], weight: m[3] ? parseFloat(m[3].replace(',','.')) : globalWeight };
+      return { count: +m[1], reps: +m[2], weight: m[3] ? parseFloat(m[3].replace(',','.')) : globalWeight,
+               warm: !!m[4], bang: m[5] || null };
     }
-    const m2 = p.match(/^(\d+)$/);
-    if (m2) return { count: 1, reps: +m2[1], weight: globalWeight };
-    const m3 = p.match(/^(\d+)\s*@\s*(\d+(?:[.,]\d+)?)\s*k?g?$/i);
-    if (m3) return { count: 1, reps: +m3[1], weight: parseFloat(m3[2].replace(',','.')) };
+    const m2 = p.match(/^(\d+)\s*(w)?\s*(!{1,2})?$/i);
+    if (m2) return { count: 1, reps: +m2[1], weight: globalWeight, warm: !!m2[2], bang: m2[3] || null };
+    const m3 = p.match(/^(\d+)\s*@\s*(\d+(?:[.,]\d+)?)\s*k?g?\s*(w)?\s*(!{1,2})?$/i);
+    if (m3) return { count: 1, reps: +m3[1], weight: parseFloat(m3[2].replace(',','.')),
+                     warm: !!m3[3], bang: m3[4] || null };
     return null;
   });
 
@@ -3035,6 +3207,8 @@ function parseWorkoutLine(line) {
     !Number.isInteger(segment.count) || segment.count <= 0 ||
     !Number.isInteger(segment.reps) || segment.reps <= 0 ||
     (segment.weight !== null && (!Number.isFinite(segment.weight) || segment.weight <= 0)))) return null;
+
+  if (globalBang && !segments.some(sg => sg.bang)) segments[segments.length - 1].bang = globalBang;
 
   const weights = segments.map(s => s.weight || 0).filter(w => w > 0);
   const peakWeight = weights.length ? Math.max(...weights) : null;
@@ -3058,7 +3232,8 @@ function parseWorkoutLine(line) {
     else pattern = 'mix';
   }
 
-  return { abbr, segments, peakWeight, volume: Math.round(volume)||null, estimated1RM, isMultiWeight, pattern };
+  return { abbr, segments, peakWeight, volume: Math.round(volume)||null, estimated1RM, isMultiWeight, pattern,
+           hasBang: segments.some(sg => !!sg.bang) };
 }
 
 function parseAllLines(text) {
@@ -3120,15 +3295,331 @@ function aggregateSessionExercise(session, abbr) {
 }
 
 /* ───────────────────────────────────────────────────────────────────
+   3b. Muscoli e conteggio frazionario
+   ─────────────────────────────────────────────────────────────────── */
+const MUSCOLI = ['petto','dorsali','trapezi','delt-ant','delt-lat','delt-post','bicipiti',
+                 'tricipiti','quadricipiti','femorali','glutei','polpacci','addome'];
+// Matite colorate sul quaderno: toni scuri e terrosi, leggibili sulla carta.
+const MUSCOLO_COLORE = {
+  petto:'#a0522d', dorsali:'#3e638a', trapezi:'#2e4a66',
+  'delt-ant':'#9a6a10', 'delt-lat':'#7d621f', 'delt-post':'#5e4a1a',
+  bicipiti:'#6d4f92', tricipiti:'#4e3a72',
+  quadricipiti:'#39775a', femorali:'#2c5d46', glutei:'#1f4a37', polpacci:'#54916f',
+  addome:'#a04468'
+};
+const coloreMuscolo = m => MUSCOLO_COLORE[m] || 'var(--ink-2)';
+
+// Vocabolario di MISURA: l'assegnazione resta sui 13 muscoli, ma volume e
+// obiettivi si leggono per gruppo — i tre capi della spalla contano insieme,
+// femorali e glutei insieme (quadricipiti a parte: la barra unica "gambe"
+// nasconderebbe lo squilibrio quad/posteriore). Dentro un gruppo ogni set
+// fisico vale al massimo 1: OHP = delt-ant 1 + delt-lat ½ resta UN set di
+// spalle, non 1½. Gli obiettivi settimanali sono per gruppo, qui.
+const GRUPPI_SFA = [
+  { id:'petto',        label:'Petto',           membri:['petto'],                           obiettivo:[8,12] },
+  { id:'schiena',      label:'Schiena',         membri:['dorsali','trapezi'],               obiettivo:[10,14] },
+  { id:'spalle',       label:'Spalle',          membri:['delt-ant','delt-lat','delt-post'], obiettivo:[8,12] },
+  { id:'bicipiti',     label:'Bicipiti',        membri:['bicipiti'],                        obiettivo:[6,10] },
+  { id:'tricipiti',    label:'Tricipiti',       membri:['tricipiti'],                       obiettivo:[6,10] },
+  { id:'quadricipiti', label:'Quadricipiti',    membri:['quadricipiti'],                    obiettivo:[8,12] },
+  { id:'posteriore',   label:'Fem.+glutei',     membri:['femorali','glutei'],               obiettivo:[8,12] },
+  { id:'polpacci',     label:'Polpacci',        membri:['polpacci'],                        obiettivo:[6,10] },
+  { id:'addome',       label:'Addome',          membri:['addome'],                          obiettivo:[6,10] },
+];
+const GRUPPO_COLORE = {
+  petto: MUSCOLO_COLORE.petto, schiena: MUSCOLO_COLORE.dorsali,
+  spalle: MUSCOLO_COLORE['delt-ant'], bicipiti: MUSCOLO_COLORE.bicipiti,
+  tricipiti: MUSCOLO_COLORE.tricipiti, quadricipiti: MUSCOLO_COLORE.quadricipiti,
+  posteriore: MUSCOLO_COLORE.glutei, polpacci: MUSCOLO_COLORE.polpacci,
+  addome: MUSCOLO_COLORE.addome,
+};
+const MEMBRO_GRUPPO = {};
+GRUPPI_SFA.forEach(g => g.membri.forEach(m => { MEMBRO_GRUPPO[m] = g.id; }));
+// Muscoli fuori vocabolario (vecchi "gambe", "braccia"): gruppo singleton,
+// così lo storico legacy resta leggibile finché non viene rimappato in Nomi.
+const gruppoDiMuscolo = m => MEMBRO_GRUPPO[m] || ('x:' + m);
+function gruppoInfo(gid) {
+  const g = GRUPPI_SFA.find(x => x.id === gid);
+  if (g) return { label: g.label, obiettivo: g.obiettivo, colore: GRUPPO_COLORE[gid] };
+  return { label: gid.startsWith('x:') ? gid.slice(2) : gid, obiettivo: [8, 12], colore: 'var(--ink-2)' };
+}
+
+// Mappature suggerite: 1 = muscolo che limita la serie, 0,5 = contributo significativo.
+// L'ordine conta (stacco rumeno prima di stacco, leg curl prima di curl).
+const SUGGERIMENTI = [
+  [/lat\s*machine|pull\s*down|pulldown|trazion|\blat\b/, {dorsali:1, bicipiti:.5}],
+  [/rematore|pulley|\brow\b|pull\s*up/,                    {dorsali:1, bicipiti:.5, 'delt-post':.5, trapezi:.5}],
+  [/croci|pectoral|butterfly|peck/,                         {petto:1}],
+  [/chest\s*press|panca|bench|distension/,                  {petto:1, tricipiti:.5, 'delt-ant':.5}],
+  [/alzate\s*lateral|lateral\s*raise/,                      {'delt-lat':1}],
+  [/alzate\s*poster|rear\s*delt|reverse\s*fly/,             {'delt-post':1}],
+  [/military|shoulder\s*press|lento|overhead|\bohp\b/,      {'delt-ant':1, tricipiti:.5, 'delt-lat':.5}],
+  [/leg\s*extension|estensioni/,                            {quadricipiti:1}],
+  [/leg\s*curl|femoral|hamstring/,                          {femorali:1}],
+  [/squat|pressa|leg\s*press|affond|lunge|hack/,            {quadricipiti:1, glutei:.5}],
+  [/stacco\s*rumeno|romanian|\brdl\b|hip\s*thrust|ponte/,  {glutei:1, femorali:1}],
+  [/stacco|deadlift/,                                       {glutei:1, femorali:1, dorsali:.5, trapezi:.5, quadricipiti:.5}],
+  [/push\s*down|pushdown|french|tricip|\bdip/,              {tricipiti:1}],
+  [/curl/,                                                  {bicipiti:1}],
+  [/calf|polpacc/,                                          {polpacci:1}],
+  [/crunch|plank|addom|\babs\b/,                            {addome:1}],
+  [/scrollate|shrug/,                                       {trapezi:1}]
+];
+function suggerisciPerNome(nome) {
+  const n = String(nome || '').toLowerCase();
+  if (!n.trim()) return null;
+  for (const [re, map] of SUGGERIMENTI) if (re.test(n)) return map;
+  return null;
+}
+function suggerisci(abbr) {
+  if (!(State.glossary[abbr] || '').trim()) return null;
+  return suggerisciPerNome((State.glossary[abbr] || '') + ' ' + abbr);
+}
+
+// "petto, tricipiti .5, delt-ant .5"  →  {petto:1, tricipiti:0.5, 'delt-ant':0.5}
+function parseMuscleMap(str) {
+  const out = {};
+  // La virgola separa la lista ma può anche essere il separatore decimale
+  // ("tricipiti 0,5"): un frammento tutto numerico appartiene al precedente.
+  const parts = [];
+  String(str || '').split(',').forEach(raw => {
+    const t = raw.trim(); if (!t) return;
+    if (/^\d+$/.test(t) && parts.length) parts[parts.length - 1] += '.' + t;
+    else parts.push(t);
+  });
+  parts.forEach(part => {
+    const t = part.trim(); if (!t) return;
+    const m = t.match(/^(.+?)(?:\s+(\d*[.,]?\d+))?$/); if (!m) return;
+    const nome = m[1].trim().toLowerCase(); if (!nome) return;
+    let peso = m[2] !== undefined ? parseFloat(m[2].replace(',', '.')) : 1;
+    if (!(peso > 0)) peso = 1;
+    out[nome] = Math.min(1, peso);
+  });
+  return out;
+}
+// I chip offrono 1 e ½, ma il formato file accetta qualunque peso in (0,1]:
+// "### DL = glutei, dorsali .33" è valido e va mostrato per quello che è.
+function fmtPeso(v) {
+  if (v === 1) return '';
+  if (v === 0.5) return '½';
+  if (v === 0.25) return '¼';
+  if (v === 0.75) return '¾';
+  if (Math.abs(v - 1 / 3) < 0.021) return '⅓';
+  if (Math.abs(v - 2 / 3) < 0.021) return '⅔';
+  return String(Math.round(v * 100) / 100).replace('0.', ',');
+}
+function muscleMapLabel(map) {
+  return Object.entries(map || {}).filter(([, v]) => v > 0)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([k, v]) => v === 1 ? k : k + ' ' + fmtPeso(v)).join(', ');
+}
+function muscleMapToStr(map) {
+  return Object.entries(map || {}).filter(([, v]) => v > 0)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([k, v]) => v === 1 ? k : k + ' ' + String(v).replace(/^0/, '')).join(', ');
+}
+// migrazione v1 (una stringa per esercizio) → v2 (mappa muscolo→peso)
+function normalizeMuscleGroups(raw) {
+  const out = {};
+  for (const k in (raw || {})) {
+    const v = raw[k];
+    if (typeof v === 'string') { const map = parseMuscleMap(v); if (Object.keys(map).length) out[k] = map; }
+    else if (v && typeof v === 'object' && !Array.isArray(v)) out[k] = v;
+  }
+  return out;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   3c. Motore SFA (Set Frazionari Allenanti)
+   Stima quanto ogni serie "conta" davvero: i riscaldamenti zero, le code
+   di drop metà, il resto pesato per vicinanza al cedimento (RIR dedotto
+   dal calo di ripetizioni, ancorato ai set marcati con '!').
+   ─────────────────────────────────────────────────────────────────── */
+const SFA = (() => {
+  const SOGLIA_RAMPA = 0.85;                                     // riscaldamenti e code di drop
+  const E_TAB = [1.00, 1.00, 0.95, 0.85, 0.65, 0.45, 0.25, 0.10, 0.00];   // E per RIR 0..8
+  const D_DEF = 1.3, D_LO = 0.8, D_HI = 2.0;                     // calo di capacità per set
+  const PRIOR_NEUTRO    = { e: 0.85, lo: 0.45, hi: 1.00 };
+  const PRIOR_ABITUDINE = { e: 0.75, lo: 0.45, hi: 0.95 };
+  const SCALA_MIN = 16;   // la scala delle barre non scende sotto 16 SFA/sett
+
+  function E(rir) {
+    if (rir <= 0) return 1;
+    if (rir >= 8) return 0;
+    const i = Math.floor(rir);
+    return E_TAB[i] + (E_TAB[i + 1] - E_TAB[i]) * (rir - i);
+  }
+  function R(reps) {
+    return reps <= 2 ? 0.40 : reps <= 4 ? 0.60 : reps === 5 ? 0.85
+         : reps <= 20 ? 1.00 : reps <= 30 ? 0.90 : reps <= 40 ? 0.75 : 0.50;
+  }
+
+  // riscaldamento (0) · lavoro (1) · back-off (1) · coda di drop set (0,5)
+  function classify(segments) {
+    if (!segments || !segments.length) return [];
+    const W = Math.max(...segments.map(s => s.weight || 0));
+    const top = segments.findIndex(s => (s.weight || 0) === W);
+    return segments.map((s, i) => {
+      if (s.warm) return { ...s, kind: 'warm', D: 0 };
+      if (s.bang) return { ...s, kind: 'work', D: 1 };
+      if (i < top && (s.weight || 0) <= SOGLIA_RAMPA * W && segments.length > 1)
+        return { ...s, kind: 'warm', D: 0 };
+      if (i > top && (s.weight || 0) < W) {
+        const prev = segments[i - 1].weight || 0;
+        if (s.count === 1 && (s.weight || 0) <= SOGLIA_RAMPA * prev)
+          return { ...s, kind: 'drop', D: 0.5 };
+        return { ...s, kind: 'backoff', D: 1 };
+      }
+      return { ...s, kind: 'work', D: 1 };
+    });
+  }
+
+  // set singoli, raggruppati in blocchi a carico costante
+  function toBlocks(cls) {
+    const sets = [];
+    cls.forEach((s, si) => {
+      if (s.D === 0) return;
+      for (let j = 0; j < s.count; j++)
+        sets.push({ reps: s.reps, weight: s.weight, D: s.D, segIdx: si,
+                    failed: s.bang === '!!' ? true : (s.bang === '!' && j === s.count - 1) });
+    });
+    const out = []; let cur = null;
+    for (const st of sets) {
+      if (!cur || cur.weight !== st.weight) { cur = { weight: st.weight, sets: [] }; out.push(cur); }
+      cur.sets.push(st);
+    }
+    return out;
+  }
+
+  // RIR dedotto dal calo di ripetizioni, ancorato al set marcato a cedimento
+  function efforts(block, prior) {
+    const k = block.sets.map(s => s.failed).lastIndexOf(true);
+    if (k < 0) return block.sets.map(() => ({ e: prior.e, lo: prior.lo, hi: prior.hi, src: 'prior' }));
+    const rk = block.sets[k].reps, r1 = block.sets[0].reps;
+    let dEst, dLo, dHi;
+    if (k > 0 && r1 > rk) { const d = (r1 - rk) / k; dEst = d; dLo = d * 0.7; dHi = d * 1.3; }
+    else { dEst = D_DEF; dLo = D_LO; dHi = D_HI; }
+    return block.sets.map((s, i) => {
+      if (s.failed) return { e: 1, lo: 1, hi: 1, src: 'ced' };
+      const rir = d => Math.max(0, (rk + d * (k - i)) - s.reps);
+      // d più grande ⇒ capacità stimata più alta ⇒ RIR più alto ⇒ E più basso
+      return { e: E(rir(dEst)), lo: E(rir(dHi)), hi: E(rir(dLo)), src: 'dedotto' };
+    });
+  }
+
+  function forExercise(ex, groups, prior) {
+    prior = prior || PRIOR_NEUTRO;
+    const cls = classify(ex.segments);
+    const map = (groups || {})[ex.abbr];
+    const hasMap = !!(map && Object.keys(map).length);
+    // Coefficiente per gruppo di lettura, con tetto a 1 per set fisico:
+    // sommare i capi (delt-ant 1 + delt-lat ½) gonfierebbe il gruppo.
+    const coefGruppo = {};
+    if (hasMap) for (const m in map) {
+      const c = map[m]; if (!c) continue;
+      const gid = gruppoDiMuscolo(m);
+      coefGruppo[gid] = Math.min(1, (coefGruppo[gid] || 0) + c);
+    }
+    const res = { kinds: cls.map(s => s.kind), perMuscle: {}, perGroup: {}, nSets: 0, nAnchored: 0, mapped: hasMap };
+    for (const b of toBlocks(cls)) {
+      const eff = efforts(b, prior);
+      b.sets.forEach((st, i) => {
+        res.nSets += st.D;
+        if (eff[i].src !== 'prior') res.nAnchored += st.D;
+        if (!hasMap) return;
+        const base = R(st.reps) * st.D;
+        for (const m in map) {
+          const c = map[m]; if (!c) continue;
+          const t = res.perMuscle[m] || (res.perMuscle[m] = [0, 0, 0]);
+          t[0] += base * eff[i].lo * c;
+          t[1] += base * eff[i].e  * c;
+          t[2] += base * eff[i].hi * c;
+        }
+        for (const gid in coefGruppo) {
+          const cg = coefGruppo[gid];
+          const t = res.perGroup[gid] || (res.perGroup[gid] = [0, 0, 0]);
+          t[0] += base * eff[i].lo * cg;
+          t[1] += base * eff[i].e  * cg;
+          t[2] += base * eff[i].hi * cg;
+        }
+      });
+    }
+    return res;
+  }
+
+  // Il prior "con abitudine" vale solo dalla prima seduta marcata in poi:
+  // applicarlo allo storico non marcato inventerebbe un calo di volume mai avvenuto.
+  function priorContext(sessions) {
+    const marcate = (sessions || []).filter(s =>
+      (s.exercises || []).some(e => (e.segments || []).some(g => g.bang)));
+    if (!marcate.length) return { from: null, prior: PRIOR_NEUTRO };
+    const from = marcate.map(s => s.date).sort()[0];
+    const lim = new Date(); lim.setDate(lim.getDate() - 56);
+    const limStr = lim.getFullYear() + '-' + String(lim.getMonth() + 1).padStart(2, '0')
+                 + '-' + String(lim.getDate()).padStart(2, '0');
+    const nMarcati = marcate.filter(s => s.date >= limStr).reduce((a, s) =>
+      a + s.exercises.reduce((b, e) =>
+        b + (e.segments || []).filter(g => g.bang)
+              .reduce((c, g) => c + (g.bang === '!!' ? g.count : 1), 0), 0), 0);
+    return { from, prior: nMarcati >= 10 ? PRIOR_ABITUDINE : PRIOR_NEUTRO, nMarcati };
+  }
+
+  function forSessions(sessions, groups) {
+    const ctx = priorContext(sessions);
+    const tot = {}, sedute = {}, picco = {}, nonMappati = new Set();
+    let nSets = 0, nAnchored = 0;
+    for (const s of (sessions || [])) {
+      const prior = (ctx.from && s.date >= ctx.from) ? ctx.prior : PRIOR_NEUTRO;
+      const perSeduta = {};
+      for (const ex of (s.exercises || [])) {
+        const r = forExercise(ex, groups, prior);
+        nSets += r.nSets; nAnchored += r.nAnchored;
+        if (!r.mapped && r.nSets > 0) nonMappati.add(ex.abbr);
+        // L'aggregato di sessione ragiona per gruppi di lettura (spalle,
+        // femorali+glutei…): sono loro ad avere un obiettivo settimanale.
+        for (const gid in r.perGroup) {
+          const t = tot[gid] || (tot[gid] = [0, 0, 0]);
+          for (let i = 0; i < 3; i++) t[i] += r.perGroup[gid][i];
+          perSeduta[gid] = (perSeduta[gid] || 0) + r.perGroup[gid][1];
+        }
+      }
+      for (const m in perSeduta) {
+        sedute[m] = (sedute[m] || 0) + 1;
+        picco[m] = Math.max(picco[m] || 0, perSeduta[m]);
+      }
+    }
+    return { tot, sedute, picco, nSets,
+             confidenza: nSets ? nAnchored / nSets : 0,
+             nonMappati: [...nonMappati],
+             abitudine: ctx.prior === PRIOR_ABITUDINE, dalla: ctx.from };
+  }
+
+  return { classify, forExercise, forSessions, E, R, SCALA_MIN, SOGLIA_RAMPA };
+})();
+
+/* ───────────────────────────────────────────────────────────────────
    4. Renderer formattazione voci (ledger style)
    ─────────────────────────────────────────────────────────────────── */
-function segsToHtml(segments) {
+function setTagHtml(seg, kind) {
+  let out = '';
+  if (kind === 'warm') out += '<span class="set-tag warm" title="riscaldamento">r</span>';
+  if (kind === 'drop') out += '<span class="set-tag drop" title="coda di drop set">½</span>';
+  if (seg.bang) out += '<span class="set-tag bang" title="' +
+    (seg.bang === '!!' ? 'tutti i set a cedimento' : 'ultimo set a cedimento') + '">' + seg.bang + '</span>';
+  return out;
+}
+
+function segsToHtml(segments, kinds) {
+  const wrap = (i, body) =>
+    `<span class="segpart${kinds && kinds[i] === 'warm' ? ' dim' : ''}">${body}</span>`;
+  const tag = i => setTagHtml(segments[i], kinds && kinds[i]);
   const uniqueW = new Set(segments.map(s => s.weight));
   if (uniqueW.size === 1) {
-    const setsStr = segments.map(s => {
-      return s.count > 1
+    const setsStr = segments.map((s, i) => {
+      const core = s.count > 1
         ? `${s.count}<span class="seg-x">×</span>${s.reps}`
         : `${s.reps}`;
+      return wrap(i, core + tag(i));
     }).join(' <span class="seg-plus">+</span> ');
     const w = segments[0].weight;
     return setsStr + (w ? `<span class="seg-at"> @</span><span class="seg-w">${escapeHTML(w)}</span><span class="seg-at"> kg</span>` : '');
@@ -3136,28 +3627,60 @@ function segsToHtml(segments) {
   // ' kg' in coda solo se tutti i segmenti sono pesati: con un segmento a
   // corpo libero in coda ("1×8 kg") il suffisso si leggerebbe come un peso
   const allWeighted = segments.every(s => s.weight);
-  return segments.map(s =>
+  return segments.map((s, i) => wrap(i,
     `${s.count}<span class="seg-x">×</span>${s.reps}` +
-    (s.weight ? `<span class="seg-at">@</span><span class="seg-w">${escapeHTML(s.weight)}</span>` : '')
-  ).join(' <span class="seg-plus">+</span> ')
+    (s.weight ? `<span class="seg-at">@</span><span class="seg-w">${escapeHTML(s.weight)}</span>` : '') +
+    tag(i)
+  )).join(' <span class="seg-plus">+</span> ')
   + (allWeighted ? ' <span class="seg-at">kg</span>' : '');
 }
 
 const PATTERN_LABEL = { drop:'drop', diamond:'diamante', mix:'misto' };
+
+// Il pattern mostrato ignora i riscaldamenti: 12@25 + 12@35 + 3x8@45 è una
+// rampa di avvicinamento, non un "misto".
+function patternForWork(cls) {
+  const ws = cls.filter(s => s.D > 0).map(s => s.weight || 0);
+  if (new Set(ws).size <= 1) return null;
+  const pi = ws.indexOf(Math.max(...ws));
+  if (ws.every((w, i) => i === 0 || w <= ws[i - 1])) return 'drop';
+  if (pi > 0 && pi < ws.length - 1) return 'diamond';
+  return 'mix';
+}
+
+function fmtSfa(v) { return (Math.round(v * 10) / 10).toFixed(1).replace('.', ','); }
+
+function sfaLineHtml(ex) {
+  const r = SFA.forExercise(ex, State.muscleGroups);
+  const parts = Object.entries(r.perGroup).sort((a, b) => b[1][1] - a[1][1])
+    .map(([gid, v]) => {
+      const g = gruppoInfo(gid);
+      return `<span class="sfa-m" style="color:${g.colore}">${escapeHTML(g.label.toLowerCase())}</span> ${fmtSfa(v[1])}`;
+    });
+  if (!parts.length) {
+    return r.nSets > 0
+      ? `<span class="entry-sfa muted">nessun muscolo assegnato · <button class="sfa-link" type="button" data-action="open-nomi-link">Nomi</button></span>`
+      : '';
+  }
+  return `<span class="entry-sfa">${parts.join(' <span style="opacity:.45">·</span> ')} <span class="sfa-u">sfa</span></span>`;
+}
 
 function entryRowHtml(ex, idx, isPR, compact=false) {
   const safeAbbr = escapeHTML(ex.abbr);
   const safeName = State.glossary[ex.abbr] ? escapeHTML(State.glossary[ex.abbr]) : '';
   const show1RM = ex.estimated1RM && ex.peakWeight && ex.estimated1RM > ex.peakWeight;
   const showVol = ex.volume && ex.isMultiWeight;
-  const patternLbl = ex.pattern && PATTERN_LABEL[ex.pattern];
+  const cls = SFA.classify(ex.segments);
+  const kinds = cls.map(s => s.kind);
+  const workPattern = patternForWork(cls);
+  const patternLbl = workPattern && PATTERN_LABEL[workPattern];
   const showMeta = !compact && (show1RM || showVol || patternLbl);
 
   return `<div class="entry">
     <span class="entry-abbr">${safeAbbr}</span>
     <span class="entry-main">
       ${safeName ? `<span class="entry-name">${safeName}</span>` : ''}
-      <span class="entry-segs">${segsToHtml(ex.segments)}</span>
+      <span class="entry-segs">${segsToHtml(ex.segments, kinds)}</span>
     </span>
     <span class="entry-right">
       ${isPR && ex.peakWeight ? '<span class="pr-chip">PR</span>' : ''}
@@ -3166,11 +3689,12 @@ function entryRowHtml(ex, idx, isPR, compact=false) {
         : `<span class="entry-peak" style="opacity:0.3">—</span>`}
     </span>
     ${showMeta ? `<span class="entry-meta">
-        ${patternLbl ? `<span class="m-pattern ${ex.pattern}">${patternLbl}</span>` : ''}
+        ${patternLbl ? `<span class="m-pattern ${workPattern}">${patternLbl}</span>` : ''}
         ${showVol ? `<span class="m-vol">${escapeHTML(ex.volume)} kg·r</span>` : ''}
         ${show1RM ? `<span class="m-1rm">~${ex.estimated1RM} 1RM</span>` : ''}
       </span>` : ''}
     ${ex.comment ? `<span class="entry-comment">${escapeHTML(ex.comment)}</span>` : ''}
+    ${compact ? '' : sfaLineHtml(ex)}
   </div>`;
 }
 
@@ -3191,7 +3715,8 @@ function bwRowHtml(weight) {
    ─────────────────────────────────────────────────────────────────── */
 function sessionsToTxt(sessions, glossary, muscleGroups) {
   const glLines = Object.entries(glossary).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,v])=>'## '+k+' = '+v);
-  const mgLines = Object.entries(muscleGroups||{}).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,v])=>'### '+k+' = '+v);
+  const mgLines = Object.entries(muscleGroups||{}).sort((a,b)=>a[0].localeCompare(b[0]))
+    .map(([k,v])=>[k, muscleMapToStr(v)]).filter(([,str])=>str).map(([k,str])=>'### '+k+' = '+str);
   const headerLines = [...glLines, ...mgLines];
   const glBlock = headerLines.length ? headerLines.join('\n')+'\n\n' : '';
   // Righe '#' dentro il raw diventerebbero header al re-import (split della
@@ -3219,8 +3744,14 @@ function txtToSessions(txt) {
   const newGlossary = {};
   const newMuscleGroups = {};
   txt.split('\n').forEach(line => {
+    // Accetta sia il vecchio formato piatto ("petto") sia quello frazionario
+    // ("petto, tricipiti .5"): parseMuscleMap li normalizza entrambi.
     const mg = line.match(/^###\s*([A-Z]{1,6})\s*=\s*(.+)$/);
-    if (mg) { newMuscleGroups[mg[1].trim()] = mg[2].trim().toLowerCase(); return; }
+    if (mg) {
+      const map = parseMuscleMap(mg[2]);
+      if (Object.keys(map).length) newMuscleGroups[mg[1].trim()] = map;
+      return;
+    }
     const m = line.match(/^##\s*([A-Z]{1,6})\s*=\s*(.+)$/);
     if (m) newGlossary[m[1].trim()] = m[2].trim();
   });
@@ -3471,6 +4002,7 @@ async function importFromText(text, fileName) {
       [CONFIG.SESSIONS]: storedSessions,
       [CONFIG.GLOSSARY]: parsed.glossary,
       [CONFIG.MUSCLE_GROUPS]: parsed.muscleGroups,
+      [CONFIG.MUSCLE_GROUPS_V1]: {},
       [CONFIG.DRAFT]: {},
     }));
   } catch (error) {
@@ -3503,6 +4035,7 @@ async function importFromText(text, fileName) {
   _persistErrorShown = false;
   _ncDismissed.clear();
   _arcOpen.clear();
+  State.palette = null;
   stopRestTimer();
   renderAfterDatasetMutation();
   let currentSaved = true;
@@ -3639,6 +4172,7 @@ async function handleNewFile() {
       [CONFIG.SESSIONS]: [],
       [CONFIG.GLOSSARY]: {},
       [CONFIG.MUSCLE_GROUPS]: {},
+      [CONFIG.MUSCLE_GROUPS_V1]: {},
       [CONFIG.DRAFT]: {},
     }));
   } catch (error) {
@@ -3671,6 +4205,7 @@ async function handleNewFile() {
   _saveState = Object.keys(State.pendingDrafts).length ? 'dirty' : 'saved';
   _ncDismissed.clear();
   _arcOpen.clear();
+  State.palette = null;
   stopRestTimer();
   renderAfterDatasetMutation();
   let currentSaved = true;
@@ -4103,7 +4638,7 @@ function handleEditSession(date) {
   handleLogDateChange();   // stasha la bozza corrente e carica la data richiesta
 }
 
-function handleQuickAdd() {
+function handleQuickAdd(bang = false) {
   const abbr = document.getElementById('qaAbbr').value.trim().toUpperCase();
   const setsEl = document.getElementById('qaSets');
   const setsRaw = setsEl?.value?.trim() || '';
@@ -4148,14 +4683,19 @@ function handleQuickAdd() {
   const lastComment = cm ? cm[2] : '';
   const parsedLast = parseWorkoutLine(lastBody);
 
-  const segStr = s => (s.count > 1 ? s.count + 'x' : '') + s.reps + (s.weight ? '@' + s.weight : '');
-  const newSeg = { count: sets, reps, weight };
+  const segStr = s => (s.count > 1 ? s.count + 'x' : '') + s.reps + (s.weight ? '@' + s.weight : '')
+    + (s.warm ? 'w' : '') + (s.bang || '');
+  const newSeg = { count: sets, reps, weight, warm: false, bang: bang ? '!' : null };
 
   if (parsedLast && parsedLast.abbr === abbr) {
     const segs = parsedLast.segments.map(s => ({ ...s }));
     const tail = segs[segs.length - 1];
-    if (tail.reps === newSeg.reps && (tail.weight ?? null) === (newSeg.weight ?? null)) {
+    // Un blocco già chiuso da '!' (o marcato riscaldamento) non si fonde:
+    // la serie successiva apre un blocco nuovo.
+    if (tail.reps === newSeg.reps && (tail.weight ?? null) === (newSeg.weight ?? null) &&
+        !tail.bang && !tail.warm) {
       tail.count += newSeg.count;
+      if (bang) tail.bang = '!';   // "l'ultima del blocco è andata a cedimento"
     } else {
       segs.push(newSeg);
     }
@@ -4346,9 +4886,18 @@ async function handleDeleteDay() {
    L'app non conosce una sigla? La si battezza qui, una volta sola,
    senza cambiare schermata. Il glossario completo vive in Archivio › Nomi.
    ─────────────────────────────────────────────────────────────────── */
-const NC_GROUPS = ['petto', 'schiena', 'spalle', 'gambe', 'braccia', 'altro'];
 const _ncDismissed = new Set();
-let _ncAbbr = null, _ncGroup = null;
+let _ncAbbr = null, _ncSuggMap = null, _ncSuggOn = false;
+
+// Mentre si scrive il nome, la mappa muscoli suggerita si aggiorna dal vivo:
+// un tocco per accettarla, il fino si fa in Archivio › Nomi.
+function renderNcSugg() {
+  const wrap = document.getElementById('ncSugg');
+  if (!wrap) return;
+  wrap.innerHTML = _ncSuggMap
+    ? `<button class="nc-chip${_ncSuggOn ? ' on' : ''}" type="button" data-action="nc-sugg">muscoli: ${escapeHTML(muscleMapLabel(_ncSuggMap))}</button>`
+    : '<span class="gl-nomusc">i muscoli si assegnano in Archivio › Nomi</span>';
+}
 
 function renderNameCard(exercises) {
   const host = document.getElementById('nameCard');
@@ -4361,26 +4910,36 @@ function renderNameCard(exercises) {
   // il testo che l'utente sta digitando a ogni refresh del report)
   if (abbr === _ncAbbr && host.firstElementChild) return;
   _ncAbbr = abbr;
-  _ncGroup = State.muscleGroups[abbr] || null;
+  _ncSuggMap = Object.keys(State.muscleGroups[abbr] || {}).length ? null : suggerisciPerNome(abbr);
+  _ncSuggOn = !!_ncSuggMap;
   host.innerHTML = `<div class="name-card">
     <div class="nc-label">come si chiama <strong>${escapeHTML(abbr)}</strong>? Un nome una volta sola — poi riappare da solo.</div>
     <input class="nc-input" id="ncInput" type="text" placeholder="es. Pulldown" autocomplete="off" autocorrect="off" spellcheck="false">
-    <div class="nc-chips">${NC_GROUPS.map(g =>
-      `<button class="nc-chip${_ncGroup === g ? ' on' : ''}" type="button" data-group="${g}">${g}</button>`).join('')}</div>
+    <div class="nc-chips" id="ncSugg"></div>
     <div class="nc-actions">
       <button class="nc-skip" type="button" data-action="nc-skip">non ora</button>
       <button class="nc-done" type="button" data-action="nc-done">fatto</button>
     </div>
   </div>`;
+  renderNcSugg();
+}
+
+function handleNameCardInput(e) {
+  if (e.target.id !== 'ncInput' || !_ncAbbr) return;
+  if (Object.keys(State.muscleGroups[_ncAbbr] || {}).length) return;
+  const next = suggerisciPerNome(e.target.value + ' ' + _ncAbbr);
+  if (JSON.stringify(next) === JSON.stringify(_ncSuggMap)) return;
+  _ncSuggMap = next;
+  _ncSuggOn = !!next;
+  renderNcSugg();
 }
 
 function handleNameCardClick(e) {
   if (datasetMutationBlocked()) return;
-  const chip = e.target.closest('.nc-chip');
-  if (chip) {
-    _ncGroup = _ncGroup === chip.dataset.group ? null : chip.dataset.group;
-    chip.parentElement.querySelectorAll('.nc-chip').forEach(c =>
-      c.classList.toggle('on', c.dataset.group === _ncGroup));
+  const suggBtn = e.target.closest('[data-action="nc-sugg"]');
+  if (suggBtn) {
+    _ncSuggOn = !_ncSuggOn;
+    renderNcSugg();
     return;
   }
   const action = e.target.closest('[data-action]')?.dataset.action;
@@ -4394,14 +4953,14 @@ function handleNameCardClick(e) {
   }
   if (action === 'nc-done') {
     const name = document.getElementById('ncInput').value.trim();
-    const group = _ncGroup;
+    const map = _ncSuggOn && _ncSuggMap ? { ..._ncSuggMap } : null;
     _ncDismissed.add(abbr);
     _ncAbbr = null;
-    if (!name && !group) { renderLogPreview(); return; }
+    if (!name && !map) { renderLogPreview(); return; }
     if (name) State.glossary[abbr] = name;
-    if (group) { State.muscleGroups[abbr] = group; persistMuscleGroups(); }
+    if (map) { State.muscleGroups[abbr] = map; persistMuscleGroups(); }
     persistGlossary();   // persiste e, se c'è un file collegato, lo riscrive
-    showToast(name ? abbr + ' = ' + name : abbr + ' → ' + group);
+    showToast(name ? abbr + ' = ' + name : abbr + ' → ' + muscleMapLabel(map));
     renderLogPreview();
   }
 }
@@ -4590,7 +5149,7 @@ function trendBigHtml(pts, unit, metricLbl) {
 }
 
 function renderTrend({ chartOnly = false } = {}) {
-  if (!chartOnly) renderMuscleVolume();
+  if (!chartOnly) renderSFA();
   const allAbbrs = [...new Set(State.sessions.flatMap(s => s.exercises.map(e => e.abbr)))].sort();
   const hasBW = State.sessions.some(s => s.bodyWeight);
   if (hasBW) allAbbrs.unshift('BW');
@@ -4735,8 +5294,19 @@ function renderTrend({ chartOnly = false } = {}) {
 /* ───────────────────────────────────────────────────────────────────
    13. Glossario
    ─────────────────────────────────────────────────────────────────── */
+function chipHtml(abbr, m, peso, assegnato) {
+  const c = coloreMuscolo(m);
+  const cls = 'mchip' + (assegnato ? (peso === 1 ? ' full' : ' half') : '');
+  // '1f' = ~12% alpha in hex: lavaggio leggero del colore matita sul chip pieno
+  const style = assegnato
+    ? ` style="border-color:${c};color:${c}${peso === 1 ? `;background:${c}1f` : ''}"` : '';
+  const label = escapeHTML(m) + (assegnato && peso !== 1 ? ' <span class="mchip-w">' + escapeHTML(fmtPeso(peso)) + '</span>' : '');
+  return `<button class="${cls}" type="button" data-act="cycle" data-abbr="${escapeHTML(abbr)}" data-m="${escapeHTML(m)}"${style}>${label}</button>`;
+}
+
 function renderGlossario() {
-  const known = new Set([...Object.keys(State.glossary), ...State.sessions.flatMap(s => s.exercises.map(e => e.abbr))]);
+  const known = new Set([...Object.keys(State.glossary), ...Object.keys(State.muscleGroups),
+                         ...State.sessions.flatMap(s => s.exercises.map(e => e.abbr))]);
   const sorted = [...known].sort();
   const el = document.getElementById('glossarioContent');
   if (!sorted.length) {
@@ -4747,29 +5317,50 @@ function renderGlossario() {
     </div>`;
     return;
   }
-  el.innerHTML = sorted.map(abbr => `<div class="glossary-row">
-    <span class="gl-abbr">${escapeHTML(abbr)}</span>
-    <input class="gl-name" type="text" placeholder="nome esteso…" data-abbr="${escapeHTML(abbr)}" value="${escapeHTML(State.glossary[abbr] || '')}">
-    <input class="gl-group" type="text" placeholder="gruppo" data-abbr="${escapeHTML(abbr)}" value="${escapeHTML(State.muscleGroups[abbr] || '')}">
-  </div>`).join('');
+  const fuori = sorted.filter(a => Object.keys(State.muscleGroups[a] || {}).some(m => MUSCOLI.indexOf(m) < 0));
+  const banner = fuori.length ? `<div class="gl-banner">
+      <strong>vecchio formato gruppi</strong>
+      ${fuori.length} ${fuori.length === 1 ? 'sigla usa' : 'sigle usano'} gruppi generici
+      (${fuori.map(a => escapeHTML(Object.keys(State.muscleGroups[a]).join('/'))).filter((v, i, arr) => arr.indexOf(v) === i).slice(0, 4).join(', ')}).
+      Tocca il chip finché sparisce, poi scegli i muscoli precisi: il conteggio SFA
+      distingue per esempio bicipiti da tricipiti, che nel vecchio formato erano entrambi «braccia».
+    </div>` : '';
+  el.innerHTML = banner + sorted.map(abbr => {
+    const map = State.muscleGroups[abbr] || {};
+    const assegnati = Object.keys(map).filter(m => map[m] > 0)
+      .sort((a, b) => map[b] - map[a] || a.localeCompare(b));
+    const aperto = State.palette === abbr;
+    const restanti = MUSCOLI.filter(m => !(map[m] > 0));
+    const sugg = assegnati.length ? null : suggerisci(abbr);
+    return `<div class="glossary-row">
+      <span class="gl-abbr">${escapeHTML(abbr)}</span>
+      <input class="gl-name" type="text" placeholder="nome esteso…" data-abbr="${escapeHTML(abbr)}" value="${escapeHTML(State.glossary[abbr] || '')}">
+    </div>
+    <div class="gl-muscles">
+      ${assegnati.map(m => chipHtml(abbr, m, map[m], true)).join('')}
+      <button class="mchip add${aperto ? ' open' : ''}" type="button" data-act="palette" data-abbr="${escapeHTML(abbr)}" aria-expanded="${aperto}">${aperto ? 'chiudi' : '+'}</button>
+      ${assegnati.length ? '' : (sugg
+        ? `<button class="mchip sugg" type="button" data-act="sugg" data-abbr="${escapeHTML(abbr)}">usa ${escapeHTML(muscleMapLabel(sugg))}</button>`
+        : '<span class="gl-nomusc">non conta negli SFA</span>')}
+    </div>
+    ${aperto ? `<div class="gl-palette">${restanti.map(m => chipHtml(abbr, m, 0, false)).join('')}</div>` : ''}`;
+  }).join('');
   document.querySelectorAll('.gl-name').forEach(input => {
     input.addEventListener('change', handleGlossaryInputUpdate);
   });
-  document.querySelectorAll('.gl-group').forEach(input => {
-    input.addEventListener('change', e => {
-      // lowercase come all'import: 'Petto' e 'petto' diventerebbero due gruppi
-      const abbr = e.target.dataset.abbr, g = e.target.value.trim().toLowerCase();
-      if (_datasetBusy) {
-        e.target.value = State.muscleGroups[abbr] || '';
-        showToast('Operazione già in corso');
-        return;
-      }
-      e.target.value = g;
-      if (g) State.muscleGroups[abbr] = g; else delete State.muscleGroups[abbr];
-      persistMuscleGroupsDebounced();
-    });
-  });
   if (_datasetBusy) setDatasetBusy(true);
+}
+
+// spento → 1 (primario) → 0,5 (secondario) → spento
+function handleMuscleCycle(abbr, m) {
+  const map = State.muscleGroups[abbr] || (State.muscleGroups[abbr] = {});
+  const cur = map[m] || 0;
+  if (cur === 0) map[m] = 1;
+  else if (cur === 1) map[m] = 0.5;
+  else delete map[m];
+  if (!Object.keys(map).length) delete State.muscleGroups[abbr];
+  persistMuscleGroupsDebounced();
+  renderGlossario();
 }
 
 function handleGlossaryInputUpdate(e) {
@@ -4812,59 +5403,99 @@ function handleAddGlossaryEntry() {
 }
 
 /* ───────────────────────────────────────────────────────────────────
-   15. Muscle volume
+   15. SFA per muscolo (Andamento)
+   Barre settimanali con zona obiettivo 8–12 e banda di incertezza:
+   il segno pieno è la stima, la banda dice quanto ci si può fidare.
    ─────────────────────────────────────────────────────────────────── */
-function renderMuscleVolume() {
+function renderSFA() {
   const el = document.getElementById('muscleVolumeSection');
   if (!el) return;
-
   if (!State.sessions.length) { el.innerHTML = ''; return; }
 
-  const existingSel = document.getElementById('muscleRangeSel');
-  const range = existingSel ? existingSel.value : '3m';
+  const existing = document.getElementById('sfaRangeSel');
+  const range = existing ? existing.value : '7g';
+  const giorni = range === '7g' ? 7 : range === '30g' ? 30 : 90;
 
-  let cutoff = null;
-  if (range !== 'all') {
-    const now = new Date();
-    const months = range === '1m' ? 1 : 3;
-    const c = new Date(now.getFullYear(), now.getMonth() - months, now.getDate());
-    // Fine mese: il 31 marzo - 1 mese traboccherebbe a "3 marzo". Se il mese
-    // non e' quello atteso, il giorno e' traboccato: si clampa all'ultimo valido.
-    if (c.getMonth() !== ((now.getMonth() - months) % 12 + 12) % 12) c.setDate(0);
-    cutoff = c.getFullYear() + '-' + String(c.getMonth() + 1).padStart(2, '0') + '-' + String(c.getDate()).padStart(2, '0');
-  }
-  const sessions = cutoff ? State.sessions.filter(s => s.date >= cutoff) : State.sessions;
+  const oggi = new Date(); oggi.setHours(12, 0, 0, 0);
+  const c = new Date(oggi); c.setDate(c.getDate() - giorni + 1);
+  const cutoff = c.getFullYear() + '-' + String(c.getMonth() + 1).padStart(2, '0') + '-' + String(c.getDate()).padStart(2, '0');
+  const sessions = State.sessions.filter(s => s.date >= cutoff && s.date <= todayStr());
 
-  const grouped = {};
-  sessions.forEach(s => {
-    s.exercises.forEach(e => {
-      const g = State.muscleGroups[e.abbr];
-      if (!g) return;
-      const sets = e.segments.reduce((a, seg) => a + seg.count, 0);
-      grouped[g] = (grouped[g] || 0) + sets;
-    });
-  });
+  // Normalizzare sulla finestra nominale sottostima quando lo storico è più
+  // corto della finestra: 8 settimane di dati divise per 13 darebbero medie
+  // del 40% troppo basse. Si divide per le settimane effettivamente coperte,
+  // così un'eventuale pausa resta comunque al denominatore.
+  const prima = sessions.length ? sessions.map(s => s.date).sort()[0] : null;
+  const giorniCoperti = prima
+    ? Math.min(giorni, Math.round((oggi - new Date(prima + 'T12:00:00')) / 86400000) + 1)
+    : giorni;
+  const settimane = Math.max(1, giorniCoperti / 7);
 
-  const rangeSelect = `<select class="muscle-range" id="muscleRangeSel">
-    <option value="1m"${range === '1m' ? ' selected' : ''}>1 mese</option>
-    <option value="3m"${range === '3m' ? ' selected' : ''}>3 mesi</option>
-    <option value="all"${range === 'all' ? ' selected' : ''}>tutto</option>
+  const r = SFA.forSessions(sessions, State.muscleGroups);
+  const entries = Object.entries(r.tot)
+    .map(([gid, v]) => ({ gid, info: gruppoInfo(gid), v: v.map(x => x / settimane),
+                          sed: (r.sedute[gid] || 0) / settimane, picco: r.picco[gid] || 0 }))
+    .sort((a, b) => b.v[1] - a.v[1]);
+
+  const rangeSel = `<select class="muscle-range" id="sfaRangeSel">
+    <option value="7g"${range === '7g' ? ' selected' : ''}>7 giorni</option>
+    <option value="30g"${range === '30g' ? ' selected' : ''}>30 giorni · media</option>
+    <option value="90g"${range === '90g' ? ' selected' : ''}>3 mesi · media</option>
   </select>`;
   const header = `<div class="muscle-section"><div class="muscle-head">
-    <h4>Set per gruppo</h4>${rangeSelect}</div>`;
+    <h4>SFA per muscolo</h4>${rangeSel}</div>`;
 
-  const entries = Object.entries(grouped).sort((a, b) => b[1] - a[1]);
   if (!entries.length) {
-    el.innerHTML = header + `<div class="muscle-hint">Nessun dato nel periodo. Assegna i gruppi muscolari in <strong style="color:var(--ink-2)">Archivio › Nomi</strong>, o al volo quando registri una sigla nuova.</div></div>`;
+    el.innerHTML = header + `<div class="muscle-hint">Nessun dato nel periodo. Assegna i muscoli agli esercizi in <strong style="color:var(--ink-2)">Archivio › Nomi</strong>: senza mappatura gli esercizi non contano negli SFA.</div></div>`;
     return;
   }
 
-  const maxSets = entries[0][1];
-  el.innerHTML = header + entries.map(([g, v]) => `<div class="muscle-row">
-    <div class="muscle-name">${escapeHTML(g.charAt(0).toUpperCase() + g.slice(1))}</div>
-    <div class="muscle-bar"><div class="muscle-fill" style="width:${Math.round((v / maxSets) * 100)}%"></div></div>
-    <div class="muscle-val">${v} set</div>
-  </div>`).join('') + '</div>';
+  // La scala è comune a tutte le barre; l'obiettivo invece è per gruppo, e
+  // ogni riga disegna la SUA zona tratteggiata (spalle 8–12, schiena 10–14…).
+  const max = Math.max(SFA.SCALA_MIN,
+    ...entries.map(e => e.info.obiettivo[1] + 2),
+    ...entries.map(e => e.v[2]));
+  const pct = v => Math.max(0, Math.min(100, v / max * 100));
+  const conf = Math.round(r.confidenza * 100);
+
+  const meta = [];
+  meta.push('tratteggio = obiettivo/sett');
+  if (settimane > 1) meta.push(`media su ${(Math.round(settimane * 10) / 10).toFixed(1).replace('.', ',')} sett`);
+  meta.push(`<span class="sfa-conf${conf >= 50 ? ' good' : ''}">confidenza ${conf}%</span>`);
+  if (r.abitudine) meta.push('prior calibrato');
+
+  const rows = entries.map(({ info, v, sed, picco }) => {
+    const col = info.colore;
+    const [t1, t2] = info.obiettivo;
+    const conc = picco > 10;
+    const sedTxt = settimane > 1
+      ? (Math.round(sed * 10) / 10).toFixed(1).replace('.', ',') + ' sed/sett'
+      : Math.round(sed) + (Math.round(sed) === 1 ? ' seduta' : ' sedute');
+    const bandaW = Math.max(1.5, pct(v[2]) - pct(v[0]));
+    return `<div class="sfa-row">
+      <div class="sfa-name">
+        <div class="sfa-name-t">${escapeHTML(info.label)}${conc ? ' <span class="sfa-warn" title="oltre 10 SFA in una sola seduta">▲</span>' : ''}</div>
+        <div class="sfa-sub">${sedTxt} · ${t1}–${t2}</div>
+      </div>
+      <div class="sfa-track">
+        <div class="sfa-target" style="left:${pct(t1)}%;width:${pct(t2) - pct(t1)}%"></div>
+        <div class="sfa-band" style="left:${pct(v[0])}%;width:${bandaW}%;background:${col}"></div>
+        <div class="sfa-fill" style="width:${pct(v[0])}%;background:${col}"></div>
+        <div class="sfa-tick" style="left:${pct(v[1])}%"></div>
+      </div>
+      <div class="sfa-val">
+        <div class="sfa-num">${fmtSfa(v[1])}</div>
+        <div class="sfa-sub">${fmtSfa(v[0])}–${fmtSfa(v[2])}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const avvisi = [];
+  if (r.nonMappati.length) avvisi.push(`<div class="sfa-note warn">Senza muscoli assegnati: <strong>${r.nonMappati.map(escapeHTML).join(', ')}</strong> — non contano. Assegnali in Archivio › Nomi.</div>`);
+  if (conf < 100) avvisi.push(`<div class="sfa-note">La banda è l'incertezza sulla vicinanza al cedimento. Marca l'ultimo set con <code>!</code> (o usa <code>+!</code>) e si restringe.</div>`);
+
+  el.innerHTML = header + `<div class="sfa-meta">${meta.join(' <span style="opacity:.45">·</span> ')}</div>`
+               + rows + avvisi.join('') + '</div>';
 }
 
 /* ───────────────────────────────────────────────────────────────────
@@ -5000,14 +5631,20 @@ function attachGlobalListeners() {
   });
   window.addEventListener('pagehide', () => { autosaveCommit(); stashCurrentDraft(); });
   document.getElementById('btnDeleteDay').addEventListener('click', handleDeleteDay);
-  document.getElementById('btnQaAdd').addEventListener('click', handleQuickAdd);
+  // Arrow esplicite: passare handleQuickAdd diretto farebbe da MouseEvent un "bang" veritiero
+  document.getElementById('btnQaAdd').addEventListener('click', () => handleQuickAdd(false));
+  document.getElementById('btnQaAddBang').addEventListener('click', () => handleQuickAdd(true));
   document.getElementById('qaAbbr').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase(); updateQaHint(); });
-  document.getElementById('qaWeight').addEventListener('keydown', e => { if (e.key === 'Enter') handleQuickAdd(); });
-  document.getElementById('qaReps').addEventListener('keydown', e => { if (e.key === 'Enter') handleQuickAdd(); });
+  document.getElementById('qaWeight').addEventListener('keydown', e => { if (e.key === 'Enter') handleQuickAdd(false); });
+  document.getElementById('qaReps').addEventListener('keydown', e => { if (e.key === 'Enter') handleQuickAdd(false); });
   document.getElementById('restTimer').addEventListener('click', e => {
     if (e.target.closest('[data-action="rest-skip"]')) stopRestTimer();
   });
   document.getElementById('nameCard').addEventListener('click', handleNameCardClick);
+  document.getElementById('nameCard').addEventListener('input', handleNameCardInput);
+  document.getElementById('preview').addEventListener('click', e => {
+    if (e.target.closest('[data-action="open-nomi-link"]')) { handleTabSwitch('storico'); toggleNomi(true); }
+  });
   document.getElementById('nameCard').addEventListener('keydown', e => {
     if (e.key === 'Enter' && e.target.id === 'ncInput') {
       e.preventDefault();
@@ -5041,7 +5678,27 @@ function attachGlobalListeners() {
     renderTrend({ chartOnly: true });
   });
   document.getElementById('muscleVolumeSection').addEventListener('change', e => {
-    if (e.target.id === 'muscleRangeSel') renderMuscleVolume();
+    if (e.target.id === 'sfaRangeSel') renderSFA();
+  });
+  document.getElementById('glossarioContent').addEventListener('click', e => {
+    const b = e.target.closest('button[data-act]');
+    if (!b) return;
+    if (b.dataset.act === 'palette') {
+      // Aprire/chiudere la tavolozza è puro stato UI: nessun dato da proteggere
+      State.palette = State.palette === b.dataset.abbr ? null : b.dataset.abbr;
+      renderGlossario();
+      return;
+    }
+    if (datasetMutationBlocked()) return;
+    if (b.dataset.act === 'cycle') handleMuscleCycle(b.dataset.abbr, b.dataset.m);
+    else if (b.dataset.act === 'sugg') {
+      const m = suggerisci(b.dataset.abbr);
+      if (m) {
+        State.muscleGroups[b.dataset.abbr] = { ...m };
+        persistMuscleGroupsDebounced();
+        renderGlossario();
+      }
+    }
   });
   document.getElementById('btnAddGlossary').addEventListener('click', handleAddGlossaryEntry);
   document.getElementById('glNewAbbr').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase(); });
@@ -5182,11 +5839,21 @@ function hydrateApp() {
       CONFIG.SESSIONS,
       CONFIG.GLOSSARY,
       CONFIG.MUSCLE_GROUPS,
+      CONFIG.MUSCLE_GROUPS_V1,
       CONFIG.DRAFT,
     ]);
     const sessions = normalizeStoredSessions(values[CONFIG.SESSIONS]);
     const glossary = normalizeObject(values[CONFIG.GLOSSARY], 'Glossario');
-    const muscleGroups = normalizeObject(values[CONFIG.MUSCLE_GROUPS], 'Gruppi muscolari');
+    // Migrazione gruppi v1 → v2: la stringa piatta ("petto") diventa mappa
+    // ({petto:1}) solo se la v2 non esiste ancora. Una v2 vuota ({}) è uno
+    // stato legittimo (es. dopo "Nuovo quaderno") e NON riapre la v1.
+    let muscleGroupsRaw = values[CONFIG.MUSCLE_GROUPS];
+    let migrateV1 = false;
+    if (muscleGroupsRaw == null && values[CONFIG.MUSCLE_GROUPS_V1] != null) {
+      muscleGroupsRaw = normalizeObject(values[CONFIG.MUSCLE_GROUPS_V1], 'Gruppi muscolari');
+      migrateV1 = true;
+    }
+    const muscleGroups = normalizeMuscleGroups(normalizeObject(muscleGroupsRaw, 'Gruppi muscolari'));
     const storedDrafts = normalizeStoredDrafts(values[CONFIG.DRAFT]);
 
     const currentDate = _activeDate || document.getElementById('logDateInput').value || todayStr();
@@ -5200,8 +5867,13 @@ function hydrateApp() {
     _durableDraftRawByDate.clear();
     Object.entries(storedDrafts).forEach(([date, raw]) => _durableDraftRawByDate.set(date, raw));
     State.glossary = { ...glossary };
-    State.muscleGroups = Object.fromEntries(
-      Object.entries(muscleGroups).map(([key, value]) => [key, String(value).toLowerCase()]));
+    State.muscleGroups = { ...muscleGroups };
+    if (migrateV1) {
+      // La v1 resta al suo posto come rete di sicurezza; la v2 diventa la
+      // verità da qui in poi. Errore non bloccante: si ritenterà al prossimo avvio.
+      queueLocalWrite(() => DB.set(CONFIG.MUSCLE_GROUPS, { ...muscleGroups }))
+        .catch(error => console.warn('Migrazione gruppi muscolari rimandata', error));
+    }
 
     const sessionByDate = new Map(sessions.map(session => [session.date, session]));
     const liveDrafts = { ...draftsAtStart, ...State.pendingDrafts };
@@ -5300,10 +5972,13 @@ async function initApp() {
   scheduleServiceWorkerRegistration();
   requestDurableStorage();
   // Cede davvero un frame al browser prima di parsing/migrazione legacy.
+  // In pagina nascosta rAF è sospeso (PWA rilanciata in background): senza
+  // fallback l'idratazione resterebbe appesa finché la pagina non è visibile.
   await new Promise(resolve => {
-    if ('requestAnimationFrame' in window) {
-      window.requestAnimationFrame(() => setTimeout(resolve, 0));
-    } else setTimeout(resolve, 0);
+    let done = false;
+    const finish = () => { if (!done) { done = true; setTimeout(resolve, 0); } };
+    if ('requestAnimationFrame' in window) window.requestAnimationFrame(finish);
+    setTimeout(finish, 250);
   });
   return hydrateApp();
 }

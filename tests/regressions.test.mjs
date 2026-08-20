@@ -209,7 +209,7 @@ test('parallel reads share one in-flight IndexedDB open', async () => {
   await vm.runInContext(`Promise.all([
     DB.get('sessions_v1'),
     DB.get('glossary_v1'),
-    DB.get('musclegroups_v1'),
+    DB.get('musclegroups_v2'),
     DB.get('draft_v1')
   ])`, context);
   assert.equal(indexedDB.openCount, 1, 'startup must not open the same database four times');
@@ -774,7 +774,7 @@ async function runSameDateHydrationConflict({ storedSession = null, storedDraft 
   context.__resolveHydration({
     sessions_v1: sessions,
     glossary_v1: {},
-    musclegroups_v1: {},
+    musclegroups_v2: {},
     draft_v1: drafts,
   });
   await init;
