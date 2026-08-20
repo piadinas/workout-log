@@ -64,7 +64,7 @@ assert.equal(marked.hasBang, true);
 assert.equal(context.parseWorkoutLine('BP 3x10 @60!').segments[0].bang, '!');
 assert.equal(context.parseWorkoutLine('BP 3x10@60!!!'), null, 'tre bang non sono sintassi valida');
 
-const kinds = SFA.classify(marked.segments).map(s => s.kind);
+const kinds = plain(SFA.classify(marked.segments)).map(s => s.kind);
 assert.deepEqual(kinds, ['warm', 'work', 'work']);
 const sfa = SFA.forExercise(marked, { BP: { petto: 1, tricipiti: 0.5 } });
 assert.equal(sfa.nSets, 3, 'il riscaldamento non conta negli SFA');
