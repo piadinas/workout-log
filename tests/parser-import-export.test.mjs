@@ -2,9 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 
-const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-const script = html.match(/<script>([\s\S]*)<\/script>/)?.[1];
-assert.ok(script, 'index.html should contain an inline script');
+const script = fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8');
+assert.ok(script, 'app.js should contain the application code');
 
 const context = {
   console,
@@ -15,7 +14,7 @@ const context = {
   navigator: {},
 };
 vm.createContext(context);
-vm.runInContext(script, context, { filename: 'index.html' });
+vm.runInContext(script, context, { filename: 'app.js' });
 
 const plain = value => JSON.parse(JSON.stringify(value));
 

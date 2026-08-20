@@ -1,14 +1,14 @@
-// Test JSC (osascript -l JavaScript) per index.html — parser marcatori, SFA, mappe muscolari
+// Test JSC (osascript -l JavaScript) per app.js — parser marcatori, SFA, mappe muscolari
+// Unico harness eseguibile su questa macchina (niente node): la suite completa
+// node:test gira in CI (GitHub Actions).
 ObjC.import('Foundation');
 
 function readFile(p) {
   return $.NSString.stringWithContentsOfFileEncodingError($(p), $.NSUTF8StringEncoding, null).js;
 }
 
-const html = readFile('/Users/nicolafalcioni/Desktop/palestra/index.html');
-const m = html.match(/<script>([\s\S]*)<\/script>/);
-if (!m) throw new Error('inline script non trovato');
-const src = m[1];
+const src = readFile('/Users/nicolafalcioni/Desktop/palestra/app.js');
+if (!src) throw new Error('app.js non trovato');
 
 const documentStub = { addEventListener() {} };
 const exportNames = ['parseWorkoutLine','parseAllLines','SFA','parseMuscleMap','muscleMapToStr','muscleMapLabel',
