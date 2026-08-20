@@ -83,12 +83,12 @@ test('a workout line is atomic: malformed or zero-valued segments invalidate it'
 
   const valid = plain(context.parseWorkoutLine('BP 3x10@60 + 2x5@80'));
   assert.deepEqual(valid.segments, [
-    { count: 3, reps: 10, weight: 60 },
-    { count: 2, reps: 5, weight: 80 },
+    { count: 3, reps: 10, weight: 60, warm: false, bang: null },
+    { count: 2, reps: 5, weight: 80, warm: false, bang: null },
   ]);
   assert.deepEqual(
     plain(context.parseWorkoutLine('PU 3x10')).segments,
-    [{ count: 3, reps: 10, weight: null }],
+    [{ count: 3, reps: 10, weight: null, warm: false, bang: null }],
     'an omitted weight still represents a valid bodyweight exercise',
   );
 });

@@ -54,6 +54,9 @@ const withoutGroups = context.txtToSessions('## BP = Panca piana\n\n# 2026-05-04
 assert.deepEqual(plain(withoutGroups.muscleGroups), {});
 
 // Marcatori V8 (! !! w) e mappe muscolari frazionarie
+// SFA e' un const top-level: in vm non appare come proprieta' del context,
+// va estratto valutando l'identificatore dentro il context stesso.
+const SFA = vm.runInContext('SFA', context);
 const marked = context.parseWorkoutLine('BP 12@30w + 2x10@60 + 1x8@60!');
 assert.equal(marked.segments[0].warm, true);
 assert.equal(marked.segments[2].bang, '!');
@@ -61,12 +64,12 @@ assert.equal(marked.hasBang, true);
 assert.equal(context.parseWorkoutLine('BP 3x10 @60!').segments[0].bang, '!');
 assert.equal(context.parseWorkoutLine('BP 3x10@60!!!'), null, 'tre bang non sono sintassi valida');
 
-const kinds = context.SFA.classify(marked.segments).map(s => s.kind);
+const kinds = SFA.classify(marked.segments).map(s => s.kind);
 assert.deepEqual(kinds, ['warm', 'work', 'work']);
-const sfa = context.SFA.forExercise(marked, { BP: { petto: 1, tricipiti: 0.5 } });
+const sfa = SFA.forExercise(marked, { BP: { petto: 1, tricipiti: 0.5 } });
 assert.equal(sfa.nSets, 3, 'il riscaldamento non conta negli SFA');
 assert.ok(sfa.perMuscle.petto[1] > 0);
-const grouped = context.SFA.forExercise(context.parseWorkoutLine('OHP 3x8@40'), { OHP: { 'delt-ant': 1, 'delt-lat': 0.5 } });
+const grouped = SFA.forExercise(context.parseWorkoutLine('OHP 3x8@40'), { OHP: { 'delt-ant': 1, 'delt-lat': 0.5 } });
 assert.ok(Math.abs(grouped.perGroup.spalle[1] - 3 * 0.85) < 1e-9, 'i capi della spalla contano insieme, massimo 1 per set');
 
 assert.deepEqual(plain(context.parseMuscleMap('petto, tricipiti .5')), { petto: 1, tricipiti: 0.5 });
