@@ -210,12 +210,15 @@ const DB = (() => {
    ─────────────────────────────────────────────────────────────────── */
 // MUSCLE_GROUPS v2: mappa frazionaria per esercizio ({BP:{petto:1,tricipiti:.5}}).
 // La v1 (stringa piatta "petto") resta solo come sorgente di migrazione.
-const CONFIG = { SESSIONS: 'sessions_v1', GLOSSARY: 'glossary_v1', MUSCLE_GROUPS: 'musclegroups_v2', MUSCLE_GROUPS_V1: 'musclegroups_v1', DRAFT: 'draft_v1' };
+// EX_OPTS: opzioni per esercizio — notazione serie@ripetizioni (inv) e tara.
+const CONFIG = { SESSIONS: 'sessions_v1', GLOSSARY: 'glossary_v1', MUSCLE_GROUPS: 'musclegroups_v2', MUSCLE_GROUPS_V1: 'musclegroups_v1', DRAFT: 'draft_v1', EX_OPTS: 'exopts_v1' };
 
 const State = {
   sessions: [],
   glossary: {},
   muscleGroups: {},
+  exOpts: {},               // per sigla: { inv: bool, tara: kg }
+  contoAperto: null,        // voce dell'anteprima con il conto set per set aperto
   pendingDrafts: {},
   palette: null,            // sigla con la tavolozza muscoli aperta (vista Nomi)
   fileHandle: null,
@@ -437,6 +440,9 @@ function queueLocalWrite(operation) {
 
 function replaceSessionsInMemory(sessions) {
   State.sessions = Array.isArray(sessions) ? sessions : [];
+  // Gli esercizi salvati sono una cache del testo: per le sigle con una
+  // notazione esplicita si rileggono, così valgono le opzioni attuali.
+  reparseNotation(Object.keys(State.exOpts).filter(a => typeof State.exOpts[a].inv === 'boolean'));
   _prCacheVer++;
 }
 
@@ -1036,7 +1042,7 @@ function escapeHTML(str) {
     t => ({ '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;' }[t]));
 }
 
-function parseWorkoutLine(line) {
+function parseWorkoutLine(line, exOpts = State.exOpts) {
   line = line.trim();
   if (!line || line.startsWith('#') || line.startsWith('//')) return null;
   if (/^BW\s+/i.test(line)) return null;
@@ -1052,8 +1058,11 @@ function parseWorkoutLine(line) {
   // cedimento, '!!' = tutti. Il '!' scritto dopo il peso globale (BP 3x10 @60!)
   // appartiene all'ultimo set della riga.
   let globalWeight = null, globalBang = null;
+  const inv = isInv(abbr, exOpts);
   const trailingW = rest.match(/^(.*?)\s*@\s*(\d+(?:[.,]\d+)?)\s*k?g?\s*(!{1,2})?\s*$/i);
-  if (trailingW && !trailingW[1].includes('@')) {
+  // "@peso" in fondo vale per tutti i segmenti (BP 10 + 8 @60). Negli esercizi
+  // scritti come serie@ripetizioni no: "CR 15 + 1@12" sono 15 e 12 ripetizioni.
+  if (trailingW && !trailingW[1].includes('@') && !(inv && trailingW[1].includes('+'))) {
     rest = trailingW[1].trim();
     globalWeight = parseFloat(trailingW[2].replace(',', '.'));
     globalBang = trailingW[3] || null;
@@ -1087,6 +1096,14 @@ function parseWorkoutLine(line) {
 
   if (globalBang && !segments.some(sg => sg.bang)) segments[segments.length - 1].bang = globalBang;
 
+  // Notazione serie@ripetizioni (CR 1@12 = una serie da 12 a corpo libero):
+  // dopo @ ci sono le ripetizioni, prima il carico; "1" prima di @ vuol dire
+  // solo corpo. Vale segmento per segmento: CR 15 (senza @) resta com'è.
+  if (inv) segments.forEach(sg => {
+    if (sg.weight == null || !Number.isInteger(sg.weight) || sg.weight < 1) return;
+    const prima = sg.reps; sg.reps = sg.weight; sg.weight = prima === 1 ? null : prima;
+  });
+
   const weights = segments.map(s => s.weight || 0).filter(w => w > 0);
   const peakWeight = weights.length ? Math.max(...weights) : null;
   const volume = segments.reduce((a, s) => a + (s.weight||0)*s.count*s.reps, 0);
@@ -1110,10 +1127,10 @@ function parseWorkoutLine(line) {
   }
 
   return { abbr, segments, peakWeight, volume: Math.round(volume)||null, estimated1RM, isMultiWeight, pattern,
-           hasBang: segments.some(sg => !!sg.bang) };
+           hasBang: segments.some(sg => !!sg.bang), inv };
 }
 
-function parseAllLines(text) {
+function parseAllLines(text, exOpts = State.exOpts) {
   return text.split('\n').map(rawLine => {
     const line = rawLine.trim();
     if (!line) return null;
@@ -1129,7 +1146,7 @@ function parseAllLines(text) {
       const weight = parseFloat(bwMatch[1].replace(',','.'));
       return weight > 0 ? { type:'bw', weight } : { type:'invalid', text:line };
     }
-    const ex = parseWorkoutLine(cleanLine);
+    const ex = parseWorkoutLine(cleanLine, exOpts);
     if (ex) {
       if (inlineComment) ex.comment = inlineComment;
       return { type:'exercise', ...ex };
@@ -1170,6 +1187,119 @@ function aggregateSessionExercise(session, abbr) {
     estimated1RM: estimates.length ? Math.max(...estimates) : null,
   };
 }
+
+/* ───────────────────────────────────────────────────────────────────
+   3a. Opzioni per esercizio
+   inv:  l'esercizio è scritto come "1@12" = una serie da 12 ripetizioni;
+         dopo @ ci sono le ripetizioni. Rilevato una volta dallo storico, poi
+         resta un'opzione esplicita finché non la cambi in Nomi.
+   tara: chili che fanno parte del carico ma non sono nel numero segnato
+         (corpo, bilanciere, slitta). Serve a confrontare set a carichi
+         diversi: 5 kg contro 10 kg di zavorra non sono "metà carico".
+   Le opzioni cambiano il significato delle righe, mai il testo delle sedute.
+   ─────────────────────────────────────────────────────────────────── */
+function isInv(abbr, exOpts = State.exOpts) { const o = exOpts && exOpts[abbr]; return !!(o && o.inv === true); }
+function taraDi(abbr) { const o = State.exOpts[abbr]; return o && +o.tara > 0 ? +o.tara : 0; }
+function setExOpt(abbr, key, val) {
+  const o = State.exOpts[abbr] || (State.exOpts[abbr] = {});
+  if (key === 'tara') {
+    // tolta a mano dove il nome ne suggerirebbe una: resta "tara 0", così non torna da sola
+    if (+val > 0) o.tara = +val; else if (suggTara(abbr)) o.tara = 0; else delete o.tara;
+  }
+  else if (val === undefined || val === null || val === '') delete o[key];
+  else o[key] = val;
+  if (!Object.keys(o).length) delete State.exOpts[abbr];
+}
+function exOptsToStr(o) {
+  const out = [];
+  if (o && typeof o.inv === 'boolean') out.push(o.inv ? 'inv' : 'noinv');
+  if (o && typeof o.tara === 'number' && o.tara >= 0) out.push('tara ' + String(Math.round(o.tara * 10) / 10));
+  return out.join(', ');
+}
+function parseExOpts(str) {
+  const o = {}, t = String(str || '').toLowerCase();
+  if (/\bnoinv\b/.test(t)) o.inv = false; else if (/\binv\b/.test(t)) o.inv = true;
+  const m = t.match(/\btara\s+(\d+(?:[.,]\d+)?)/);
+  if (m) { const v = parseFloat(m[1].replace(',', '.')); if (v >= 0) o.tara = v; }
+  return o;
+}
+
+// Almeno due righe con @ e in quasi tutte ogni segmento ha "1" prima di @
+// (CR 1@12 + 1@15, DH 2x1@30): è la notazione serie@ripetizioni, non una serie
+// di singole. Le righe senza @ (CR 3x15) non dicono nulla e non contano.
+function computeAutoInv(sessions) {
+  const tot = {}, ones = {};
+  const SEG = /^(?:\d+[xX×])?1\s*@\s*\d+\s*k?g?\s*w?\s*!{0,2}$/i;
+  for (const sess of (sessions || [])) String(sess.raw || '').split('\n').forEach(line => {
+    line = line.trim();
+    if (!line || line.startsWith('#') || line.startsWith('//')) return;
+    line = line.replace(/\s*\/\/.*$/, '').trim();
+    const m = line.match(/^([A-Za-z]{1,6})\s+(.+)$/);
+    if (!m || /^BW$/i.test(m[1]) || m[2].indexOf('@') < 0) return;
+    const abbr = m[1].toUpperCase();
+    tot[abbr] = (tot[abbr] || 0) + 1;
+    if (m[2].split(/\s*\+\s*/).every(p => SEG.test(p.trim()))) ones[abbr] = (ones[abbr] || 0) + 1;
+  });
+  return Object.keys(ones).filter(a => ones[a] >= 2 && ones[a] / tot[a] >= 0.8).sort();
+}
+
+// Tara suggerita dal nome, per gli esercizi in cui il corpo è il grosso del carico
+function suggTara(abbr) {
+  const nome = (State.glossary[abbr] || '').toLowerCase();
+  if (!nome) return null;
+  const conBw = State.sessions.find(s => s.bodyWeight);      // sessioni ordinate dalla più recente
+  const bw = conBw ? conBw.bodyWeight : null;
+  const r5 = v => Math.round(v / 5) * 5;
+  if (/hyperext|iperest|back\s*ext|lombar/.test(nome)) return r5(bw ? bw * 0.55 : 40);
+  if (/trazion|pull\s*-?\s*up|chin\s*-?\s*up|\bdips?\b|parallele/.test(nome)) return r5(bw || 70);
+  return null;
+}
+
+// La notazione cambia il significato delle righe già scritte: le sedute con
+// quelle sigle si rileggono dal testo. Con righe che il parser attuale rifiuta
+// (dati legacy) si lascia la cache com'è, per non perderle dal conto.
+function reparseNotation(abbrs) {
+  const set = new Set(abbrs);
+  if (!set.size) return false;
+  let changed = false;
+  State.sessions.forEach(s => {
+    if (!(s.exercises || []).some(e => set.has(e.abbr)) || typeof s.raw !== 'string') return;
+    const lines = parseAllLines(s.raw);
+    if (lines.some(l => l.type === 'invalid')) return;
+    s.lines = lines;
+    s.exercises = lines.filter(l => l.type === 'exercise');
+    changed = true;
+  });
+  if (changed) _prCacheVer++;
+  return changed;
+}
+
+// Rilevazione una tantum: diventa un'opzione esplicita, così le righe scritte
+// dopo non possono cambiare il significato di quelle vecchie. Restituisce cosa
+// ha deciso, da dire all'utente.
+function detectExOpts() {
+  const inv = computeAutoInv(State.sessions)
+    .filter(a => !(State.exOpts[a] && typeof State.exOpts[a].inv === 'boolean'));
+  inv.forEach(a => setExOpt(a, 'inv', true));
+  reparseNotation(inv);
+  const msgs = [];
+  if (inv.length) msgs.push(inv.join(', ') + ': «1@12» letto come una serie da 12');
+  Object.keys(State.glossary).sort().forEach(a => {
+    const o = State.exOpts[a];
+    if (o && typeof o.tara === 'number') return;
+    const t = suggTara(a);
+    if (t) { (State.exOpts[a] || (State.exOpts[a] = {})).tara = t; msgs.push(a + ': conto anche ' + t + ' kg di tara (il corpo)'); }
+  });
+  return msgs;
+}
+function applyExOptsDetection() {
+  const msgs = detectExOpts();
+  if (!msgs.length) return false;
+  persistExOpts();
+  showToast(msgs.join(' · ') + ' · si cambia in Nomi', 8000);
+  return true;
+}
+const exOptsFor = (abbr, marcata) => ({ marcata: !!marcata, tara: taraDi(abbr) });
 
 /* ───────────────────────────────────────────────────────────────────
    3b. Muscoli e conteggio frazionario
@@ -1222,25 +1352,35 @@ function gruppoInfo(gid) {
 }
 
 // Mappature suggerite: 1 = muscolo che limita la serie, 0,5 = contributo significativo.
-// L'ordine conta (stacco rumeno prima di stacco, leg curl prima di curl).
+// L'ordine conta: le regole specifiche precedono le generiche (braccia tese prima
+// di pulldown, Scott e panca stretta prima di panca, iperestensioni prima di
+// estensioni, calf prima di pressa, stacco rumeno prima di stacco, leg curl prima
+// di curl). Le sigle del diario (\bbp\b, \blm\b, \btbr\b…) sono riconosciute anche
+// da sole: suggerisci() concatena nome e sigla prima del match. Niente \bal\b o
+// \bps\b: troppo facili da incrociare per sbaglio, le loro mappe vivono nel file.
 const SUGGERIMENTI = [
-  [/lat\s*machine|pull\s*down|pulldown|trazion|\blat\b/, {dorsali:1, bicipiti:.5}],
-  [/rematore|pulley|\brow\b|pull\s*up/,                    {dorsali:1, bicipiti:.5, 'delt-post':.5, trapezi:.5}],
-  [/croci|pectoral|butterfly|peck/,                         {petto:1}],
-  [/chest\s*press|panca|bench|distension/,                  {petto:1, tricipiti:.5, 'delt-ant':.5}],
-  [/alzate\s*lateral|lateral\s*raise/,                      {'delt-lat':1}],
-  [/alzate\s*poster|rear\s*delt|reverse\s*fly/,             {'delt-post':1}],
+  [/braccia\s*tese|straight\s*arm|\bpdb\b/,                 {dorsali:1}],
+  [/lat\s*machine|pull\s*down|pulldown|trazion|\blat\b|\blm\b|\btrz\b/, {dorsali:1, bicipiti:.5}],
+  [/rematore|pulley|\brow\b|pull\s*up|\bt\s*-?\s*bar|\btbr\b|\bpul\b/, {dorsali:1, bicipiti:.5, 'delt-post':.5, trapezi:.5}],
+  [/croci|pectoral|butterfly|peck|\bcc\b/,                  {petto:1}],
+  [/scott|preacher/,                                        {bicipiti:1}],
+  [/panca\s*stretta|presa\s*stretta|close\s*grip|\bpst\b/,  {tricipiti:1, petto:.5, 'delt-ant':.5}],
+  [/chest\s*press|panca|bench|distension|\bbp\b|\bpim\b|\bchp\b/, {petto:1, tricipiti:.5, 'delt-ant':.5}],
+  [/alzate\s*lateral|lateral\s*raise|\balc\b/,              {'delt-lat':1}],
+  [/alzate\s*poster|rear\s*delt|reverse\s*fly|face\s*pull|\balp\b/, {'delt-post':1}],
   [/military|shoulder\s*press|lento|overhead|\bohp\b/,      {'delt-ant':1, tricipiti:.5, 'delt-lat':.5}],
-  [/leg\s*extension|estensioni/,                            {quadricipiti:1}],
-  [/leg\s*curl|femoral|hamstring/,                          {femorali:1}],
-  [/squat|pressa|leg\s*press|affond|lunge|hack/,            {quadricipiti:1, glutei:.5}],
-  [/stacco\s*rumeno|romanian|\brdl\b|hip\s*thrust|ponte/,  {glutei:1, femorali:1}],
-  [/stacco|deadlift/,                                       {glutei:1, femorali:1, dorsali:.5, trapezi:.5, quadricipiti:.5}],
-  [/push\s*down|pushdown|french|tricip|\bdip/,              {tricipiti:1}],
-  [/curl/,                                                  {bicipiti:1}],
-  [/calf|polpacc/,                                          {polpacci:1}],
-  [/crunch|plank|addom|\babs\b/,                            {addome:1}],
-  [/scrollate|shrug/,                                       {trapezi:1}]
+  [/iperestension|hyperextension|back\s*extension/,         {glutei:.5, femorali:.5}],
+  [/leg\s*extension|estensioni|\blge\b/,                    {quadricipiti:1}],
+  [/leg\s*curl|femoral|hamstring|\blcs\b/,                  {femorali:1}],
+  [/calf|polpacc|\bpolp\b|\bcls\b|\bclp\b/,                 {polpacci:1}],
+  [/squat|pressa|leg\s*press|affond|lunge|hack|\bsq\b|\blp\b|\bbss\b|\bhck\b/, {quadricipiti:1, glutei:.5}],
+  [/stacco\s*rumeno|romanian|\brdl\b|hip\s*thrust|ponte|good\s*morning|\bhpt\b|\bgdm\b/, {glutei:1, femorali:1}],
+  [/stacco|deadlift|\bstc\b/,                               {glutei:1, femorali:1, dorsali:.5, trapezi:.5, quadricipiti:.5}],
+  [/\bdips?\b|parallele/,                                   {tricipiti:1, petto:.5}],
+  [/push\s*down|pushdown|french|tricip|\bfp\b/,             {tricipiti:1}],
+  [/curl|\bbc\b|\bcri\b|\bham\b/,                           {bicipiti:1}],
+  [/crunch|plank|addom|\babs\b|ginocchia\s*al\s*petto|leg\s*raise|knee\s*raise|ruota|\bcr\b|\bgin\b|\brtl\b/, {addome:1}],
+  [/scrollate|shrug|\bscr\b/,                               {trapezi:1}]
 ];
 function suggerisciPerNome(nome) {
   const n = String(nome || '').toLowerCase();
@@ -1307,189 +1447,262 @@ function normalizeMuscleGroups(raw) {
 }
 
 /* ───────────────────────────────────────────────────────────────────
-   3c. Motore SFA (Set Frazionari Allenanti)
-   Stima quanto ogni serie "conta" davvero: i riscaldamenti zero, le code
-   di drop metà, il resto pesato per vicinanza al cedimento (RIR dedotto
-   dal calo di ripetizioni, ancorato ai set marcati con '!').
+   3c. Motore SFA (Set Frazionari Allenanti) — «SFA 2»
+   Un solo principio: ogni set vale da 0 a 1 secondo quanto era vicino al
+   cedimento. Il cedimento lo marchi tu (!). Per gli altri set la distanza dal
+   cedimento si ricava dagli altri set dello stesso esercizio, quel giorno:
+     1. PRIMA del set di riferimento eri almeno forte così: un set più leggero
+        o più corto che viene prima era lontano dal cedimento (avvicinamento).
+     2. DOPO il set di riferimento un calo è stanchezza: il set conta come
+        quello di riferimento, e solo la parte di calo troppo grande per
+        essere stanchezza diventa margine.
+   Il riferimento è un set a cedimento; senza "!" è il set migliore, presunto
+   a qualche ripetizione dal cedimento. Niente soglia "sotto l'85% è
+   riscaldamento", niente regole a scatto: una ripetizione o un disco in più
+   non fanno mai valere MENO quel set, e un "!" in più non abbassa mai il
+   totale dell'esercizio.
+   Limite noto e voluto: un set più pesante aggiunto in coda può abbassare i
+   set prima, perché dimostra che erano più lontani dal cedimento. Vietarlo
+   impedirebbe di riconoscere i riscaldamenti (2x12@20 + 12@30: i 12@20
+   tornerebbero a contare); sul diario reale capita in 5 serie aggiunte su 348.
    ─────────────────────────────────────────────────────────────────── */
 const SFA = (() => {
-  const SOGLIA_RAMPA = 0.85;                                     // riscaldamenti e code di drop
-  const E_TAB = [1.00, 1.00, 0.95, 0.85, 0.65, 0.45, 0.25, 0.10, 0.00];   // E per RIR 0..8
-  const D_DEF = 1.3, D_LO = 0.8, D_HI = 2.0;                     // calo di capacità per set
-  const PRIOR_NEUTRO    = { e: 0.85, lo: 0.45, hi: 1.00 };
-  const PRIOR_ABITUDINE = { e: 0.75, lo: 0.45, hi: 0.95 };
-  const SCALA_MIN = 16;   // la scala delle barre non scende sotto 16 SFA/sett
+  // E — valore del set per ripetizioni di margine. Pieno fra 0 e 1 (il "!"
+  // vale fino a 1 di margine), poi −5% a ripetizione con pendenza costante,
+  // zero a 21: l'ordine di grandezza della meta-regressione di Robinson 2024,
+  // senza gomito. Un set a 9 di margine vale 0,60; un riscaldamento a 20, ~0.
+  const E_PENDENZA = 0.05, E_PIENO = 1;
+  // Stanchezza, come frazione delle ripetizioni possibili a quel carico
+  // [min, stima, max]. Misurata sul diario: fra due set a cedimento consecutivi
+  // allo stesso carico le ripetizioni calano del 17% in mediana, meno del 27%
+  // tre volte su quattro, meno del 35% nove su dieci.
+  //   FATICA — quanto toglie DI SOLITO un set al limite al set dopo (1 su 6):
+  //            serve a risalire da un cedimento ai set che lo precedono.
+  //   CALO   — fin dove un calo DOPO il riferimento si spiega con la
+  //            stanchezza (1 su 4). Qui il dubbio va a tuo favore.
+  const FATICA = [0.10, 0.17, 0.27];
+  const CALO   = [0.35, 0.25, 0.15];                  // ordine inverso: più calo spiegato = meno margine
+  // Solo un set vicino al limite stanca: a 5 o più dal cedimento non lascia fatica.
+  const affatica = rir => Math.max(0, Math.min(1, 1 - rir / 5));
+  const BANDA_CARICO = [0.7, 1, 1.4];                 // incertezza in più fra carichi diversi
+  // margine presunto del set migliore quando l'esercizio non ha nessun "!"  [min, stima, max]
+  const PRIOR_NEUTRO    = [1, 3, 6];                  // seduta senza nessun "!": non so se marcavi
+  const PRIOR_ABITUDINE = [2, 3.5, 6];                // seduta con dei "!": non marcato = non a cedimento
+  const SCALA_MIN = 16;                               // la scala delle barre non scende sotto 16 SFA/sett
 
-  function E(rir) {
-    if (rir <= 0) return 1;
-    if (rir >= 8) return 0;
-    const i = Math.floor(rir);
-    return E_TAB[i] + (E_TAB[i + 1] - E_TAB[i]) * (rir - i);
-  }
-  function R(reps) {
-    return reps <= 2 ? 0.40 : reps <= 4 ? 0.60 : reps === 5 ? 0.85
-         : reps <= 20 ? 1.00 : reps <= 30 ? 0.90 : reps <= 40 ? 0.75 : 0.50;
-  }
+  const lerp = (tab, x) => {
+    if (x <= tab[0][0]) return tab[0][1];
+    for (let i = 1; i < tab.length; i++)
+      if (x <= tab[i][0]) { const [x0, y0] = tab[i - 1], [x1, y1] = tab[i]; return y0 + (y1 - y0) * (x - x0) / (x1 - x0); }
+    return tab[tab.length - 1][1];
+  };
+  const E = rir => !(rir > E_PIENO) ? 1 : Math.max(0, 1 - E_PENDENZA * (rir - E_PIENO));
+  // R — poche ripetizioni contano meno (carichi da forza). Per un set a
+  // cedimento conta il CARICO, cioè quante ripetizioni permette da fresco: 5 a
+  // cedimento con un carico da 12 sono stanchezza, non un carico pesante. Per
+  // un set non marcato contano anche le ripetizioni fatte, così marcarlo non
+  // può mai farlo valere meno.
+  const R_TAB = [[1, 0.40], [2, 0.50], [3, 0.60], [4, 0.72], [5, 0.85], [6, 1.00], [20, 1.00], [30, 0.90], [40, 0.75], [50, 0.50]];
+  const R = cap => lerp(R_TAB, cap);
 
-  // riscaldamento (0) · lavoro (1) · back-off (1) · coda di drop set (0,5)
-  function classify(segments) {
-    if (!segments || !segments.length) return [];
-    const W = Math.max(...segments.map(s => s.weight || 0));
-    const top = segments.findIndex(s => (s.weight || 0) === W);
-    return segments.map((s, i) => {
-      if (s.warm) return { ...s, kind: 'warm', D: 0 };
-      if (s.bang) return { ...s, kind: 'work', D: 1 };
-      if (i < top && (s.weight || 0) <= SOGLIA_RAMPA * W && segments.length > 1)
-        return { ...s, kind: 'warm', D: 0 };
-      if (i > top && (s.weight || 0) < W) {
-        const prev = segments[i - 1].weight || 0;
-        if (s.count === 1 && (s.weight || 0) <= SOGLIA_RAMPA * prev)
-          return { ...s, kind: 'drop', D: 0.5 };
-        return { ...s, kind: 'backoff', D: 1 };
-      }
-      return { ...s, kind: 'work', D: 1 };
-    });
-  }
+  const e1 = (L, r) => r <= 1 ? L : L * (1 + r / 30);            // Epley, come l'1RM stimato dell'app
+  const capAt = (S, L) => Math.max(0, 30 * (S / L - 1));         // ripetizioni possibili al carico L
+  const pos = v => Math.max(0, v);
 
-  // set singoli, raggruppati in blocchi a carico costante
-  function toBlocks(cls) {
+  function expand(segments) {
     const sets = [];
-    cls.forEach((s, si) => {
-      if (s.D === 0) return;
-      for (let j = 0; j < s.count; j++)
-        sets.push({ reps: s.reps, weight: s.weight, D: s.D, segIdx: si,
-                    failed: s.bang === '!!' ? true : (s.bang === '!' && j === s.count - 1) });
+    (segments || []).forEach((s, si) => {
+      const n = Math.min(Math.max(0, s.count | 0), 60);          // un refuso tipo 120x8 non blocca l'app
+      for (let j = 0; j < n; j++)
+        sets.push({ segIdx: si, reps: s.reps, w: s.weight, warm: !!s.warm,
+                    failed: !s.warm && (s.bang === '!!' || (s.bang === '!' && j === n - 1)) });
     });
-    const out = []; let cur = null;
-    for (const st of sets) {
-      if (!cur || cur.weight !== st.weight) { cur = { weight: st.weight, sets: [] }; out.push(cur); }
-      cur.sets.push(st);
+    return sets;
+  }
+
+  // Forza prima di un set non marcato, sapendo quella che resta dopo (carry):
+  // è quella più la fatica che il set ha lasciato — tanta se era al limite,
+  // niente se era lontano. La fatica toglie una frazione f delle ripetizioni
+  // possibili a quel carico: dopo = prima − f·(prima − L). Più forza → più
+  // margine → meno fatica: la funzione è decrescente e la soluzione è unica.
+  function prima(s, carry, f) {
+    if (!(carry > s.L)) return carry;
+    const val = Sx => { const phi = f * affatica(capAt(Sx, s.L) - s.reps); return (carry - phi * s.L) / (1 - phi); };
+    let lo = carry, hi = (carry - f * s.L) / (1 - f);
+    for (let it = 0; it < 40; it++) { const mid = (lo + hi) / 2; if (val(mid) > mid) lo = mid; else hi = mid; }
+    return (lo + hi) / 2;
+  }
+
+  // Forza disponibile a ogni set (in kg di 1RM equivalente) in uno scenario.
+  //   f = fatica tipica, g = calo massimo spiegabile, p = margine del
+  //   riferimento (0 se è un "!"). Restituisce anche da quale set viene la
+  //   stima di ognuno (rif) e se il calo dopo il riferimento è tutta stanchezza.
+  function stati(work, anchored, f, g, p) {
+    const n = work.length, S = new Array(n), rif = new Array(n), stanco = new Array(n).fill(false);
+    const lastF = anchored ? work.map(s => s.failed).lastIndexOf(true) : -1;
+    // 1) All'indietro. Un set a cedimento fissa la forza di quel momento; ai
+    //    set precedenti passa quel valore, o quello dei successivi se dimostrano
+    //    di più (i dati vincono sul modello: la forza non cresce durante l'esercizio).
+    let carry = 0, da = -1;
+    for (let i = n - 1; i >= 0; i--) {
+      const s = work[i], U = e1(s.L, s.reps + p);
+      if (s.failed) { S[i] = U; rif[i] = i; if (U >= carry) { carry = U; da = i; } continue; }
+      const via = anchored ? prima(s, carry, f) : carry;
+      if (U >= via) { S[i] = carry = U; rif[i] = da = i; }       // è questo set a dire quanta forza c'era
+      else { S[i] = carry = via; rif[i] = da; }
     }
-    return out;
+    // 2) In avanti, dopo il riferimento (l'ultimo cedimento; senza "!",
+    //    dall'inizio). Il set precedente può spiegare un calo fino a g delle sue
+    //    ripetizioni possibili, in proporzione a quanto era vicino al suo
+    //    limite; sotto quel livello la forza non può essere scesa.
+    for (let i = Math.max(1, lastF + 1); i < n; i++) {
+      const a = work[i - 1], cap = capAt(S[i - 1], a.L), u = cap > 0 ? Math.min(1, (a.reps + p) / cap) : 1;
+      const pavimento = S[i - 1] - g * u * u * pos(S[i - 1] - a.L);
+      if (pavimento > S[i]) { S[i] = pavimento; rif[i] = lastF >= 0 ? lastF : Math.min(rif[i - 1], i - 1); }
+      else if (rif[i] === i) stanco[i] = true;
+    }
+    return { S, rif, stanco, lastF };
   }
 
-  // RIR dedotto dal calo di ripetizioni, ancorato al set marcato a cedimento
-  function efforts(block, prior) {
-    const k = block.sets.map(s => s.failed).lastIndexOf(true);
-    if (k < 0) return block.sets.map(() => ({ e: prior.e, lo: prior.lo, hi: prior.hi, src: 'prior' }));
-    const rk = block.sets[k].reps, r1 = block.sets[0].reps;
-    let dEst, dLo, dHi;
-    if (k > 0 && r1 > rk) { const d = (r1 - rk) / k; dEst = d; dLo = d * 0.7; dHi = d * 1.3; }
-    else { dEst = D_DEF; dLo = D_LO; dHi = D_HI; }
-    return block.sets.map((s, i) => {
-      if (s.failed) return { e: 1, lo: 1, hi: 1, src: 'ced' };
-      const rir = d => Math.max(0, (rk + d * (k - i)) - s.reps);
-      // d più grande ⇒ capacità stimata più alta ⇒ RIR più alto ⇒ E più basso
-      return { e: E(rir(dEst)), lo: E(rir(dHi)), hi: E(rir(dLo)), src: 'dedotto' };
+  // opts: { marcata, tara }  →  { sets, segCredit, total:[min, stima, max], anchored }
+  // Ogni set: rir [min, stima, max], c [min, stima, max], src:
+  //   ced = a cedimento · prima = prima del riferimento · top = il set migliore
+  //   di un esercizio senza "!" · dopo = dopo il riferimento (stanco = il calo
+  //   è tutto stanchezza) · nc = senza peso fra set con peso · risc = escluso
+  // rif = indice (in sets) del set con cui è confrontato, pari = stesso carico.
+  function analyze(ex, opts) {
+    opts = opts || {};
+    const prior = opts.marcata ? PRIOR_ABITUDINE : PRIOR_NEUTRO;
+    const tara = +opts.tara > 0 ? +opts.tara : 0;
+    const sets = expand(ex.segments);
+    const segCredit = (ex.segments || []).map(() => []);
+    const total = [0, 0, 0];
+
+    sets.forEach((s, k) => { s.idx = k; s.L = (s.w || 0) + tara; s.out = s.warm || !(s.reps > 0); });
+    const vivi = sets.filter(s => !s.out);
+    const conPeso = vivi.some(s => s.L > 0);
+    // Tutti senza peso: corpo libero, contano solo le ripetizioni. Alcuni sì e
+    // altri no (e nessuna tara): quelli senza peso non sono confrontabili.
+    if (!conPeso) vivi.forEach(s => { s.L = 1; });
+    else vivi.forEach(s => { if (!(s.L > 0)) s.nc = true; });
+    const work = vivi.filter(s => !s.nc);
+    const anchored = work.some(s => s.failed);
+
+    let Sfresh = 0;
+    if (work.length) {
+      // tre scenari: [margine minimo, stima, margine massimo]
+      const sc = [0, 1, 2].map(q => stati(work, anchored, FATICA[q], CALO[q], anchored ? 0 : prior[q]));
+      const st = sc[1];
+      // la forza "da fresco": la migliore dimostrata (più il margine presunto, senza "!")
+      Sfresh = work.reduce((m, s, i) => Math.max(m, anchored ? e1(s.L, s.reps) : st.S[i]), 0);
+      work.forEach((s, i) => {
+        const r = sc.map(x => pos(capAt(x.S[i], s.L) - s.reps));
+        const lo = Math.min(r[0], r[1], r[2]), hi = Math.max(r[0], r[1], r[2]);
+        const j = st.rif[i];
+        s.rif = j >= 0 && j !== i ? work[j].idx : null;
+        s.pari = s.rif == null || work[j].L === s.L;
+        if (s.failed) { s.rir = [0, 0, 0]; s.src = 'ced'; s.rif = null; return; }
+        s.rir = anchored && !s.pari ? [lo * BANDA_CARICO[0], r[1], hi * BANDA_CARICO[2]] : [lo, r[1], hi];
+        s.stanco = st.stanco[i];
+        s.src = anchored ? (i > st.lastF ? 'dopo' : 'prima')
+              : j > i ? 'prima' : st.S[i] >= Sfresh ? 'top' : 'dopo';
+      });
+    }
+
+    sets.forEach(s => {
+      if (s.out) { s.rir = null; s.cap = 0; s.R = 0; s.c = [0, 0, 0]; s.src = 'risc'; }
+      else if (s.nc) {
+        // senza peso in mezzo a set con peso: conta solo se portato a cedimento
+        s.rir = null; s.cap = s.reps; s.R = R(s.reps); s.src = 'nc';
+        s.c = s.failed ? [s.R, s.R, s.R] : [0, 0, 0];
+      } else {
+        s.cap = Math.max(1, capAt(Sfresh, s.L), s.reps);        // ripetizioni che quel carico permette da fresco
+        s.R = s.failed ? R(s.cap) : Math.min(R(s.cap), R(s.reps));
+        s.c = [E(s.rir[2]) * s.R, E(s.rir[1]) * s.R, E(s.rir[0]) * s.R];   // margine massimo → credito minimo
+      }
+      segCredit[s.segIdx].push(s.c[1]);
+      for (let q = 0; q < 3; q++) total[q] += s.c[q];
     });
+    return { sets, segCredit, total, anchored };
   }
 
-  function forExercise(ex, groups, prior) {
-    prior = prior || PRIOR_NEUTRO;
-    const cls = classify(ex.segments);
+  // Muscoli e gruppi di lettura: dentro un gruppo un set fisico vale al
+  // massimo 1 (OHP = delt-ant 1 + delt-lat ½ resta UN set di spalle).
+  function forExercise(ex, groups, opts) {
+    const a = analyze(ex, opts);
     const map = (groups || {})[ex.abbr];
-    const hasMap = !!(map && Object.keys(map).length);
-    // Coefficiente per gruppo di lettura, con tetto a 1 per set fisico:
-    // sommare i capi (delt-ant 1 + delt-lat ½) gonfierebbe il gruppo.
-    const coefGruppo = {};
-    if (hasMap) for (const m in map) {
-      const c = map[m]; if (!c) continue;
+    const mapped = !!(map && Object.keys(map).some(m => map[m] > 0));
+    const perMuscle = {}, perGroup = {}, coefGruppo = {};
+    if (mapped) for (const m in map) {
+      const c = map[m]; if (!(c > 0)) continue;
+      perMuscle[m] = a.total.map(v => v * c);
       const gid = gruppoDiMuscolo(m);
       coefGruppo[gid] = Math.min(1, (coefGruppo[gid] || 0) + c);
     }
-    const res = { kinds: cls.map(s => s.kind), perMuscle: {}, perGroup: {}, nSets: 0, nAnchored: 0, mapped: hasMap };
-    for (const b of toBlocks(cls)) {
-      const eff = efforts(b, prior);
-      b.sets.forEach((st, i) => {
-        res.nSets += st.D;
-        if (eff[i].src !== 'prior') res.nAnchored += st.D;
-        if (!hasMap) return;
-        const base = R(st.reps) * st.D;
-        for (const m in map) {
-          const c = map[m]; if (!c) continue;
-          const t = res.perMuscle[m] || (res.perMuscle[m] = [0, 0, 0]);
-          t[0] += base * eff[i].lo * c;
-          t[1] += base * eff[i].e  * c;
-          t[2] += base * eff[i].hi * c;
-        }
-        for (const gid in coefGruppo) {
-          const cg = coefGruppo[gid];
-          const t = res.perGroup[gid] || (res.perGroup[gid] = [0, 0, 0]);
-          t[0] += base * eff[i].lo * cg;
-          t[1] += base * eff[i].e  * cg;
-          t[2] += base * eff[i].hi * cg;
-        }
-      });
-    }
-    return res;
+    for (const gid in coefGruppo) perGroup[gid] = a.total.map(v => v * coefGruppo[gid]);
+    return { ...a, perMuscle, perGroup, mapped };
   }
 
-  // Il prior "con abitudine" vale solo dalla prima seduta marcata in poi:
-  // applicarlo allo storico non marcato inventerebbe un calo di volume mai avvenuto.
-  function priorContext(sessions) {
-    const marcate = (sessions || []).filter(s =>
-      (s.exercises || []).some(e => (e.segments || []).some(g => g.bang)));
-    if (!marcate.length) return { from: null, prior: PRIOR_NEUTRO };
-    const from = marcate.map(s => s.date).sort()[0];
-    const lim = new Date(); lim.setDate(lim.getDate() - 56);
-    const limStr = lim.getFullYear() + '-' + String(lim.getMonth() + 1).padStart(2, '0')
-                 + '-' + String(lim.getDate()).padStart(2, '0');
-    const nMarcati = marcate.filter(s => s.date >= limStr).reduce((a, s) =>
-      a + s.exercises.reduce((b, e) =>
-        b + (e.segments || []).filter(g => g.bang)
-              .reduce((c, g) => c + (g.bang === '!!' ? g.count : 1), 0), 0), 0);
-    return { from, prior: nMarcati >= 10 ? PRIOR_ABITUDINE : PRIOR_NEUTRO, nMarcati };
-  }
+  // Nella seduta in cui compare almeno un "!", un set non marcato non è
+  // arrivato a cedimento. Dove non ce n'è nessuno non si può dire.
+  const marcata = sess => ((sess && sess.exercises) || []).some(e => (e.segments || []).some(g => g.bang && !g.warm));
 
-  function forSessions(sessions, groups) {
-    const ctx = priorContext(sessions);
-    const tot = {}, sedute = {}, picco = {}, nonMappati = new Set();
-    let nSets = 0, nAnchored = 0;
+  // cfg: { tara: abbr => kg }
+  function forSessions(sessions, groups, cfg) {
+    cfg = cfg || {};
+    const tot = {}, perGiorno = {}, nonMappati = new Set();
+    let credito = 0, ancorato = 0, scritti = 0;
     for (const s of (sessions || [])) {
-      const prior = (ctx.from && s.date >= ctx.from) ? ctx.prior : PRIOR_NEUTRO;
-      const perSeduta = {};
+      const m0 = marcata(s);
       for (const ex of (s.exercises || [])) {
-        const r = forExercise(ex, groups, prior);
-        nSets += r.nSets; nAnchored += r.nAnchored;
-        if (!r.mapped && r.nSets > 0) nonMappati.add(ex.abbr);
-        // L'aggregato di sessione ragiona per gruppi di lettura (spalle,
-        // femorali+glutei…): sono loro ad avere un obiettivo settimanale.
+        const r = forExercise(ex, groups, { marcata: m0, tara: cfg.tara ? cfg.tara(ex.abbr) : 0 });
+        credito += r.total[1]; scritti += r.sets.length;
+        if (r.anchored) ancorato += r.total[1];
+        if (!r.mapped && r.total[2] > 0) nonMappati.add(ex.abbr);
+        // L'aggregato ragiona per gruppi di lettura: sono loro ad avere un obiettivo.
         for (const gid in r.perGroup) {
           const t = tot[gid] || (tot[gid] = [0, 0, 0]);
-          for (let i = 0; i < 3; i++) t[i] += r.perGroup[gid][i];
-          perSeduta[gid] = (perSeduta[gid] || 0) + r.perGroup[gid][1];
+          for (let q = 0; q < 3; q++) t[q] += r.perGroup[gid][q];
+          const k = gid + '\n' + s.date;
+          perGiorno[k] = (perGiorno[k] || 0) + r.perGroup[gid][1];
         }
       }
-      for (const m in perSeduta) {
-        sedute[m] = (sedute[m] || 0) + 1;
-        picco[m] = Math.max(picco[m] || 0, perSeduta[m]);
-      }
     }
-    return { tot, sedute, picco, nSets,
-             confidenza: nSets ? nAnchored / nSets : 0,
-             nonMappati: [...nonMappati],
-             abitudine: ctx.prior === PRIOR_ABITUDINE, dalla: ctx.from };
+    const sedute = {}, picco = {};
+    for (const k in perGiorno) {
+      if (!(perGiorno[k] > 0)) continue;                 // una seduta conta per un gruppo solo se gli ha dato qualcosa
+      const gid = k.split('\n')[0];
+      sedute[gid] = (sedute[gid] || 0) + 1; picco[gid] = Math.max(picco[gid] || 0, perGiorno[k]);
+    }
+    return { tot, sedute, picco, credito, scritti,
+             confidenza: credito ? ancorato / credito : 0, nonMappati: [...nonMappati] };
   }
 
-  return { classify, forExercise, forSessions, E, R, SCALA_MIN, SOGLIA_RAMPA };
+  return { analyze, forExercise, forSessions, marcata, E, R, e1, capAt, SCALA_MIN };
 })();
 
 /* ───────────────────────────────────────────────────────────────────
    4. Renderer formattazione voci (ledger style)
    ─────────────────────────────────────────────────────────────────── */
-function setTagHtml(seg, kind) {
+const creditoMedio = a => a && a.length ? a.reduce((x, y) => x + y, 0) / a.length : 1;
+
+// segCredit[i] = credito (0..1) dei set del segmento i: quelli che non contano
+// quasi niente portano il segno r, gli altri arretrano in proporzione.
+function setTagHtml(seg, credito) {
   let out = '';
-  if (kind === 'warm') out += '<span class="set-tag warm" title="riscaldamento">r</span>';
-  if (kind === 'drop') out += '<span class="set-tag drop" title="coda di drop set">½</span>';
+  if (credito < 0.15 && !seg.bang) out += '<span class="set-tag warm" title="non conta: troppo lontano dal cedimento">r</span>';
   if (seg.bang) out += '<span class="set-tag bang" title="' +
     (seg.bang === '!!' ? 'tutti i set a cedimento' : 'ultimo set a cedimento') + '">' + seg.bang + '</span>';
   return out;
 }
 
-function segsToHtml(segments, kinds) {
-  const wrap = (i, body) =>
-    `<span class="segpart${kinds && kinds[i] === 'warm' ? ' dim' : ''}">${body}</span>`;
-  const tag = i => setTagHtml(segments[i], kinds && kinds[i]);
+function segsToHtml(segments, segCredit) {
+  const cr = i => segCredit ? creditoMedio(segCredit[i]) : 1;
+  const wrap = (i, body) => {
+    const op = cr(i) >= 0.85 ? 1 : 0.4 + 0.6 * cr(i);
+    return `<span class="segpart"${op < 1 ? ` style="opacity:${op.toFixed(2)}"` : ''}>${body}</span>`;
+  };
+  const tag = i => setTagHtml(segments[i], cr(i));
   const uniqueW = new Set(segments.map(s => s.weight));
   if (uniqueW.size === 1) {
     const setsStr = segments.map((s, i) => {
@@ -1514,10 +1727,10 @@ function segsToHtml(segments, kinds) {
 
 const PATTERN_LABEL = { drop:'drop', diamond:'diamante', mix:'misto' };
 
-// Il pattern mostrato ignora i riscaldamenti: 12@25 + 12@35 + 3x8@45 è una
-// rampa di avvicinamento, non un "misto".
-function patternForWork(cls) {
-  const ws = cls.filter(s => s.D > 0).map(s => s.weight || 0);
+// Il pattern mostrato ignora i set che non contano: 12@25 + 12@35 + 3x8@45 è
+// una rampa di avvicinamento, non un "misto".
+function patternForWork(segments, segCredit) {
+  const ws = segments.filter((s, i) => s.bang || creditoMedio(segCredit && segCredit[i]) >= 0.15).map(s => s.weight || 0);
   if (new Set(ws).size <= 1) return null;
   const pi = ws.indexOf(Math.max(...ws));
   if (ws.every((w, i) => i === 0 || w <= ws[i - 1])) return 'drop';
@@ -1526,30 +1739,75 @@ function patternForWork(cls) {
 }
 
 function fmtSfa(v) { return (Math.round(v * 10) / 10).toFixed(1).replace('.', ','); }
+// Il conto set per set, verificabile a occhio:  0 + 0,4 + 1 + 1 = 2,4 di 4 set
+function fmtCr(v) { const r = Math.round(v * 10) / 10; return r <= 0 ? '0' : r >= 1 ? '1' : String(r).replace('.', ','); }
+function fmtCr2(v) { return (Math.round(v * 100) / 100).toString().replace('.', ','); }
 
-function sfaLineHtml(ex) {
-  const r = SFA.forExercise(ex, State.muscleGroups);
+// Perché un set vale quel numero: una riga per set, a richiesta.
+function contoDettaglioHtml(r, tara) {
+  const nome = q => q.reps + (q.w != null ? '@' + q.w : '');
+  const righe = r.sets.map(s => {
+    const x = s.rir ? s.rir[1] : null;
+    const rif = s.rif != null ? r.sets[s.rif] : null;
+    // "avvicinamento" quando il set non conta quasi niente (lo stesso limite del segno r)
+    const lim = x != null && x < 0.5, lontano = x != null && s.c[1] < 0.15;
+    const dist = x == null ? '' : x >= 20 ? 'oltre 20 rip. dal cedimento' : lim ? 'al limite' : '≈ ' + Math.round(x) + ' rip. dal cedimento';
+    const potevi = x == null ? '' : 'ne avresti fatte ~' + Math.round(s.reps + x);
+    const rifTxt = rif ? (rif.failed ? 'ceduto a ' : 'fatto ') + nome(rif) : '';
+    let why;
+    if (s.src === 'risc') why = s.warm ? 'escluso con w' : 'zero ripetizioni';
+    else if (s.src === 'ced') why = 'cedimento';
+    else if (s.src === 'nc') why = s.failed ? 'cedimento' : 'senza peso fra set col peso: non confrontabile (metti una tara in Nomi)';
+    else if (s.src === 'top') why = dist + ' — stima: nessun ! in questo esercizio';
+    else if (rif && rif.idx > s.idx)              // il confronto è con un set che viene dopo
+      why = dist + (lontano ? ' — avvicinamento: dopo hai ' + rifTxt
+                  : lim ? ' — subito dopo hai ' + rifTxt
+                  : ' — dopo hai ' + rifTxt + ': qui ' + potevi);
+    else if (rif)                                 // il confronto è con un set che viene prima
+      why = dist + ' — dopo ' + nome(rif) + (rif.failed ? '!' : '') + ', anche da stanco ' + potevi;
+    else if (s.src === 'dopo')                    // dopo il riferimento, e il calo si spiega da solo
+      why = dist + (r.anchored ? ' — dopo il cedimento: il calo è stanchezza' : ' — come il set migliore: il calo è stanchezza');
+    else why = dist + ' — nessun set dopo mostra più forza di questo';
+    if (s.src !== 'risc' && s.c[1] > 0 && s.R < 0.95)
+      why += s.cap < 6 || s.reps < 6 ? ' · poche ripetizioni: ×' + fmtCr2(s.R)
+                                     : ' · carico molto leggero: ×' + fmtCr2(s.R);
+    return `<span class="cd-row"><span class="cd-set">${escapeHTML(nome(s) + (s.failed ? '!' : ''))}</span><span class="cd-c">${fmtCr(s.c[1])}</span><span class="cd-why">${why}</span></span>`;
+  });
+  const nota = tara > 0 ? `<span class="cd-nota">a ogni set si aggiungono ${escapeHTML(tara)} kg di tara (Nomi)</span>` : '';
+  return `<span class="conto-det">${nota}${righe.join('')}</span>`;
+}
+
+// key: identifica la voce dell'anteprima, per aprire il conto set per set
+function sfaLineHtml(ex, r, key) {
+  if (!r.sets.length) return '';
+  let html = '';
+  if (key != null) {
+    const aperto = State.contoAperto === key;
+    const conto = r.segCredit.map(a => a.map(fmtCr).join('<span class="cr-dot">·</span>')).join(' + ');
+    html += `<button class="entry-conto${aperto ? ' open' : ''}" type="button" data-action="conto" data-conto="${escapeHTML(key)}" aria-expanded="${aperto}">${conto} = <b>${fmtSfa(r.total[1])}</b> <span class="sfa-u">di ${r.sets.length} set</span></button>`;
+    if (aperto) html += contoDettaglioHtml(r, taraDi(ex.abbr));
+  }
   const parts = Object.entries(r.perGroup).sort((a, b) => b[1][1] - a[1][1])
     .map(([gid, v]) => {
       const g = gruppoInfo(gid);
       return `<span class="sfa-m" style="color:${g.colore}">${escapeHTML(g.label.toLowerCase())}</span> ${fmtSfa(v[1])}`;
     });
   if (!parts.length) {
-    return r.nSets > 0
+    return html + (r.total[2] > 0
       ? `<span class="entry-sfa muted">nessun muscolo assegnato · <button class="sfa-link" type="button" data-action="open-nomi-link">Nomi</button></span>`
-      : '';
+      : '');
   }
-  return `<span class="entry-sfa">${parts.join(' <span style="opacity:.45">·</span> ')} <span class="sfa-u">sfa</span></span>`;
+  return html + `<span class="entry-sfa">${parts.join(' <span style="opacity:.45">·</span> ')} <span class="sfa-u">sfa</span></span>`;
 }
 
-function entryRowHtml(ex, idx, isPR, compact=false) {
+// marcata: la seduta contiene almeno un "!" (vedi SFA.marcata)
+function entryRowHtml(ex, idx, isPR, compact = false, marcata = false) {
   const safeAbbr = escapeHTML(ex.abbr);
   const safeName = State.glossary[ex.abbr] ? escapeHTML(State.glossary[ex.abbr]) : '';
   const show1RM = ex.estimated1RM && ex.peakWeight && ex.estimated1RM > ex.peakWeight;
   const showVol = ex.volume && ex.isMultiWeight;
-  const cls = SFA.classify(ex.segments);
-  const kinds = cls.map(s => s.kind);
-  const workPattern = patternForWork(cls);
+  const r = SFA.forExercise(ex, State.muscleGroups, exOptsFor(ex.abbr, marcata));
+  const workPattern = patternForWork(ex.segments, r.segCredit);
   const patternLbl = workPattern && PATTERN_LABEL[workPattern];
   const showMeta = !compact && (show1RM || showVol || patternLbl);
 
@@ -1557,7 +1815,7 @@ function entryRowHtml(ex, idx, isPR, compact=false) {
     <span class="entry-abbr">${safeAbbr}</span>
     <span class="entry-main">
       ${safeName ? `<span class="entry-name">${safeName}</span>` : ''}
-      <span class="entry-segs">${segsToHtml(ex.segments, kinds)}</span>
+      <span class="entry-segs">${segsToHtml(ex.segments, r.segCredit)}</span>
     </span>
     <span class="entry-right">
       ${isPR && ex.peakWeight ? '<span class="pr-chip">PR</span>' : ''}
@@ -1571,7 +1829,7 @@ function entryRowHtml(ex, idx, isPR, compact=false) {
         ${show1RM ? `<span class="m-1rm">~${ex.estimated1RM} 1RM</span>` : ''}
       </span>` : ''}
     ${ex.comment ? `<span class="entry-comment">${escapeHTML(ex.comment)}</span>` : ''}
-    ${compact ? '' : sfaLineHtml(ex)}
+    ${compact ? '' : sfaLineHtml(ex, r, ex.abbr + '#' + idx)}
   </div>`;
 }
 
@@ -1590,11 +1848,14 @@ function bwRowHtml(weight) {
 /* ───────────────────────────────────────────────────────────────────
    5. File .txt (import/export)
    ─────────────────────────────────────────────────────────────────── */
-function sessionsToTxt(sessions, glossary, muscleGroups) {
+function sessionsToTxt(sessions, glossary, muscleGroups, exOpts) {
   const glLines = Object.entries(glossary).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,v])=>'## '+k+' = '+v);
   const mgLines = Object.entries(muscleGroups||{}).sort((a,b)=>a[0].localeCompare(b[0]))
     .map(([k,v])=>[k, muscleMapToStr(v)]).filter(([,str])=>str).map(([k,str])=>'### '+k+' = '+str);
-  const headerLines = [...glLines, ...mgLines];
+  // "####": opzioni per esercizio (notazione, tara). Le versioni precedenti le ignorano.
+  const opLines = Object.entries(exOpts||{}).sort((a,b)=>a[0].localeCompare(b[0]))
+    .map(([k,v])=>[k, exOptsToStr(v)]).filter(([,str])=>str).map(([k,str])=>'#### '+k+' = '+str);
+  const headerLines = [...glLines, ...mgLines, ...opLines];
   const glBlock = headerLines.length ? headerLines.join('\n')+'\n\n' : '';
   // Righe '#' dentro il raw diventerebbero header al re-import (split della
   // sessione): le si esporta declassate a commento '//', semantica invariata.
@@ -1618,9 +1879,17 @@ function isRealISODate(s) {
 }
 
 function txtToSessions(txt) {
+  txt = String(txt || '').replace(/\r\n?/g, '\n');     // file salvati su Windows: senza, le intestazioni restano sporche
   const newGlossary = {};
   const newMuscleGroups = {};
+  const newExOpts = {};
   txt.split('\n').forEach(line => {
+    const op = line.match(/^####\s*([A-Z]{1,6})\s*=\s*(.+)$/);
+    if (op) {
+      const o = parseExOpts(op[2]);
+      if (Object.keys(o).length) newExOpts[op[1].trim()] = o;
+      return;
+    }
     // Accetta sia il vecchio formato piatto ("petto") sia quello frazionario
     // ("petto, tricipiti .5"): parseMuscleMap li normalizza entrambi.
     const mg = line.match(/^###\s*([A-Z]{1,6})\s*=\s*(.+)$/);
@@ -1632,6 +1901,8 @@ function txtToSessions(txt) {
     const m = line.match(/^##\s*([A-Z]{1,6})\s*=\s*(.+)$/);
     if (m) newGlossary[m[1].trim()] = m[2].trim();
   });
+  // Le righe si leggono con la notazione del file, se ne porta una
+  const parseOpts = Object.keys(newExOpts).length ? newExOpts : State.exOpts;
   const newSessions = [];
   const seenDates = new Set();
   const blocks = txt.split(/\n(?=#\s*\d{4}-\d{2}-\d{2})/);
@@ -1643,7 +1914,7 @@ function txtToSessions(txt) {
     if (seenDates.has(date)) throw new Error('Data duplicata: ' + date);
     seenDates.add(date);
     const raw = lines.slice(1).join('\n').trim();
-    const parsedLines = parseAllLines(raw);
+    const parsedLines = parseAllLines(raw, parseOpts);
     const invalid = parsedLines.find(line => line.type === 'invalid');
     if (invalid) throw new Error('Riga non valida (' + date + '): ' + invalid.text);
     const exercises = parsedLines.filter(l=>l.type==='exercise');
@@ -1653,7 +1924,7 @@ function txtToSessions(txt) {
     const bodyWeight = bwLine ? bwLine.weight : null;
     if (exercises.length || bodyWeight) newSessions.push({ date, raw, exercises, bodyWeight, lines:parsedLines });
   }
-  return { sessions: newSessions.sort((a,b)=>b.date.localeCompare(a.date)), glossary: newGlossary, muscleGroups: newMuscleGroups };
+  return { sessions: newSessions.sort((a,b)=>b.date.localeCompare(a.date)), glossary: newGlossary, muscleGroups: newMuscleGroups, exOpts: newExOpts };
 }
 
 /* ───────────────────────────────────────────────────────────────────
@@ -1872,6 +2143,8 @@ async function importFromText(text, fileName) {
   }
   const operation = beginDatasetMutation();
   const storedSessions = parsed.sessions.map(sessionForStorage);
+  // Un file senza righe "####" (versioni precedenti) non azzera le opzioni attuali
+  const importedExOpts = Object.keys(parsed.exOpts).length ? parsed.exOpts : { ...State.exOpts };
   _saveState = 'saving';
   renderFileStatus();
   try {
@@ -1881,6 +2154,7 @@ async function importFromText(text, fileName) {
       [CONFIG.MUSCLE_GROUPS]: parsed.muscleGroups,
       [CONFIG.MUSCLE_GROUPS_V1]: {},
       [CONFIG.DRAFT]: {},
+      [CONFIG.EX_OPTS]: importedExOpts,
     }));
   } catch (error) {
     console.error('Import commit failed', error);
@@ -1896,10 +2170,13 @@ async function importFromText(text, fileName) {
   const concurrent = collectConcurrentEdits(operation);
   State.fileHandle = null;
   State.fileName = fileName;
-  replaceSessionsInMemory(parsed.sessions);
   State.glossary = { ...parsed.glossary };
+  State.exOpts = { ...importedExOpts };
+  replaceSessionsInMemory(parsed.sessions);
   State.muscleGroups = { ...parsed.muscleGroups };
   State.pendingDrafts = {};
+  const rilevate = detectExOpts();
+  if (rilevate.length) persistExOpts();
   _durableRawByDate.clear();
   parsed.sessions.forEach(session => _durableRawByDate.set(session.date, session.raw.trim()));
   _durableDraftRawByDate.clear();
@@ -1913,6 +2190,7 @@ async function importFromText(text, fileName) {
   _ncDismissed.clear();
   _arcOpen.clear();
   State.palette = null;
+  State.contoAperto = null;
   stopRestTimer();
   renderAfterDatasetMutation();
   let currentSaved = true;
@@ -1922,7 +2200,8 @@ async function importFromText(text, fileName) {
   const otherDraftsSaved = await persistConcurrentDrafts(reconciled.draftDates, concurrent.currentDate);
   const n = parsed.sessions.length;
   const draftWarning = currentSaved && otherDraftsSaved ? '' : ' · ⚠ bozza nel recupero';
-  showToast(`Importate ${n} ${n === 1 ? 'sessione' : 'sessioni'}${reconciled.merged ? ' · testo in corso unito' : ''}${draftWarning}`);
+  const avviso = rilevate.length ? ' · ' + rilevate.join(' · ') + ' · si cambia in Nomi' : '';
+  showToast(`Importate ${n} ${n === 1 ? 'sessione' : 'sessioni'}${reconciled.merged ? ' · testo in corso unito' : ''}${draftWarning}${avviso}`, avviso ? 8000 : undefined);
   return true;
 }
 
@@ -1997,7 +2276,7 @@ async function handleSaveToFs({ silent = false } = {}) {
   }
   try {
     const w = await State.fileHandle.createWritable();
-    await w.write(sessionsToTxt(State.sessions, State.glossary, State.muscleGroups));
+    await w.write(sessionsToTxt(State.sessions, State.glossary, State.muscleGroups, State.exOpts));
     await w.close();
     // Con l'autosave la scrittura è continua: il toast solo su azione esplicita
     if (!silent) showToast('Salvato ✓');
@@ -2018,7 +2297,7 @@ async function handleDownloadFile() {
     showToast('Archivio non disponibile: export annullato');
     return;
   }
-  const content = sessionsToTxt(State.sessions, State.glossary, State.muscleGroups);
+  const content = sessionsToTxt(State.sessions, State.glossary, State.muscleGroups, State.exOpts);
   const fileName = State.fileName||'workout_log.txt';
   const file = new File([content], fileName, {type:'text/plain'});
   if (navigator.canShare && navigator.canShare({files:[file]})) {
@@ -2051,6 +2330,7 @@ async function handleNewFile() {
       [CONFIG.MUSCLE_GROUPS]: {},
       [CONFIG.MUSCLE_GROUPS_V1]: {},
       [CONFIG.DRAFT]: {},
+      [CONFIG.EX_OPTS]: {},
     }));
   } catch (error) {
     console.error('Reset failed', error);
@@ -2068,9 +2348,11 @@ async function handleNewFile() {
     concurrent.currentDate = todayStr();
   }
   State.fileHandle = null; State.fileName = null;
+  State.exOpts = {};
   replaceSessionsInMemory([]);
   State.glossary = {};
   State.muscleGroups = {};
+  State.contoAperto = null;
   State.pendingDrafts = {};
   _durableRawByDate.clear();
   _durableDraftRawByDate.clear();
@@ -2162,15 +2444,49 @@ async function persistMuscleGroups() {
   }
 }
 
+let _exOptsDebounce = null, _exOptsRetryDelay = 2500;
+function persistExOptsDebounced(delay = 600) {
+  clearTimeout(_exOptsDebounce);
+  _exOptsDebounce = setTimeout(() => {
+    _exOptsDebounce = null;
+    persistExOpts();
+  }, delay);
+}
+async function persistExOpts() {
+  if (_datasetBusy) {
+    persistExOptsDebounced(_exOptsRetryDelay);
+    return false;
+  }
+  const pending = { ...State.exOpts };
+  if (_hydrationState !== 'ready' && !(await hydrateApp())) return false;
+  State.exOpts = { ...State.exOpts, ...pending };
+  try {
+    await queueLocalWrite(() => DB.set(CONFIG.EX_OPTS, { ...State.exOpts }));
+    _exOptsRetryDelay = 2500;
+    if (State.fileHandle) queueFsSave();
+    return true;
+  } catch (error) {
+    _saveState = 'error';
+    renderFileStatus();
+    const delay = _exOptsRetryDelay;
+    _exOptsRetryDelay = Math.min(delay * 2, 30000);
+    persistExOptsDebounced(delay);
+    if (!_persistErrorShown) { _persistErrorShown = true; showToast('⚠ Opzioni non salvate'); }
+    return false;
+  }
+}
+
 /* ───────────────────────────────────────────────────────────────────
    9. UI helpers
    ─────────────────────────────────────────────────────────────────── */
 let toastTimer;
-function showToast(msg) {
+// ms: per gli avvisi da leggere con calma (opzioni rilevate), che vanno a capo
+function showToast(msg, ms) {
   const el = document.getElementById('toast');
   el.textContent = msg; el.classList.add('show');
+  el.classList.toggle('long', !!ms);
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>el.classList.remove('show'), 2200);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), ms || 2200);
 }
 
 function todayStr() {
@@ -2494,6 +2810,7 @@ function handleLogDateChange() {
   autosaveCommit();      // consolida la data che si sta lasciando
   stashCurrentDraft();   // e conserva come bozza ciò che non parsa
   const date = document.getElementById('logDateInput').value || todayStr();
+  if (_activeDate !== date) State.contoAperto = null;
   _activeDate = date;
   const draft = State.pendingDrafts[date];
   const session = getSessByDate().get(date);
@@ -2689,10 +3006,11 @@ function renderPreviewEntries(lines, targetDate, label) {
   }
   html += '<div class="entries">';
   let idx = 0;
+  const marcata = SFA.marcata({ exercises: lines.filter(l => l.type === 'exercise') });
   lines.forEach(item => {
     if (item.type === 'exercise') {
       const isPR = item.peakWeight != null && (historicalPRs[item.abbr] == null || item.peakWeight > historicalPRs[item.abbr]);
-      html += entryRowHtml(item, idx, isPR, false);
+      html += entryRowHtml(item, idx, isPR, false, marcata);
       idx++;
     } else if (item.type === 'comment') {
       html += commentRowHtml(item.text);
@@ -2914,10 +3232,11 @@ function sessionDetailHtml(s) {
   const historicalPRs = prMap.get(s.date) || {};
   let body = '<div class="entries">';
   let idx = 0;
+  const marcata = SFA.marcata(s);
   lines.forEach(item => {
     if (item.type === 'exercise') {
       const isPR = item.peakWeight != null && (historicalPRs[item.abbr] == null || item.peakWeight > historicalPRs[item.abbr]);
-      body += entryRowHtml(item, idx, isPR, true);
+      body += entryRowHtml(item, idx, isPR, true, marcata);
       idx++;
     } else if (item.type === 'comment') {
       body += commentRowHtml(item.text);
@@ -3209,6 +3528,16 @@ function renderGlossario() {
     const aperto = State.palette === abbr;
     const restanti = MUSCOLI.filter(m => !(map[m] > 0));
     const sugg = assegnati.length ? null : suggerisci(abbr);
+    const a = escapeHTML(abbr), invOn = isInv(abbr), tara = taraDi(abbr), st = tara ? null : suggTara(abbr);
+    const flags = (invOn ? '<span class="gl-flag">@ = ripetizioni</span>' : '')
+                + (tara ? `<span class="gl-flag">tara ${escapeHTML(tara)} kg</span>` : '');
+    const opts = `<div class="gl-opts">
+      <button class="mchip opt${invOn ? ' on' : ''}" type="button" data-act="inv" data-abbr="${a}" aria-pressed="${invOn}">@ = ripetizioni</button>
+      <label class="gl-tara">tara <input class="gl-tara-in" type="number" inputmode="decimal" min="0" step="1" data-abbr="${a}" value="${tara || ''}" placeholder="0"> kg</label>
+      ${st ? `<button class="mchip sugg" type="button" data-act="tara" data-v="${st}" data-abbr="${a}">usa ${st} kg</button>` : ''}
+      <span class="gl-opts-hint"><b>@ = ripetizioni</b>: per gli esercizi che scrivi come <code>1@12</code> (una serie da 12).
+        <b>Tara</b>: chili che fanno parte del carico ma non sono nel numero che segni — il corpo, il bilanciere, la slitta.</span>
+    </div>`;
     return `<div class="glossary-row">
       <span class="gl-abbr">${escapeHTML(abbr)}</span>
       <input class="gl-name" type="text" placeholder="nome esteso…" data-abbr="${escapeHTML(abbr)}" value="${escapeHTML(State.glossary[abbr] || '')}">
@@ -3219,11 +3548,21 @@ function renderGlossario() {
       ${assegnati.length ? '' : (sugg
         ? `<button class="mchip sugg" type="button" data-act="sugg" data-abbr="${escapeHTML(abbr)}">usa ${escapeHTML(muscleMapLabel(sugg))}</button>`
         : '<span class="gl-nomusc">non conta negli SFA</span>')}
+      ${flags}
     </div>
-    ${aperto ? `<div class="gl-palette">${restanti.map(m => chipHtml(abbr, m, 0, false)).join('')}</div>` : ''}`;
+    ${aperto ? `<div class="gl-palette">${restanti.map(m => chipHtml(abbr, m, 0, false)).join('')}</div>${opts}` : ''}`;
   }).join('');
   document.querySelectorAll('.gl-name').forEach(input => {
     input.addEventListener('change', handleGlossaryInputUpdate);
+  });
+  // La tara si salva mentre la scrivi e non ridisegna la lista: un ridisegno a
+  // metà gesto farebbe perdere il tocco sul controllo successivo.
+  document.querySelectorAll('.gl-tara-in').forEach(input => {
+    input.addEventListener('input', e => {
+      if (_datasetBusy) return;
+      setExOpt(e.target.dataset.abbr, 'tara', parseFloat(String(e.target.value).replace(',', '.')));
+      persistExOptsDebounced();
+    });
   });
   if (_datasetBusy) setDatasetBusy(true);
 }
@@ -3250,6 +3589,8 @@ function handleGlossaryInputUpdate(e) {
   const name = e.target.value.trim();
   if (name) State.glossary[abbr] = name; else delete State.glossary[abbr];
   persistGlossaryDebounced();
+  // un nome come "Trazioni" o "Iperestensioni" porta una tara suggerita
+  applyExOptsDetection();
 }
 
 function updateQaHint() {
@@ -3308,7 +3649,7 @@ function renderSFA() {
     : giorni;
   const settimane = Math.max(1, giorniCoperti / 7);
 
-  const r = SFA.forSessions(sessions, State.muscleGroups);
+  const r = SFA.forSessions(sessions, State.muscleGroups, { tara: taraDi });
   const entries = Object.entries(r.tot)
     .map(([gid, v]) => ({ gid, info: gruppoInfo(gid), v: v.map(x => x / settimane),
                           sed: (r.sedute[gid] || 0) / settimane, picco: r.picco[gid] || 0 }))
@@ -3338,8 +3679,8 @@ function renderSFA() {
   const meta = [];
   meta.push('tratteggio = obiettivo/sett');
   if (settimane > 1) meta.push(`media su ${(Math.round(settimane * 10) / 10).toFixed(1).replace('.', ',')} sett`);
+  meta.push(`contano ${fmtSfa(r.credito)} set su ${r.scritti}`);
   meta.push(`<span class="sfa-conf${conf >= 50 ? ' good' : ''}">confidenza ${conf}%</span>`);
-  if (r.abitudine) meta.push('prior calibrato');
 
   const rows = entries.map(({ info, v, sed, picco }) => {
     const col = info.colore;
@@ -3369,7 +3710,7 @@ function renderSFA() {
 
   const avvisi = [];
   if (r.nonMappati.length) avvisi.push(`<div class="sfa-note warn">Senza muscoli assegnati: <strong>${r.nonMappati.map(escapeHTML).join(', ')}</strong> — non contano. Assegnali in Archivio › Nomi.</div>`);
-  if (conf < 100) avvisi.push(`<div class="sfa-note">La banda è l'incertezza sulla vicinanza al cedimento. Marca l'ultimo set con <code>!</code> (o usa <code>+!</code>) e si restringe.</div>`);
+  if (conf < 100) avvisi.push(`<div class="sfa-note">La banda è l'incertezza sui set senza <code>!</code>: quanto erano vicini al cedimento lo stimo, non lo so. Marca l'ultimo set con <code>!</code> (o usa <code>+!</code>) e si restringe. Il conto set per set è nell'anteprima di Oggi: tocca la riga dei numeri.</div>`);
 
   el.innerHTML = header + `<div class="sfa-meta">${meta.join(' <span style="opacity:.45">·</span> ')}</div>`
                + rows + avvisi.join('') + '</div>';
@@ -3521,6 +3862,13 @@ function attachGlobalListeners() {
   document.getElementById('nameCard').addEventListener('input', handleNameCardInput);
   document.getElementById('preview').addEventListener('click', e => {
     if (e.target.closest('[data-action="open-nomi-link"]')) { handleTabSwitch('storico'); toggleNomi(true); }
+    // Il conto set per set si apre a richiesta: è stato di sola vista, nessun dato da proteggere
+    const conto = e.target.closest('[data-action="conto"]');
+    if (conto) {
+      State.contoAperto = State.contoAperto === conto.dataset.conto ? null : conto.dataset.conto;
+      renderLogPreview();
+      return;
+    }
   });
   document.getElementById('nameCard').addEventListener('keydown', e => {
     if (e.key === 'Enter' && e.target.id === 'ncInput') {
@@ -3568,6 +3916,18 @@ function attachGlobalListeners() {
     }
     if (datasetMutationBlocked()) return;
     if (b.dataset.act === 'cycle') handleMuscleCycle(b.dataset.abbr, b.dataset.m);
+    else if (b.dataset.act === 'inv') {
+      // la notazione cambia il significato delle righe già scritte: si rileggono (il testo resta com'è)
+      setExOpt(b.dataset.abbr, 'inv', !isInv(b.dataset.abbr));
+      reparseNotation([b.dataset.abbr]);
+      persistExOptsDebounced();
+      renderGlossario();
+    }
+    else if (b.dataset.act === 'tara') {
+      setExOpt(b.dataset.abbr, 'tara', parseFloat(b.dataset.v));
+      persistExOptsDebounced();
+      renderGlossario();
+    }
     else if (b.dataset.act === 'sugg') {
       const m = suggerisci(b.dataset.abbr);
       if (m) {
@@ -3718,9 +4078,11 @@ function hydrateApp() {
       CONFIG.MUSCLE_GROUPS,
       CONFIG.MUSCLE_GROUPS_V1,
       CONFIG.DRAFT,
+      CONFIG.EX_OPTS,
     ]);
     const sessions = normalizeStoredSessions(values[CONFIG.SESSIONS]);
     const glossary = normalizeObject(values[CONFIG.GLOSSARY], 'Glossario');
+    const exOpts = normalizeObject(values[CONFIG.EX_OPTS], 'Opzioni esercizi');
     // Migrazione gruppi v1 → v2: la stringa piatta ("petto") diventa mappa
     // ({petto:1}) solo se la v2 non esiste ancora. Una v2 vuota ({}) è uno
     // stato legittimo (es. dopo "Nuovo quaderno") e NON riapre la v1.
@@ -3738,6 +4100,7 @@ function hydrateApp() {
     const preserveCurrentInput = _logInputDirty ||
       (_inputRevisionByDate.get(currentDate) || 0) !== (revisionsAtStart.get(currentDate) || 0);
 
+    State.exOpts = { ...exOpts };
     replaceSessionsInMemory(sessions);
     _durableRawByDate.clear();
     sessions.forEach(session => _durableRawByDate.set(session.date, session.raw.trim()));
@@ -3745,6 +4108,8 @@ function hydrateApp() {
     Object.entries(storedDrafts).forEach(([date, raw]) => _durableDraftRawByDate.set(date, raw));
     State.glossary = { ...glossary };
     State.muscleGroups = { ...muscleGroups };
+    // Prima apertura con lo storico: notazione e tara rilevate una volta sola
+    const rilevate = detectExOpts();
     if (migrateV1) {
       // La v1 resta al suo posto come rete di sicurezza; la v2 diventa la
       // verità da qui in poi. Errore non bloccante: si ritenterà al prossimo avvio.
@@ -3810,6 +4175,10 @@ function hydrateApp() {
     if (State.currentTab === 'storico') { renderStorico(); if (_nomiOpen) renderGlossario(); }
     if (State.currentTab === 'trend') renderTrend();
     if (reconciledAny) showToast('Vecchio e nuovo testo conservati insieme');
+    if (rilevate.length) {
+      persistExOpts();
+      showToast(rilevate.join(' · ') + ' · si cambia in Nomi', 8000);
+    }
 
     const activeRaw = document.getElementById('logInput').value;
     if (activeRaw.trim()) {

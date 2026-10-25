@@ -1004,9 +1004,8 @@ details.help code {
 .entry-comment::before { content: '— '; color: var(--ink-4); }
 .entry-comment.solo { grid-column: 1 / -1; margin-top: 0; }
 
-/* ─── Marcatori set (riscaldamento · coda drop · cedimento) ─────── */
+/* ─── Marcatori set (non conta · cedimento) ───────────────────────── */
 .segpart { white-space: nowrap; }
-.segpart.dim { opacity: 0.45; }
 .set-tag {
   display: inline-block;
   font-family: var(--mono);
@@ -1020,7 +1019,6 @@ details.help code {
   vertical-align: 2px;
 }
 .set-tag.warm { color: var(--ink-4); border: 1px solid var(--rule-2); background: transparent; }
-.set-tag.drop { color: var(--ochre); background: rgba(150, 105, 15, 0.10); }
 .set-tag.bang { color: var(--paper); background: var(--brick); letter-spacing: -0.06em; }
 
 /* Riga SFA sotto la voce: quanto "conta" la serie, muscolo per muscolo */
@@ -1045,6 +1043,27 @@ details.help code {
   text-underline-offset: 2px;
   padding: 0;
 }
+/* Conto set per set (0 + 0,4 + 1 = 1,4) e, a richiesta, il perché di ogni set */
+.entry-conto, .conto-det {
+  grid-column: 2 / -1;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-3);
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+}
+.entry-conto { margin-top: -4px; padding: 0; }
+.entry-conto b { color: var(--ink-2); font-weight: 600; }
+.entry-conto::after { content: '  perché ›'; font-family: var(--sans); opacity: 0.6; white-space: nowrap; }
+.entry-conto.open::after { content: '  chiudi ‹'; }
+.cr-dot { opacity: 0.5; padding: 0 1px; }
+.conto-det { display: block; padding: 2px 0 4px; }
+.cd-row { display: flex; gap: 8px; align-items: baseline; }
+.cd-set { min-width: 58px; color: var(--ink-2); }
+.cd-c { min-width: 20px; text-align: right; color: var(--ink); font-weight: 600; }
+.cd-why { flex: 1; font-family: var(--sans); font-size: 11px; }
+.cd-nota { display: block; font-family: var(--sans); font-style: italic; }
 
 .bw-entry {
   display: grid;
@@ -1766,6 +1785,14 @@ details.help code {
 .mchip.add.open { border-style: solid; color: var(--ink); border-color: var(--ink-2); }
 .mchip.sugg { color: var(--brick); border-color: var(--brick); border-style: dashed; background: var(--brick-wash); }
 .gl-nomusc { font-family: var(--mono); font-size: 10px; color: var(--ink-4); font-style: italic; }
+.gl-flag { font-family: var(--mono); font-size: 10px; color: var(--ink-3); border: 1px solid var(--rule-2); border-radius: 999px; padding: 3px 8px; }
+.gl-opts { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 10px; margin: 0 0 4px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; }
+.mchip.opt.on { color: var(--ink); border-color: var(--ink-2); background: var(--paper-2); font-weight: 700; }
+.gl-tara { font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); display: flex; align-items: center; gap: 5px; }
+.gl-tara-in { width: 54px; padding: 4px 6px; font: inherit; color: var(--ink); text-align: center; background: var(--paper); border: 1px solid var(--rule-2); border-radius: 8px; }
+.gl-opts-hint { flex-basis: 100%; font-size: 11px; line-height: 1.55; color: var(--ink-3); }
+.gl-opts-hint b { color: var(--ink-2); font-weight: 600; }
+.gl-opts-hint code { font-family: var(--mono); font-size: 10px; }
 .gl-palette {
   display: flex;
   flex-wrap: wrap;
@@ -1929,6 +1956,7 @@ details.help code {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+.toast.long { white-space: normal; width: max-content; max-width: calc(100vw - 32px); border-radius: 14px; text-align: center; line-height: 1.5; }
 
 /* Il foglio di input deve essere visibile al primo frame. */
 .stagger-1, .stagger-2, .stagger-3, .stagger-4 { animation: none; }

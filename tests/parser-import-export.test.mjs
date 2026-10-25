@@ -64,13 +64,18 @@ assert.equal(marked.hasBang, true);
 assert.equal(context.parseWorkoutLine('BP 3x10 @60!').segments[0].bang, '!');
 assert.equal(context.parseWorkoutLine('BP 3x10@60!!!'), null, 'tre bang non sono sintassi valida');
 
-const kinds = plain(SFA.classify(marked.segments)).map(s => s.kind);
-assert.deepEqual(kinds, ['warm', 'work', 'work']);
 const sfa = SFA.forExercise(marked, { BP: { petto: 1, tricipiti: 0.5 } });
-assert.equal(sfa.nSets, 3, 'il riscaldamento non conta negli SFA');
+assert.equal(sfa.sets[0].src, 'risc', 'il riscaldamento marcato w non conta negli SFA');
+assert.equal(sfa.sets[0].c[1], 0);
 assert.ok(sfa.perMuscle.petto[1] > 0);
 const grouped = SFA.forExercise(context.parseWorkoutLine('OHP 3x8@40'), { OHP: { 'delt-ant': 1, 'delt-lat': 0.5 } });
-assert.ok(Math.abs(grouped.perGroup.spalle[1] - 3 * 0.85) < 1e-9, 'i capi della spalla contano insieme, massimo 1 per set');
+assert.ok(Math.abs(grouped.perGroup.spalle[1] - 3 * 0.9) < 1e-9, 'i capi della spalla contano insieme, massimo 1 per set');
+
+// Opzioni per esercizio ("####"): la notazione del file vale per le sue righe
+const withOpts = context.txtToSessions('#### CR = inv\n\n# 2026-05-04\nCR 1@12 + 1@15\n');
+assert.deepEqual(plain(withOpts.exOpts), { CR: { inv: true } });
+assert.deepEqual(plain(withOpts.sessions[0].exercises[0].segments.map(s => s.reps)), [12, 15]);
+assert.match(context.sessionsToTxt(withOpts.sessions, {}, {}, withOpts.exOpts), /^#### CR = inv$/m);
 
 assert.deepEqual(plain(context.parseMuscleMap('petto, tricipiti .5')), { petto: 1, tricipiti: 0.5 });
 assert.equal(context.muscleMapToStr({ petto: 1, tricipiti: 0.5 }), 'petto, tricipiti .5');
