@@ -59,7 +59,7 @@ test('install precaches the complete first-frame shell', async () => {
   const added = [];
   const caches = {
     async open(cacheName) {
-      assert.equal(cacheName, 'ledger-workout-v11-sfa2');
+      assert.equal(cacheName, 'ledger-workout-v12-scheda');
       return {
         async addAll(requests) { added.push(...requests); },
       };
@@ -83,7 +83,7 @@ test('canonical navigation returns the cached shell without starting network wor
   let fetchCalls = 0;
   const caches = {
     async open(cacheName) {
-      assert.equal(cacheName, 'ledger-workout-v11-sfa2');
+      assert.equal(cacheName, 'ledger-workout-v12-scheda');
       return {
         async match(request) {
           assert.equal(request, INDEX);
@@ -122,7 +122,7 @@ test('canonical navigation repairs a missing cached shell from the network', asy
   };
   const caches = {
     async open(cacheName) {
-      assert.equal(cacheName, 'ledger-workout-v11-sfa2');
+      assert.equal(cacheName, 'ledger-workout-v12-scheda');
       return {
         async match() { return undefined; },
         async put(request, response) { cachedResponses.push([request, response]); },
@@ -175,12 +175,13 @@ test('non-canonical documents bypass the app-shell handler', () => {
 });
 
 test('activation removes only this app\'s obsolete caches', async () => {
-  const current = 'ledger-workout-v11-sfa2';
+  const current = 'ledger-workout-v12-scheda';
   const deleted = [];
   const caches = {
     async keys() {
       return [
         current,
+        'ledger-workout-v11-sfa2',
         'ledger-workout-v8-slow',
         'workout-v8-daylight',
         'workout-v7-debug-fixes',
@@ -197,6 +198,7 @@ test('activation removes only this app\'s obsolete caches', async () => {
   await Promise.all(waits);
 
   assert.deepEqual(deleted.sort(), [
+    'ledger-workout-v11-sfa2',
     'ledger-workout-v8-slow',
     'workout-v7-debug-fixes',
     'workout-v8-daylight',

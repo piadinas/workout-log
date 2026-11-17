@@ -1149,3 +1149,35 @@ test('autosave commits the session and draft removal atomically before reporting
   await flushTasks();
   assert.ok(vm.runInContext('_lastSavedAt instanceof Date', context), 'success timestamp should be set after commit');
 });
+
+test('the Scheda transcription adds up and opens on the phase of the calendar', () => {
+  const context = loadApp();
+  const fasi = plain(vm.runInContext(`SCHEDA.fasi.map(f => ({
+    id: f.id,
+    sedute: f.sedute.map(s => ({
+      nome: s.nome,
+      dichiarate: s.serie,
+      contate: skRighe(s).reduce((t, r) => t + skSerie(r), 0),
+      sigle: skRighe(s).map(r => r.s),
+    })),
+  }))`, context));
+
+  for (const fase of fasi) {
+    for (const seduta of fase.sedute) {
+      assert.equal(seduta.contate, seduta.dichiarate, `${fase.id} ${seduta.nome}: serie dichiarate e contate`);
+      for (const sigla of seduta.sigle) assert.match(sigla, /^[A-Z]{1,6}$/, `${fase.id} ${seduta.nome}: sigla ${sigla}`);
+    }
+  }
+  const settimana = id => fasi.find(f => f.id === id).sedute.reduce((t, s) => t + s.dichiarate, 0);
+  assert.deepEqual([settimana('f1'), settimana('f2'), settimana('f3')], [72, 82, 92]);
+
+  const fase = data => vm.runInContext(`faseDiOggi(${JSON.stringify(data)})`, context);
+  assert.deepEqual(
+    ['2026-11-17', '2026-12-13', '2026-12-14', '2027-04-16', '2027-08-01', '2028-01-01'].map(fase),
+    ['f1', 'f1', 'f2', 'f3', 'f4', 'f4']);
+
+  assert.deepEqual(plain(vm.runInContext(`skRiga('BP con fermo 3×8–10')`, context)),
+    { s: 'BP', q: 'con fermo', sr: '3 × 8–10', c: '', n: '' });
+  assert.deepEqual(plain(vm.runInContext(`skRiga('DIPS con zavorra 3')`, context)),
+    { s: 'DIPS', q: 'con zavorra', sr: '3 serie', c: '', n: '' });
+});

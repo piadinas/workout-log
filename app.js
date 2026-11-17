@@ -2568,7 +2568,7 @@ function toggleFileMenu(open) {
   document.getElementById('btnFileMenu').setAttribute('aria-expanded', String(_fileMenuOpen));
 }
 
-const ZONE_LABEL = { log: 'oggi', storico: 'archivio', trend: 'andamento' };
+const ZONE_LABEL = { log: 'oggi', scheda: 'scheda', storico: 'archivio', trend: 'andamento' };
 function renderTopbarMark() {
   document.getElementById('todayMark').textContent = ZONE_LABEL[State.currentTab] || 'oggi';
 }
@@ -2592,10 +2592,11 @@ function handleTabSwitch(tab) {
     b.classList.toggle('active', selected);
     b.setAttribute('aria-selected', String(selected));
   });
-  ['log','storico','trend'].forEach(t => {
+  TABS.forEach(t => {
     const el = document.getElementById('tab-'+t);
     el.classList.toggle('hidden', t !== tab);
   });
+  if (tab==='scheda') renderScheda();
   if (tab==='storico') { renderStorico(); if (_nomiOpen) renderGlossario(); }
   if (tab==='trend') renderTrend();
   if (tab==='log') renderLogPreview();
@@ -3717,6 +3718,177 @@ function renderSFA() {
 }
 
 /* ───────────────────────────────────────────────────────────────────
+   15b. Scheda (zona di consultazione)
+   Trascrizione della scheda Torso/Limbs del 15/11/2026. È una traccia da
+   leggere, non un motore: niente suggerimenti, niente confronto col diario,
+   niente stato salvato. Si apre sulla fase del calendario; le altre sono a
+   un tocco. Le righe di Fase 2 e 3 sono scritte come nella scheda
+   ("BP con fermo 3×8–10", "DIPS con zavorra 3") e lette da skRiga.
+   ─────────────────────────────────────────────────────────────────── */
+const SCHEDA = {
+  meta: 'Torso/Limbs · nov 2026 – nov 2027 · versione del 15/11',
+  fasi: [
+    { id: 'f1', nome: 'Fase 1', fino: '2026-12-13', quando: "fino all'8 dicembre",
+      sintesi: '72 serie a settimana su 4 sedute, 54 nelle settimane da 3. Alimentazione a mantenimento.',
+      sedute: [
+        { nome: 'Torso A', serie: 17, durata: '49–64′', righe: [
+          ['BP', '3 × 6–8', '45 kg', '2/11: 13@40!. A 8-8-8 passa a 47,5'],
+          ['TBR', '3 × 8–12', '32,5 kg', '17/10: 9@35! e 8@35!. Gomiti larghi, 45–60° dal busto'],
+          ['DIPS', '3 × 6–9', 'corpo libero', "14/10: 9! + 5!. Se una serie scende sotto 6, usa l'assistenza"],
+          ['LM', '3 × 8–12', '45 kg', '4/11: 2x12@45 + 9@45!. A 12-12-12 passa a 50'],
+          ['AL', '3 × 12–20', '10 kg', '4/11: 15@10 + 12@10!'],
+          ['BR', '2 × 12–20', '20 kg', '2/11: 2x15@20! + 13@20!'],
+        ] },
+        { nome: 'Limbs A', serie: 20, durata: '49–67′', righe: [
+          ['SQ', '3 × 6–8', '65 kg', '30/10: 12@60!. A 8-8-8 passa a 67,5'],
+          ['LCS', '3 × 10–15', 'da tarare', 'Mai fatto. Cerca il carico da 12 ripetizioni con 2 di margine'],
+          ['LE', '2 × 10–15', '40 kg', '28/10: 11@45! + 12@40. Scendi fino in fondo'],
+          ['PS', '3 × 8–12', '10–12,5 kg di dischi', '10/11: 12@10 + 7@12.5! + 7@12.5!. Discesa lenta, senza rimbalzare'],
+          ['FP', '3 × 8–12', '15,5 kg con la barra', '10/11: 2x12@15.5 + 8@18!. Su panca inclinata 30–45°, bilanciere dietro la testa'],
+          ['POLP', '3 × 10–15', '35 kg', '30/10: 11@35! + 11@35!. A gamba tesa, fermo di 1–2 secondi in basso'],
+          ['CR', '3 × 10–20', 'corpo libero', '4/11: 15 + 15 + 8!. Con peso usa `CRZ`'],
+        ] },
+        { nome: 'Torso B', serie: 16, durata: '46–61′', righe: [
+          ['OHP', '3 × 8–12', '24 kg (12+12)', '4/11: 13@24 + 10@24!. A 12-12-12 passa a 28 (14+14)'],
+          ['TR', '3 serie', 'corpo / assistite', '14/10: 3 + 2!. Serie 1 a corpo libero a una dal limite. Serie 2 e 3 assistite per fare 6–8. Quando la serie 1 arriva a 6–7, fai libera anche la 2'],
+          ['BP con fermo', '3 × 8–10', '37,5–40 kg', 'Bilanciere fermo sul petto per un secondo, poi su'],
+          ['TBR', '2 × 8–12', '32,5 kg', "Presa stretta se c'è, tirando verso l'anca"],
+          ['AL', '3 × 12–20', '10 kg', 'come Torso A'],
+          ['BR', '2 × 12–20', '20 kg', 'come Torso A'],
+        ] },
+        { nome: 'Limbs B', serie: 19, durata: '49–66′', righe: [
+          ['RDL', '3 × 8–10', '40–45 kg', 'Mai fatto in questo log. Prima seduta: 2 serie con 3 o più di margine, poi +5 kg a seduta finché resta pulito. Se senti tirare collo o trapezio, torna al carico della seduta prima. Quando cede la presa, fascette'],
+          ['LP', '3 × 10–12', '130 kg', '14/10: 10@140! poi 12@120!'],
+          ['HE', '2 × 10–15', '15 kg', '2/11: 12@15! + 8@15!'],
+          ['BC', '3 × 8–12', '18 kg', '2/11: 12@18 + 10@20! + 8@18!. Va bene anche con manubri su panca inclinata 45–60°, ritarando il carico'],
+          ['PDT', '2 × 10–15', '45 kg', '10/10: 10@50! + 10@45!. Gomiti fermi ai fianchi'],
+          ['POLP', '3 × 10–15', '35 kg', 'come Limbs A'],
+          ['CR', '3 × 10–20', 'corpo libero', 'come Limbs A'],
+        ] },
+      ] },
+    { id: 'f2', nome: 'Fase 2', fino: '2027-04-15', quando: 'dal 14 dicembre a metà aprile',
+      sintesi: "82 serie a settimana su 4 sedute. Alimentazione in leggero deficit. Stessi esercizi con i carichi raggiunti nella Fase 1; l'hyperextension esce. Finisce quando il girovita è sceso di 4–6 cm dal punto zero, di solito a metà aprile.",
+      sedute: [
+        { nome: 'Torso A', serie: 20, durata: '57–73′', righe: 'BP 4×6–8 · TBR 3×8–12 · DIPS 3×6–9 · LM 3×8–12 · AL 4×12–20 · BR 3×12–20' },
+        { nome: 'Limbs A', serie: 21, durata: '54–71′', righe: 'SQ 4×6–8 · LCS 4×10–15 · PS 3×8–12 · FP 4×8–12 · POLP 3×10–15 · CR 3×10–20' },
+        { nome: 'Torso B', serie: 20, durata: '55–73′', righe: 'OHP 3×8–12 · TR 3×5–8 · BP con fermo 3×8–10 · TBR 3×8–12 · CC dal basso 2×12–15 · AL 3×12–20 · BR 3×12–20',
+          note: { CC: "Croci ai cavi dal basso verso l'alto. Il carico va tarato: è un movimento diverso dalle croci del log" } },
+        { nome: 'Limbs B', serie: 21, durata: '53–71′', righe: 'RDL 3×8–10 · LP 3×10–12 · LE 3×10–15 · BC 4×8–12 · PDT 2×10–15 · POLP 3×10–15 · CR 3×10–20' },
+      ] },
+    { id: 'f3', nome: 'Fase 3', fino: '2027-07-31', quando: 'da metà aprile a fine luglio', provvisoria: true,
+      sintesi: 'Picco di volume, in leggero surplus: 92 serie a settimana su 4 sedute. Entrano la panca inclinata (IP) al posto della panca con fermo e le scrollate (SCR). Se avrai tempo, due modi per arrivare a 107: ruotare due giorni sì e uno no, oppure una quinta seduta corta di cavi e isolamenti.',
+      sedute: [
+        { nome: 'Torso A', serie: 21, righe: 'BP 4 · TBR 4 · DIPS con zavorra 3 · LM 3 · AL 4 · BR 3' },
+        { nome: 'Limbs A', serie: 24, righe: 'SQ 4 · LCS 4 · LE 2 · PS 4 · FP 4 · POLP 4 · CR 2' },
+        { nome: 'Torso B', serie: 23, righe: 'OHP 4 · TR 3 · IP 4 · CC 2 · TBR 3 · AL 4 · BR 3' },
+        { nome: 'Limbs B', serie: 24, righe: 'RDL 4 · LP 4 · LE 2 · BC 4 · SCR 3 · POLP 4 · CR 3' },
+      ] },
+    { id: 'f4', nome: 'Fase 4', fino: '2027-11-30', quando: 'da fine luglio a novembre', provvisoria: true,
+      sintesi: "Forza: 90 serie a settimana su 4 sedute. Torna la doppia panca piana. Su BP, SQ, OHP, dips e trazioni con zavorra: 2 serie pesanti da 3–5 ripetizioni a 2 dal limite, poi 2 serie da 6–8 con il 10–12% in meno. Con i manubri all'OHP: 2 × 5–7 e poi 2 × 8–10.",
+      sedute: [] },
+  ],
+  pieghe: [
+    { titolo: 'Regole', voci: [
+      '**Fermi.** Niente superserie, niente face pull, dips mai come primo esercizio.',
+      '**Rotazione.** Torso A → Limbs A → Torso B → Limbs B, sempre con almeno un giorno di riposo dopo ogni Limbs. Si parte da Limbs A.',
+      "**Frequenza.** 3 sedute a settimana fino al 29 novembre; 4 dal 30 novembre all'8 dicembre; dal 9 al 13 dicembre pausa, che vale come primo scarico; dal 14 dicembre 4 a settimana fisse.",
+      '**Prima rotazione.** 2 serie invece di 3 su LCS, LE e RDL, per non restare bloccato dai dolori muscolari.',
+      "**Quanto spingere.** Panca, squat, OHP, RDL, trazioni e dips: fermati a 1–2 ripetizioni dal limite, `!` solo se arrivi davvero all'ultima ripetizione sicura. Macchine, cavi e isolamenti: prime serie a 1–2 dal limite, ultima a cedimento con `!`. I multiarticolari senza `!` qui contano un po' meno, circa 1 SFA a settimana su petto e deltoidi anteriori: va bene così.",
+      '**Recuperi.** 3′ su BP, SQ e RDL · 2′30″ su TBR, DIPS, LM, OHP, TR e LP · 1′30″ su isolamenti, polpacci e addome (su LCS anche 2′).',
+      "**Riscaldamento.** Sul primo esercizio 8 ripetizioni al 50% del carico, 5 al 70%, 2 all'85%; sul secondo multiarticolare 6 al 70%. Nel log non si scrivono, oppure si scrivono con `w`.",
+      '**Progressione.** Quando tutte le serie arrivano al limite alto del range, alla seduta dopo sali del minimo possibile. OHP con manubri: da 12+12 a 14+14 il salto è del 17%, quindi chiudi 12-12-12 prima di salire e a 28 kg riparti da 7–8. Dips: a 9-9-9 a corpo libero aggiungi 2,5 kg alla volta.',
+      '**Scarichi.** Stessi esercizi e stessi pesi, metà serie, 3–4 ripetizioni dal limite, niente `!`. Il primo è il 9–13 dicembre; poi fine gennaio, metà marzo, metà maggio, metà luglio e metà settembre.',
+      '**Giornata storta.** Fai i primi due esercizi e vai a casa. Conta come seduta.',
+      '**Gomiti.** Se senti un dolore puntiforme al gomito nel french press, passa alle estensioni sopra la testa al cavo con la corda.',
+    ] },
+    { titolo: 'Cardio e passi', voci: [
+      "**Nuoto.** Una nuotata facile a settimana, 35–45 minuti, in un giorno di riposo, a un ritmo a cui potresti parlare: Zona 2 sull'Apple Watch, 136–148 bpm.",
+      '**Passi.** 7.500–9.000 al giorno.',
+      "**Intervalli.** Niente nel periodo in deficit. I 4 × 4 minuti su bike o vogatore possono tornare dall'estate, se li vuoi per la salute.",
+    ] },
+    { titolo: 'Cosa misurare', voci: [
+      "**Tempi.** L'ora della prima e dell'ultima serie di ogni seduta: servono al controllo dell'8 dicembre.",
+      '**Peso.** Quattro mattine a settimana, a digiuno, con `BW`. Conta la media della settimana.',
+      "**Girovita.** Ogni domenica mattina, a digiuno, all'altezza dell'ombelico, con l'addome rilassato e a fine espirazione. La prima misura è il punto zero.",
+    ] },
+    { titolo: 'Notazione', voci: [
+      "**Trazioni assistite.** L'assistenza va in un commento: `TR 1@3 + 1@6 // -20`.",
+      '**Dips con zavorra.** `DIPS 5@8` vuol dire 8 ripetizioni con 5 kg.',
+      '**OHP con manubri.** La somma dei due: `13@24` per due manubri da 12.',
+      '**French press.** Il totale, barra inclusa.',
+      '**Crunch con peso.** Una sigla nuova, per esempio `CRZ`: `CR` ha l\'opzione `inv` e un peso verrebbe letto come ripetizioni.',
+      '**Riscaldamenti.** Se li scrivi, con `w`: `BP 8@22.5w`.',
+    ] },
+  ],
+};
+
+// "BP con fermo 3×8–10" → { s:'BP', q:'con fermo', sr:'3 × 8–10' }; "DIPS con zavorra 3" → sr '3 serie'.
+// Le righe di Fase 1 arrivano già come array [etichetta, serie×rip, carico, nota].
+function skRiga(r, note) {
+  if (Array.isArray(r)) {
+    const [s, ...q] = r[0].split(' ');
+    return { s, q: q.join(' '), sr: r[1], c: r[2] || '', n: r[3] || '' };
+  }
+  const m = r.trim().match(/^(\S+)(?: (.+?))? (\d+(?:×\S+)?)$/);
+  if (!m) return { s: r.trim(), q: '', sr: '', c: '', n: '' };
+  const sr = m[3].includes('×') ? m[3].replace('×', ' × ') : m[3] + ' serie';
+  return { s: m[1], q: m[2] || '', sr, c: '', n: (note && note[m[1]]) || '' };
+}
+function skRighe(seduta) {
+  const righe = Array.isArray(seduta.righe) ? seduta.righe : seduta.righe.split(' · ');
+  return righe.map(r => skRiga(r, seduta.note));
+}
+// Serie dichiarate da una riga: il primo numero ("3 × 8–10", "3 serie").
+const skSerie = riga => parseInt(riga.sr, 10) || 0;
+
+function faseDiOggi(oggi = todayStr()) {
+  return (SCHEDA.fasi.find(f => oggi <= f.fino) || SCHEDA.fasi[SCHEDA.fasi.length - 1]).id;
+}
+
+// Testo della scheda → HTML: escape, poi `codice` e **grassetto**.
+function skFmt(t) {
+  return escapeHTML(t).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+}
+
+let _skFase = null;
+function renderScheda() {
+  const corrente = faseDiOggi();
+  if (!_skFase) _skFase = corrente;
+  const fase = SCHEDA.fasi.find(f => f.id === _skFase) || SCHEDA.fasi[0];
+
+  document.getElementById('skMeta').textContent = SCHEDA.meta;
+  document.getElementById('skFasi').innerHTML = SCHEDA.fasi.map(f =>
+    `<button class="seg-btn${f.id === fase.id ? ' on' : ''}" data-fase="${f.id}" role="tab" aria-selected="${f.id === fase.id}" type="button">${escapeHTML(f.nome)}</button>`
+  ).join('');
+
+  const quando = fase.quando.charAt(0).toUpperCase() + fase.quando.slice(1);
+  const stato = [fase.id === corrente ? 'in corso' : '', fase.provvisoria ? 'ossatura provvisoria, si rivede ad aprile' : '']
+    .filter(Boolean).join(' · ');
+  let html = `<div class="sk-meta"><b>${escapeHTML(quando)}</b>${stato ? ' · ' + escapeHTML(stato) : ''}<br>${skFmt(fase.sintesi)}</div>`;
+  for (const seduta of fase.sedute) {
+    const testa = [seduta.serie + ' serie', seduta.durata].filter(Boolean).join(' · ');
+    html += `<div class="sk-head"><h3>${escapeHTML(seduta.nome)}</h3><i></i><span>${escapeHTML(testa)}</span></div>`;
+    html += skRighe(seduta).map(r => `<div class="sk-ex">
+      <span class="sk-s">${escapeHTML(r.s)}</span>
+      <span class="sk-sr">${r.q ? `<span class="sk-q">${escapeHTML(r.q)}</span>` : ''}${escapeHTML(r.sr)}</span>
+      <span class="sk-c">${escapeHTML(r.c)}</span>
+      ${r.n ? `<div class="sk-n">${skFmt(r.n)}</div>` : ''}
+    </div>`).join('');
+  }
+  document.getElementById('skFase').innerHTML = html;
+
+  // Le pieghe non dipendono dalla fase: si disegnano una volta sola, così
+  // cambiare fase non richiude quella che si sta leggendo.
+  const extra = document.getElementById('skExtra');
+  if (!extra.childElementCount) {
+    extra.innerHTML = SCHEDA.pieghe.map(p => `<details class="help sk-fold">
+      <summary>${escapeHTML(p.titolo)}</summary>
+      <div class="help-body">${p.voci.map(v => `<div>${skFmt(v)}</div>`).join('')}</div>
+    </details>`).join('');
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────
    16. Date picker trigger (uses native picker)
    ─────────────────────────────────────────────────────────────────── */
 function setupDatePickerTrigger() {
@@ -3734,7 +3906,7 @@ function setupDatePickerTrigger() {
 /* ───────────────────────────────────────────────────────────────────
    17. Swipe between tabs
    ─────────────────────────────────────────────────────────────────── */
-const TABS = ['log', 'storico', 'trend'];
+const TABS = ['log', 'scheda', 'storico', 'trend'];   // stesso ordine della tabbar
 function setupSwipeGesture() {
   let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
   document.addEventListener('touchstart', e => {
@@ -3901,6 +4073,12 @@ function attachGlobalListeners() {
     if (!btn) return;
     State.trendMetric = btn.dataset.metric;
     renderTrend({ chartOnly: true });
+  });
+  document.getElementById('skFasi').addEventListener('click', e => {
+    const btn = e.target.closest('.seg-btn');
+    if (!btn) return;
+    _skFase = btn.dataset.fase;
+    renderScheda();
   });
   document.getElementById('muscleVolumeSection').addEventListener('change', e => {
     if (e.target.id === 'sfaRangeSel') renderSFA();

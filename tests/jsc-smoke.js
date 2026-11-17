@@ -13,7 +13,8 @@ if (!src) throw new Error('app.js non trovato');
 const documentStub = { addEventListener() {} };
 const exportNames = ['parseWorkoutLine','parseAllLines','SFA','parseMuscleMap','muscleMapToStr','muscleMapLabel',
   'normalizeMuscleGroups','sessionsToTxt','txtToSessions','suggerisciPerNome','patternForWork','MUSCOLI','CONFIG',
-  'GRUPPI_SFA','gruppoDiMuscolo','gruppoInfo','fmtPeso','computeAutoInv','exOptsToStr','parseExOpts'];
+  'GRUPPI_SFA','gruppoDiMuscolo','gruppoInfo','fmtPeso','computeAutoInv','exOptsToStr','parseExOpts',
+  'SCHEDA','skRiga','skRighe','skSerie','faseDiOggi'];
 const factory = new Function('document','window','navigator',
   src + '\nreturn {' + exportNames.join(',') + '};');
 const app = factory(documentStub, {}, {});
@@ -206,6 +207,23 @@ check('safeRaw declassa #', txt2.includes('// appunto') && !txt2.includes('\n# a
 
 /* ── G. CONFIG v2 ────────────────────────────────────────────────── */
 check('chiave v2 attiva', app.CONFIG.MUSCLE_GROUPS === 'musclegroups_v2' && app.CONFIG.MUSCLE_GROUPS_V1 === 'musclegroups_v1');
+
+/* ── H. Scheda: la trascrizione torna coi conti della scheda ─────── */
+for (const f of app.SCHEDA.fasi) {
+  for (const sd of f.sedute) {
+    const righe = app.skRighe(sd);
+    const contate = righe.reduce((t, r) => t + app.skSerie(r), 0);
+    check('scheda ' + f.id + ' ' + sd.nome + ': serie', contate === sd.serie, contate);
+    check('scheda ' + f.id + ' ' + sd.nome + ': sigle', righe.every(r => /^[A-Z]{1,6}$/.test(r.s)), righe.map(r => r.s));
+  }
+}
+const settimana = id => app.SCHEDA.fasi.find(f => f.id === id).sedute.reduce((t, s) => t + s.serie, 0);
+check('scheda serie/sett 72 · 82 · 92', eq([settimana('f1'), settimana('f2'), settimana('f3')], [72, 82, 92]));
+check('scheda fase per data',
+  eq(['2026-11-17','2026-12-13','2026-12-14','2027-04-16','2027-08-01','2028-01-01'].map(d => app.faseDiOggi(d)),
+     ['f1','f1','f2','f3','f4','f4']));
+check('scheda riga con qualificatore', eq(app.skRiga('BP con fermo 3×8–10'), { s: 'BP', q: 'con fermo', sr: '3 × 8–10', c: '', n: '' }));
+check('scheda riga solo serie', eq(app.skRiga('DIPS con zavorra 3'), { s: 'DIPS', q: 'con zavorra', sr: '3 serie', c: '', n: '' }));
 
 /* ── Esito ───────────────────────────────────────────────────────── */
 const summary = failures.length

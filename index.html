@@ -1876,6 +1876,25 @@ details.help code {
   letter-spacing: 0.02em;
 }
 
+/* ─── Scheda: traccia da consultare, non un motore ──────────────── */
+.sk-meta { font-size: 13px; color: var(--ink-2); line-height: 1.5; margin-top: 12px; }
+.sk-head { display: flex; align-items: baseline; gap: 10px; margin: 26px 0 4px; }
+.sk-head h3 { font-family: var(--mono); font-size: 10.5px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
+.sk-head i { flex: 1; height: 1px; background: var(--rule); }
+.sk-head span, .sk-sr, .sk-s { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.sk-head span { font-size: 11px; color: var(--ink-3); white-space: nowrap; }
+.sk-ex { display: grid; grid-template-columns: 50px 1fr auto; column-gap: 10px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--rule); }
+.sk-ex:last-child { border-bottom: 0; }
+.sk-s { font-size: 13px; font-weight: 600; }
+.sk-sr { font-size: 13px; }
+.sk-q { font-family: var(--sans); font-size: 12.5px; color: var(--ink-3); margin-right: 6px; }
+.sk-c { font-size: 12.5px; color: var(--ink-2); text-align: right; }
+.sk-n { grid-column: 2 / 4; font-size: 12px; line-height: 1.45; color: var(--ink-3); margin-top: 3px; }
+.sk-fold { margin-top: 18px; }
+.sk-fold .help-body { font-family: var(--sans); font-size: 13px; color: var(--ink-2); line-height: 1.5; gap: 8px; }
+.sk-fold b { color: var(--ink); font-weight: 600; }
+.sk-fold + .sk-fold { margin-top: 2px; }
+
 /* ─── Bottom navigation ─────────────────────────────────────────── */
 .tabbar {
   /* Figlio flex del guscio, NON position:fixed: sta in fondo per layout,
@@ -2086,6 +2105,17 @@ details.help code {
     </details>
   </main>
 
+  <!-- ─── SCHEDA ───────────────────────────────────────────────── -->
+  <main id="tab-scheda" class="page hidden">
+    <div class="arc-head"><div>
+      <div class="arc-year">Scheda</div>
+      <div class="arc-meta" id="skMeta"></div>
+    </div></div>
+    <div class="seg" id="skFasi" role="tablist" aria-label="Fase"></div>
+    <div id="skFase"></div>
+    <div id="skExtra"></div>
+  </main>
+
   <!-- ─── ARCHIVIO ─────────────────────────────────────────────── -->
   <main id="tab-storico" class="page hidden">
     <div id="arcMain">
@@ -2135,6 +2165,10 @@ details.help code {
     <button class="tab-item active" data-tab="log" role="tab" aria-selected="true" type="button">
       <svg class="ti-glyph" viewBox="0 0 24 24"><path d="M6.5 6.5h11M6.5 12h11M6.5 17.5h7"/></svg>
       Oggi
+    </button>
+    <button class="tab-item" data-tab="scheda" role="tab" aria-selected="false" type="button">
+      <svg class="ti-glyph" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></svg>
+      Scheda
     </button>
     <button class="tab-item" data-tab="storico" role="tab" aria-selected="false" type="button">
       <svg class="ti-glyph" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 9h16M9 5V3M15 5V3"/></svg>
