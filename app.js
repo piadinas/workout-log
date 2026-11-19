@@ -1464,14 +1464,12 @@ function normalizeMuscleGroups(raw) {
    Limite noto e voluto: un set più pesante aggiunto in coda può abbassare i
    set prima, perché dimostra che erano più lontani dal cedimento. Vietarlo
    impedirebbe di riconoscere i riscaldamenti (2x12@20 + 12@30: i 12@20
-   tornerebbero a contare); sul diario reale capita in 5 serie aggiunte su 348.
+   tornerebbero a contare).
    ─────────────────────────────────────────────────────────────────── */
 const SFA = (() => {
-  // E — valore del set per ripetizioni di margine. Pieno fra 0 e 1 (il "!"
-  // vale fino a 1 di margine), poi −5% a ripetizione con pendenza costante,
-  // zero a 21: l'ordine di grandezza della meta-regressione di Robinson 2024,
-  // senza gomito. Un set a 9 di margine vale 0,60; un riscaldamento a 20, ~0.
-  const E_PENDENZA = 0.05, E_PIENO = 1;
+  // Curva Neon: credito per il volume ipertrofico in funzione dei RIR stimati.
+  // I nodi sono una convenzione del diario. Fra due nodi il credito è lineare.
+  const E_TAB = [[1, 1], [2, 0.90], [3, 0.75], [4, 0.55], [5, 0.30], [6, 0]];
   // Stanchezza, come frazione delle ripetizioni possibili a quel carico
   // [min, stima, max]. Misurata sul diario: fra due set a cedimento consecutivi
   // allo stesso carico le ripetizioni calano del 17% in mediana, meno del 27%
@@ -1496,7 +1494,7 @@ const SFA = (() => {
       if (x <= tab[i][0]) { const [x0, y0] = tab[i - 1], [x1, y1] = tab[i]; return y0 + (y1 - y0) * (x - x0) / (x1 - x0); }
     return tab[tab.length - 1][1];
   };
-  const E = rir => !(rir > E_PIENO) ? 1 : Math.max(0, 1 - E_PENDENZA * (rir - E_PIENO));
+  const E = rir => lerp(E_TAB, rir);
   // R — poche ripetizioni contano meno (carichi da forza). Per un set a
   // cedimento conta il CARICO, cioè quante ripetizioni permette da fresco: 5 a
   // cedimento con un carico da 12 sono stanchezza, non un carico pesante. Per
@@ -2640,7 +2638,7 @@ function handleAppResume() {
 }
 
 function renderHero() {
-  const dateStr = document.getElementById('logDateInput').value || todayStr();
+  const dateStr = _activeDate || todayStr();
   const dt = new Date(dateStr+'T12:00:00');
   const day = _fmtWeekday.format(dt);
   const num = dt.getDate();
@@ -2648,11 +2646,12 @@ function renderHero() {
   document.getElementById('heroDay').textContent = day;
   document.getElementById('heroNum').textContent = String(num).padStart(2, '0');
   document.getElementById('heroMonth').textContent = monthYr;
+  document.getElementById('dayNext').disabled = dateStr >= todayStr();
 }
 
 function renderHeroStats() {
   const el = document.getElementById('heroStats');
-  const targetDate = document.getElementById('logDateInput').value || todayStr();
+  const targetDate = _activeDate || todayStr();
 
   // Hero stats from current draft or saved session
   const raw = document.getElementById('logInput').value;
@@ -2808,9 +2807,16 @@ function fillQuickAddAbbr(abbr) {
 }
 
 function handleLogDateChange() {
+  const input = document.getElementById('logDateInput');
+  const date = input.value;
+  const today = todayStr();
+  input.max = today;
+  if (!isRealISODate(date) || date > today) {
+    input.value = _activeDate || today;
+    return;
+  }
   autosaveCommit();      // consolida la data che si sta lasciando
   stashCurrentDraft();   // e conserva come bozza ciò che non parsa
-  const date = document.getElementById('logDateInput').value || todayStr();
   if (_activeDate !== date) State.contoAperto = null;
   _activeDate = date;
   const draft = State.pendingDrafts[date];
@@ -2825,6 +2831,7 @@ function handleLogDateChange() {
   renderHero();
   renderHeroStats();
   renderLogPreview();
+  updateQaHint();
 }
 
 function handleEditSession(date) {
@@ -2862,7 +2869,7 @@ function handleQuickAdd(bang = false) {
   // Foglio vuoto ma sessione salvata (e non svuotato dall'utente): si riparte
   // dal salvato — con l'autosave un append qui non deve MAI sostituire la sessione
   if (!ta.value.trim() && !_logInputDirty) {
-    const sess = getSessByDate().get(document.getElementById('logDateInput').value || todayStr());
+    const sess = getSessByDate().get(_activeDate || todayStr());
     if (sess) ta.value = sess.raw;
   }
   const lines = ta.value ? ta.value.split('\n') : [];
@@ -2906,7 +2913,7 @@ function handleQuickAdd(bang = false) {
   document.getElementById('qaWeight').value = '';
   document.getElementById('qaReps').focus();
   // Timer di recupero: solo per l'oggi reale — su una data passata non ha senso
-  if ((document.getElementById('logDateInput').value || todayStr()) === todayStr()) startRestTimer(abbr);
+  if ((_activeDate || todayStr()) === todayStr()) startRestTimer(abbr);
 }
 
 /* ───────────────────────────────────────────────────────────────────
@@ -2955,7 +2962,7 @@ function renderRestTimer() {
 }
 
 function renderLogPreview() {
-  const targetDate = document.getElementById('logDateInput').value || todayStr();
+  const targetDate = _activeDate || todayStr();
   const rawText = document.getElementById('logInput').value;
   const allLines = parseAllLines(rawText);
   const exercises = allLines.filter(l => l.type === 'exercise');
@@ -2999,8 +3006,12 @@ function renderLogPreview() {
 
 function renderPreviewEntries(lines, targetDate, label) {
   const prMap = getCachedPRs();
-  const existingSession = getSessByDate().get(targetDate);
-  const historicalPRs = existingSession ? (prMap.get(targetDate) || {}) : (prMap.latest || {});
+  // Ogni snapshot contiene i record precedenti alla sua seduta.
+  let historicalPRs = prMap.get(targetDate);
+  if (!historicalPRs) {
+    const next = [...prMap.keys()].find(date => date > targetDate);
+    historicalPRs = prMap.get(next) || prMap.latest;
+  }
   let html = '';
   if (label) {
     html += `<div class="section-rule"><h3>${escapeHTML(label)}</h3></div>`;
@@ -3027,7 +3038,7 @@ function renderPreviewEntries(lines, targetDate, label) {
 // foglio di una sessione salvata, e chiede sempre conferma.
 async function handleDeleteDay() {
   if (datasetMutationBlocked()) return;
-  const targetDate = document.getElementById('logDateInput').value || todayStr();
+  const targetDate = _activeDate || todayStr();
   if (!getSessByDate().get(targetDate)) return;
   if (!confirm('Eliminare l\'allenamento del ' + fmtDateShort(targetDate) + '?')) return;
   if (_hydrationState !== 'ready' && !(await hydrateApp())) {
@@ -3598,8 +3609,8 @@ function updateQaHint() {
   const abbr = document.getElementById('qaAbbr').value.trim().toUpperCase();
   const hintEl = document.getElementById('qaHint');
   if (!abbr) { hintEl.style.display = 'none'; return; }
-  const targetDate = document.getElementById('logDateInput').value || todayStr();
-  const prev = State.sessions.find(s => s.date !== targetDate && s.exercises.some(e => e.abbr === abbr));
+  const targetDate = _activeDate || todayStr();
+  const prev = State.sessions.find(s => s.date < targetDate && s.exercises.some(e => e.abbr === abbr));
   if (!prev) { hintEl.style.display = 'none'; return; }
   const ex = aggregateSessionExercise(prev, abbr);
   const segs = ex.segments.map(sg => sg.count + '×' + sg.reps + (sg.weight ? '@' + sg.weight : '')).join(' + ');
@@ -3644,7 +3655,8 @@ function renderSFA() {
   // corto della finestra: 8 settimane di dati divise per 13 darebbero medie
   // del 40% troppo basse. Si divide per le settimane effettivamente coperte,
   // così un'eventuale pausa resta comunque al denominatore.
-  const prima = sessions.length ? sessions.map(s => s.date).sort()[0] : null;
+  // Il diario è ordinato per data decrescente. Una pausa a inizio finestra conta.
+  const prima = State.sessions.at(-1)?.date;
   const giorniCoperti = prima
     ? Math.min(giorni, Math.round((oggi - new Date(prima + 'T12:00:00')) / 86400000) + 1)
     : giorni;
@@ -3656,7 +3668,7 @@ function renderSFA() {
                           sed: (r.sedute[gid] || 0) / settimane, picco: r.picco[gid] || 0 }))
     .sort((a, b) => b.v[1] - a.v[1]);
 
-  const rangeSel = `<select class="muscle-range" id="sfaRangeSel">
+  const rangeSel = `<select class="muscle-range" id="sfaRangeSel" aria-label="Periodo per gli SFA">
     <option value="7g"${range === '7g' ? ' selected' : ''}>7 giorni</option>
     <option value="30g"${range === '30g' ? ' selected' : ''}>30 giorni · media</option>
     <option value="90g"${range === '90g' ? ' selected' : ''}>3 mesi · media</option>
@@ -3718,189 +3730,67 @@ function renderSFA() {
 }
 
 /* ───────────────────────────────────────────────────────────────────
-   15b. Scheda (zona di consultazione)
-   Trascrizione della scheda Torso/Limbs del 15/11/2026. È una traccia da
-   leggere, non un motore: niente suggerimenti, niente confronto col diario,
-   niente stato salvato. Si apre sulla fase del calendario; le altre sono a
-   un tocco. Le righe di Fase 2 e 3 sono scritte come nella scheda
-   ("BP con fermo 3×8–10", "DIPS con zavorra 3") e lette da skRiga.
+   15b. Scheda di allenamento del 19 novembre 2026
    ─────────────────────────────────────────────────────────────────── */
-const SCHEDA = {
-  meta: 'Torso/Limbs · nov 2026 – nov 2027 · versione del 15/11',
-  fasi: [
-    { id: 'f1', nome: 'Fase 1', fino: '2026-12-13', quando: "fino all'8 dicembre",
-      sintesi: '72 serie a settimana su 4 sedute, 54 nelle settimane da 3. Alimentazione a mantenimento.',
-      sedute: [
-        { nome: 'Torso A', serie: 17, durata: '49–64′', righe: [
-          ['BP', '3 × 6–8', '45 kg', '2/11: 13@40!. A 8-8-8 passa a 47,5'],
-          ['TBR', '3 × 8–12', '32,5 kg', '17/10: 9@35! e 8@35!. Gomiti larghi, 45–60° dal busto'],
-          ['DIPS', '3 × 6–9', 'corpo libero', "14/10: 9! + 5!. Se una serie scende sotto 6, usa l'assistenza"],
-          ['LM', '3 × 8–12', '45 kg', '4/11: 2x12@45 + 9@45!. A 12-12-12 passa a 50'],
-          ['AL', '3 × 12–20', '10 kg', '4/11: 15@10 + 12@10!'],
-          ['BR', '2 × 12–20', '20 kg', '2/11: 2x15@20! + 13@20!'],
-        ] },
-        { nome: 'Limbs A', serie: 20, durata: '49–67′', righe: [
-          ['SQ', '3 × 6–8', '65 kg', '30/10: 12@60!. A 8-8-8 passa a 67,5'],
-          ['LCS', '3 × 10–15', 'da tarare', 'Mai fatto. Cerca il carico da 12 ripetizioni con 2 di margine'],
-          ['LE', '2 × 10–15', '40 kg', '28/10: 11@45! + 12@40. Scendi fino in fondo'],
-          ['PS', '3 × 8–12', '10–12,5 kg di dischi', '10/11: 12@10 + 7@12.5! + 7@12.5!. Discesa lenta, senza rimbalzare'],
-          ['FP', '3 × 8–12', '15,5 kg con la barra', '10/11: 2x12@15.5 + 8@18!. Su panca inclinata 30–45°, bilanciere dietro la testa'],
-          ['POLP', '3 × 10–15', '35 kg', '30/10: 11@35! + 11@35!. A gamba tesa, fermo di 1–2 secondi in basso'],
-          ['CR', '3 × 10–20', 'corpo libero', '4/11: 15 + 15 + 8!. Con peso usa `CRZ`'],
-        ] },
-        { nome: 'Torso B', serie: 16, durata: '46–61′', righe: [
-          ['OHP', '3 × 8–12', '24 kg (12+12)', '4/11: 13@24 + 10@24!. A 12-12-12 passa a 28 (14+14)'],
-          ['TR', '3 serie', 'corpo / assistite', '14/10: 3 + 2!. Serie 1 a corpo libero a una dal limite. Serie 2 e 3 assistite per fare 6–8. Quando la serie 1 arriva a 6–7, fai libera anche la 2'],
-          ['BP con fermo', '3 × 8–10', '37,5–40 kg', 'Bilanciere fermo sul petto per un secondo, poi su'],
-          ['TBR', '2 × 8–12', '32,5 kg', "Presa stretta se c'è, tirando verso l'anca"],
-          ['AL', '3 × 12–20', '10 kg', 'come Torso A'],
-          ['BR', '2 × 12–20', '20 kg', 'come Torso A'],
-        ] },
-        { nome: 'Limbs B', serie: 19, durata: '49–66′', righe: [
-          ['RDL', '3 × 8–10', '40–45 kg', 'Mai fatto in questo log. Prima seduta: 2 serie con 3 o più di margine, poi +5 kg a seduta finché resta pulito. Se senti tirare collo o trapezio, torna al carico della seduta prima. Quando cede la presa, fascette'],
-          ['LP', '3 × 10–12', '130 kg', '14/10: 10@140! poi 12@120!'],
-          ['HE', '2 × 10–15', '15 kg', '2/11: 12@15! + 8@15!'],
-          ['BC', '3 × 8–12', '18 kg', '2/11: 12@18 + 10@20! + 8@18!. Va bene anche con manubri su panca inclinata 45–60°, ritarando il carico'],
-          ['PDT', '2 × 10–15', '45 kg', '10/10: 10@50! + 10@45!. Gomiti fermi ai fianchi'],
-          ['POLP', '3 × 10–15', '35 kg', 'come Limbs A'],
-          ['CR', '3 × 10–20', 'corpo libero', 'come Limbs A'],
-        ] },
-      ] },
-    { id: 'f2', nome: 'Fase 2', fino: '2027-04-15', quando: 'dal 14 dicembre a metà aprile',
-      sintesi: "82 serie a settimana su 4 sedute. Alimentazione in leggero deficit. Stessi esercizi con i carichi raggiunti nella Fase 1; l'hyperextension esce. Finisce quando il girovita è sceso di 4–6 cm dal punto zero, di solito a metà aprile.",
-      sedute: [
-        { nome: 'Torso A', serie: 20, durata: '57–73′', righe: 'BP 4×6–8 · TBR 3×8–12 · DIPS 3×6–9 · LM 3×8–12 · AL 4×12–20 · BR 3×12–20' },
-        { nome: 'Limbs A', serie: 21, durata: '54–71′', righe: 'SQ 4×6–8 · LCS 4×10–15 · PS 3×8–12 · FP 4×8–12 · POLP 3×10–15 · CR 3×10–20' },
-        { nome: 'Torso B', serie: 20, durata: '55–73′', righe: 'OHP 3×8–12 · TR 3×5–8 · BP con fermo 3×8–10 · TBR 3×8–12 · CC dal basso 2×12–15 · AL 3×12–20 · BR 3×12–20',
-          note: { CC: "Croci ai cavi dal basso verso l'alto. Il carico va tarato: è un movimento diverso dalle croci del log" } },
-        { nome: 'Limbs B', serie: 21, durata: '53–71′', righe: 'RDL 3×8–10 · LP 3×10–12 · LE 3×10–15 · BC 4×8–12 · PDT 2×10–15 · POLP 3×10–15 · CR 3×10–20' },
-      ] },
-    { id: 'f3', nome: 'Fase 3', fino: '2027-07-31', quando: 'da metà aprile a fine luglio', provvisoria: true,
-      sintesi: 'Picco di volume, in leggero surplus: 92 serie a settimana su 4 sedute. Entrano la panca inclinata (IP) al posto della panca con fermo e le scrollate (SCR). Se avrai tempo, due modi per arrivare a 107: ruotare due giorni sì e uno no, oppure una quinta seduta corta di cavi e isolamenti.',
-      sedute: [
-        { nome: 'Torso A', serie: 21, righe: 'BP 4 · TBR 4 · DIPS con zavorra 3 · LM 3 · AL 4 · BR 3' },
-        { nome: 'Limbs A', serie: 24, righe: 'SQ 4 · LCS 4 · LE 2 · PS 4 · FP 4 · POLP 4 · CR 2' },
-        { nome: 'Torso B', serie: 23, righe: 'OHP 4 · TR 3 · IP 4 · CC 2 · TBR 3 · AL 4 · BR 3' },
-        { nome: 'Limbs B', serie: 24, righe: 'RDL 4 · LP 4 · LE 2 · BC 4 · SCR 3 · POLP 4 · CR 3' },
-      ] },
-    { id: 'f4', nome: 'Fase 4', fino: '2027-11-30', quando: 'da fine luglio a novembre', provvisoria: true,
-      sintesi: "Forza: 90 serie a settimana su 4 sedute. Torna la doppia panca piana. Su BP, SQ, OHP, dips e trazioni con zavorra: 2 serie pesanti da 3–5 ripetizioni a 2 dal limite, poi 2 serie da 6–8 con il 10–12% in meno. Con i manubri all'OHP: 2 × 5–7 e poi 2 × 8–10.",
-      sedute: [] },
-  ],
-  pieghe: [
-    { titolo: 'Regole', voci: [
-      '**Fermi.** Niente superserie, niente face pull, dips mai come primo esercizio.',
-      '**Rotazione.** Torso A → Limbs A → Torso B → Limbs B, sempre con almeno un giorno di riposo dopo ogni Limbs. Si parte da Limbs A.',
-      "**Frequenza.** 3 sedute a settimana fino al 29 novembre; 4 dal 30 novembre all'8 dicembre; dal 9 al 13 dicembre pausa, che vale come primo scarico; dal 14 dicembre 4 a settimana fisse.",
-      '**Prima rotazione.** 2 serie invece di 3 su LCS, LE e RDL, per non restare bloccato dai dolori muscolari.',
-      "**Quanto spingere.** Panca, squat, OHP, RDL, trazioni e dips: fermati a 1–2 ripetizioni dal limite, `!` solo se arrivi davvero all'ultima ripetizione sicura. Macchine, cavi e isolamenti: prime serie a 1–2 dal limite, ultima a cedimento con `!`. I multiarticolari senza `!` qui contano un po' meno, circa 1 SFA a settimana su petto e deltoidi anteriori: va bene così.",
-      '**Recuperi.** 3′ su BP, SQ e RDL · 2′30″ su TBR, DIPS, LM, OHP, TR e LP · 1′30″ su isolamenti, polpacci e addome (su LCS anche 2′).',
-      "**Riscaldamento.** Sul primo esercizio 8 ripetizioni al 50% del carico, 5 al 70%, 2 all'85%; sul secondo multiarticolare 6 al 70%. Nel log non si scrivono, oppure si scrivono con `w`.",
-      '**Progressione.** Quando tutte le serie arrivano al limite alto del range, alla seduta dopo sali del minimo possibile. OHP con manubri: da 12+12 a 14+14 il salto è del 17%, quindi chiudi 12-12-12 prima di salire e a 28 kg riparti da 7–8. Dips: a 9-9-9 a corpo libero aggiungi 2,5 kg alla volta.',
-      '**Scarichi.** Stessi esercizi e stessi pesi, metà serie, 3–4 ripetizioni dal limite, niente `!`. Il primo è il 9–13 dicembre; poi fine gennaio, metà marzo, metà maggio, metà luglio e metà settembre.',
-      '**Giornata storta.** Fai i primi due esercizi e vai a casa. Conta come seduta.',
-      '**Gomiti.** Se senti un dolore puntiforme al gomito nel french press, passa alle estensioni sopra la testa al cavo con la corda.',
-    ] },
-    { titolo: 'Cardio e passi', voci: [
-      "**Nuoto.** Una nuotata facile a settimana, 35–45 minuti, in un giorno di riposo, a un ritmo a cui potresti parlare: Zona 2 sull'Apple Watch, 136–148 bpm.",
-      '**Passi.** 7.500–9.000 al giorno.',
-      "**Intervalli.** Niente nel periodo in deficit. I 4 × 4 minuti su bike o vogatore possono tornare dall'estate, se li vuoi per la salute.",
-    ] },
-    { titolo: 'Cosa misurare', voci: [
-      "**Tempi.** L'ora della prima e dell'ultima serie di ogni seduta: servono al controllo dell'8 dicembre.",
-      '**Peso.** Quattro mattine a settimana, a digiuno, con `BW`. Conta la media della settimana.',
-      "**Girovita.** Ogni domenica mattina, a digiuno, all'altezza dell'ombelico, con l'addome rilassato e a fine espirazione. La prima misura è il punto zero.",
-    ] },
-    { titolo: 'Notazione', voci: [
-      "**Trazioni assistite.** L'assistenza va in un commento: `TR 1@3 + 1@6 // -20`.",
-      '**Dips con zavorra.** `DIPS 5@8` vuol dire 8 ripetizioni con 5 kg.',
-      '**OHP con manubri.** La somma dei due: `13@24` per due manubri da 12.',
-      '**French press.** Il totale, barra inclusa.',
-      '**Crunch con peso.** Una sigla nuova, per esempio `CRZ`: `CR` ha l\'opzione `inv` e un peso verrebbe letto come ripetizioni.',
-      '**Riscaldamenti.** Se li scrivi, con `w`: `BP 8@22.5w`.',
-    ] },
-  ],
-};
+// Ogni riga indica sigla, esercizio, serie, ripetizioni, carico, recupero e nota.
+const SCHEDA = [
+  { nome: 'Torso A', durata: '51–64 min', righe: [
+    ["BP", "Panca piana", 3, "6–8", "45 kg", "3′", "A 8–8–8 passa a 47,5 kg."],
+    ["TBR", "Rematore T-bar", 3, "8–12", "32,5–35 kg", "2′30″", "Gomiti a 45–60° dal busto."],
+    ["DIPS", "Parallele", 3, "6–9", "Corpo libero", "2′30″", "Usa assistenza sotto 6 ripetizioni. A 9–9–9 aggiungi 2,5 kg."],
+    ["LM", "Lat machine", 3, "8–12", "45–50 kg", "2′30″", "A 12–12–12 con 45 kg passa a 50 kg."],
+    ["AL", "Alzate laterali al cavo basso", 3, "12–20", "10 kg per lato", "1′30″", "Carico indicato sul pacco pesi."],
+    ["BR", "Butterfly reverse", 2, "12–20", "20 kg", "1′30″", "Movimento controllato."],
+  ] },
+  { nome: 'Limbs A', durata: '51–66 min', righe: [
+    ["SQ", "Squat con bilanciere", 3, "6–8", "65–67,5 kg", "3′", "Conserva 1–2 ripetizioni di margine."],
+    ["LC", "Leg curl prono", 3, "10–15", "25–30 kg", "1′30″–2′", "Bacino sul cuscino. Sull’ultima serie puoi aggiungere 2–3 parziali in allungamento."],
+    ["HE", "Hyperextension", 2, "10–15", "15 kg di zavorra", "1′30″", "Tara di riferimento della scheda 45 kg."],
+    ["LE", "Leg extension", 2, "10–15", "45–50 kg", "1′30″", ""],
+    ["PS", "Panca Scott con barra EZ", 3, "8–12", "12,5 kg di dischi", "1′30″", "Aggiungi gli 8 kg della barra per il carico totale."],
+    ["FP", "French press su inclinata", 3, "8–12", "18 kg totali", "1′30″", "Panca a 30–45°, barra dietro la testa."],
+    ["POLP", "Calf a gamba tesa", 3, "10–15", "35 kg", "1′30″", "In piedi o alla pressa, con un fermo di 1–2 secondi in basso."],
+    ["CR", "Crunch con sovraccarico", 2, "10–15", "Cavo o disco", "1′30″", "Se CR usa la notazione inversa, registra il crunch con peso con una sigla dedicata, ad esempio CRZ."],
+  ] },
+  { nome: 'Torso B', durata: '48–60 min', righe: [
+    ["OHP", "Spinte sopra la testa", 3, "8–12", "24 kg (12+12)", "2′30″", "Panca a 75–80°. A 12–12–12 passa a 14+14 kg. Con bilanciere usa 3 × 6–8 a 25 kg."],
+    ["TR", "Trazioni prone", 3, "3–4 / 6–8 / 6–8", "Libere e assistite", "2′30″", "Prima serie a corpo libero con 1 RIR, le altre due con assistenza."],
+    ["IPM", "Panca inclinata con manubri", 3, "8–12", "28 kg (14+14)", "2′30″", "Panca a 30°."],
+    ["TBR", "Rematore T-bar", 2, "8–12", "32,5–35 kg", "2′30″", "Presa stretta e neutra, se disponibile."],
+    ["AL", "Alzate laterali al cavo basso", 3, "12–20", "10 kg per lato", "1′30″", "Carico indicato sul pacco pesi."],
+    ["BR", "Butterfly reverse", 2, "12–20", "20 kg", "1′30″", ""],
+  ] },
+  { nome: 'Limbs B', durata: '48–62 min', righe: [
+    ["RDL", "Stacco rumeno", 3, "8–10", "55–60 kg", "3′", "Aumenta di 5 kg quando completi il range con tecnica stabile."],
+    ["LP", "Leg press", 3, "10–12", "130 kg", "2′30″", "Piedi medio-bassi, discesa controllata."],
+    ["BC", "Curl con manubri su inclinata", 3, "8–12", "18–20 kg totali", "1′30″", "Panca a 45–60°."],
+    ["PDT", "Pushdown ai cavi", 2, "10–15", "45 kg", "1′30″", "Mantieni fermi i gomiti."],
+    ["POLP", "Calf a gamba tesa", 3, "10–15", "35 kg", "1′30″", "Fermo di 1–2 secondi in basso."],
+    ["CR", "Crunch con sovraccarico", 3, "10–15", "Cavo o disco", "1′30″", "Stessa variante di Limbs A."],
+  ] },
+];
 
-// "BP con fermo 3×8–10" → { s:'BP', q:'con fermo', sr:'3 × 8–10' }; "DIPS con zavorra 3" → sr '3 serie'.
-// Le righe di Fase 1 arrivano già come array [etichetta, serie×rip, carico, nota].
-function skRiga(r, note) {
-  if (Array.isArray(r)) {
-    const [s, ...q] = r[0].split(' ');
-    return { s, q: q.join(' '), sr: r[1], c: r[2] || '', n: r[3] || '' };
-  }
-  const m = r.trim().match(/^(\S+)(?: (.+?))? (\d+(?:×\S+)?)$/);
-  if (!m) return { s: r.trim(), q: '', sr: '', c: '', n: '' };
-  const sr = m[3].includes('×') ? m[3].replace('×', ' × ') : m[3] + ' serie';
-  return { s: m[1], q: m[2] || '', sr, c: '', n: (note && note[m[1]]) || '' };
-}
-function skRighe(seduta) {
-  const righe = Array.isArray(seduta.righe) ? seduta.righe : seduta.righe.split(' · ');
-  return righe.map(r => skRiga(r, seduta.note));
-}
-// Serie dichiarate da una riga: il primo numero ("3 × 8–10", "3 serie").
-const skSerie = riga => parseInt(riga.sr, 10) || 0;
-
-function faseDiOggi(oggi = todayStr()) {
-  return (SCHEDA.fasi.find(f => oggi <= f.fino) || SCHEDA.fasi[SCHEDA.fasi.length - 1]).id;
-}
-
-// Testo della scheda → HTML: escape, poi `codice` e **grassetto**.
-function skFmt(t) {
-  return escapeHTML(t).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
-}
-
-let _skFase = null;
 function renderScheda() {
-  const corrente = faseDiOggi();
-  if (!_skFase) _skFase = corrente;
-  const fase = SCHEDA.fasi.find(f => f.id === _skFase) || SCHEDA.fasi[0];
-
-  document.getElementById('skMeta').textContent = SCHEDA.meta;
-  document.getElementById('skFasi').innerHTML = SCHEDA.fasi.map(f =>
-    `<button class="seg-btn${f.id === fase.id ? ' on' : ''}" data-fase="${f.id}" role="tab" aria-selected="${f.id === fase.id}" type="button">${escapeHTML(f.nome)}</button>`
-  ).join('');
-
-  const quando = fase.quando.charAt(0).toUpperCase() + fase.quando.slice(1);
-  const stato = [fase.id === corrente ? 'in corso' : '', fase.provvisoria ? 'ossatura provvisoria, si rivede ad aprile' : '']
-    .filter(Boolean).join(' · ');
-  let html = `<div class="sk-meta"><b>${escapeHTML(quando)}</b>${stato ? ' · ' + escapeHTML(stato) : ''}<br>${skFmt(fase.sintesi)}</div>`;
-  for (const seduta of fase.sedute) {
-    const testa = [seduta.serie + ' serie', seduta.durata].filter(Boolean).join(' · ');
-    html += `<div class="sk-head"><h3>${escapeHTML(seduta.nome)}</h3><i></i><span>${escapeHTML(testa)}</span></div>`;
-    html += skRighe(seduta).map(r => `<div class="sk-ex">
-      <span class="sk-s">${escapeHTML(r.s)}</span>
-      <span class="sk-sr">${r.q ? `<span class="sk-q">${escapeHTML(r.q)}</span>` : ''}${escapeHTML(r.sr)}</span>
-      <span class="sk-c">${escapeHTML(r.c)}</span>
-      ${r.n ? `<div class="sk-n">${skFmt(r.n)}</div>` : ''}
-    </div>`).join('');
-  }
-  document.getElementById('skFase').innerHTML = html;
-
-  // Le pieghe non dipendono dalla fase: si disegnano una volta sola, così
-  // cambiare fase non richiude quella che si sta leggendo.
-  const extra = document.getElementById('skExtra');
-  if (!extra.childElementCount) {
-    extra.innerHTML = SCHEDA.pieghe.map(p => `<details class="help sk-fold">
-      <summary>${escapeHTML(p.titolo)}</summary>
-      <div class="help-body">${p.voci.map(v => `<div>${skFmt(v)}</div>`).join('')}</div>
-    </details>`).join('');
-  }
-}
-
-/* ───────────────────────────────────────────────────────────────────
-   16. Date picker trigger (uses native picker)
-   ─────────────────────────────────────────────────────────────────── */
-function setupDatePickerTrigger() {
-  const btn = document.getElementById('dateTriggerBtn');
-  const inp = document.getElementById('logDateInput');
-  btn.addEventListener('click', () => {
-    if (typeof inp.showPicker === 'function') {
-      try { inp.showPicker(); return; } catch {}
-    }
-    inp.focus();
-    inp.click();
-  });
+  const host = document.getElementById('skSedute');
+  if (host.childElementCount) return;
+  document.getElementById('skMeta').textContent = '19 novembre – 8 dicembre 2026';
+  const totals = SCHEDA.map(s => s.righe.reduce((sum, row) => sum + row[2], 0));
+  const serie = totals.reduce((sum, n) => sum + n, 0);
+  host.innerHTML = `<p class="sk-meta">Alterna un giorno di allenamento e uno di riposo. Se salti un giorno, riprendi dalla seduta successiva. ${serie} serie in otto giorni.</p>`
+    + SCHEDA.map((s, i) => `<details class="sk-session"${i === 0 ? ' open' : ''}>
+      <summary class="sk-head"><strong>${escapeHTML(s.nome)}</strong><span>${totals[i]} serie · ${escapeHTML(s.durata)}</span></summary>
+      ${s.righe.map(([sigla, nome, serie, rip, carico, recupero, nota]) => `<div class="sk-ex">
+        <b class="sk-s">${escapeHTML(sigla)}</b><b class="sk-name">${escapeHTML(nome)}</b>
+        <span class="sk-sr">${serie} × ${escapeHTML(rip)}</span>
+        <span class="sk-c">${escapeHTML(carico)} · rec. ${escapeHTML(recupero)}</span>
+        ${nota ? `<div class="sk-n">${escapeHTML(nota)}</div>` : ''}
+      </div>`).join('')}
+    </details>`).join('')
+    + `<details class="help sk-fold"><summary>Progressione e recupero</summary><div class="help-body">
+      <div>Quando raggiungi il tetto di ripetizioni in tutte le serie, aumenta il carico alla seduta successiva. Usa incrementi di 2,5 kg su bilanciere ed EZ e di 5 kg su pressa, stacco rumeno e lat machine.</div>
+      <div>Tieni 1–2 ripetizioni in riserva (RIR) nelle prime serie. Sui fondamentali conserva questo margine anche nelle successive. Segna <code>!</code> se arrivi a cedimento nell’ultima serie.</div>
+      <div>Se hai solo 25 minuti, fai i primi due esercizi della seduta. Dal 9 al 13 dicembre è prevista una pausa.</div>
+    </div></details>`;
 }
 
 /* ───────────────────────────────────────────────────────────────────
@@ -3910,7 +3800,7 @@ const TABS = ['log', 'scheda', 'storico', 'trend'];   // stesso ordine della tab
 function setupSwipeGesture() {
   let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
   document.addEventListener('touchstart', e => {
-    if (e.target.closest('input,textarea,select,.heatmap,svg,.search,.freetext')) {
+    if (e.target.closest('input,textarea,select,.date-nav,.heatmap,svg,.search,.freetext')) {
       touchStartX = null; return;
     }
     touchStartX = e.touches[0].clientX;
@@ -4008,7 +3898,16 @@ function attachGlobalListeners() {
     const btn = e.target.closest('.tab-item');
     if (btn) handleTabSwitch(btn.dataset.tab);
   });
-  document.getElementById('logDateInput').addEventListener('change', handleLogDateChange);
+  const dateInput = document.getElementById('logDateInput');
+  dateInput.addEventListener('change', handleLogDateChange);
+  const stepDay = direction => {
+    dateInput.max = todayStr();
+    dateInput.value = _activeDate || dateInput.max;
+    dateInput.stepUp(direction);
+    handleLogDateChange();
+  };
+  document.getElementById('dayPrev').addEventListener('click', () => stepDay(-1));
+  document.getElementById('dayNext').addEventListener('click', () => stepDay(1));
   document.getElementById('logInput').addEventListener('input', () => {
     captureCurrentDraftSync();
     schedulePreviewAndDraft();
@@ -4074,12 +3973,6 @@ function attachGlobalListeners() {
     State.trendMetric = btn.dataset.metric;
     renderTrend({ chartOnly: true });
   });
-  document.getElementById('skFasi').addEventListener('click', e => {
-    const btn = e.target.closest('.seg-btn');
-    if (!btn) return;
-    _skFase = btn.dataset.fase;
-    renderScheda();
-  });
   document.getElementById('muscleVolumeSection').addEventListener('change', e => {
     if (e.target.id === 'sfaRangeSel') renderSFA();
   });
@@ -4121,7 +4014,6 @@ function attachGlobalListeners() {
   document.getElementById('glNewAbbr').addEventListener('keydown', glEnter);
   document.getElementById('glNewName').addEventListener('keydown', glEnter);
 
-  setupDatePickerTrigger();
   setupSwipeGesture();
   setupScrollShrink();
   setupKeyboardHeal();
@@ -4202,7 +4094,7 @@ function initializeLogUIImmediately() {
   const logInput = document.getElementById('logInput');
   const today = todayStr();
   dateInput.max = today;
-  if (!dateInput.value) dateInput.value = today;
+  if (!isRealISODate(dateInput.value) || dateInput.value > today) dateInput.value = today;
   _activeDate = dateInput.value;
 
   const recovered = recoveryDrafts();
@@ -4273,7 +4165,7 @@ function hydrateApp() {
     const muscleGroups = normalizeMuscleGroups(normalizeObject(muscleGroupsRaw, 'Gruppi muscolari'));
     const storedDrafts = normalizeStoredDrafts(values[CONFIG.DRAFT]);
 
-    const currentDate = _activeDate || document.getElementById('logDateInput').value || todayStr();
+    const currentDate = _activeDate || todayStr();
     const currentRaw = document.getElementById('logInput').value;
     const preserveCurrentInput = _logInputDirty ||
       (_inputRevisionByDate.get(currentDate) || 0) !== (revisionsAtStart.get(currentDate) || 0);
