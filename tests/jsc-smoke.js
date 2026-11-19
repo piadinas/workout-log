@@ -14,7 +14,7 @@ const documentStub = { addEventListener() {} };
 const exportNames = ['parseWorkoutLine','parseAllLines','SFA','parseMuscleMap','muscleMapToStr','muscleMapLabel',
   'normalizeMuscleGroups','sessionsToTxt','txtToSessions','suggerisciPerNome','patternForWork','MUSCOLI','CONFIG',
   'GRUPPI_SFA','gruppoDiMuscolo','gruppoInfo','fmtPeso','computeAutoInv','exOptsToStr','parseExOpts',
-  'SCHEDA','skRiga','skRighe','skSerie','faseDiOggi'];
+  'SCHEDA'];
 const factory = new Function('document','window','navigator',
   src + '\nreturn {' + exportNames.join(',') + '};');
 const app = factory(documentStub, {}, {});
@@ -65,12 +65,15 @@ check('BW ok', eq(JSON.parse(JSON.stringify(app.parseAllLines('BW 78,5'))), [{ t
 /* ── B. Credito per set / patternForWork ─────────────────────────── */
 const A = (line, opts, xo) => app.SFA.analyze(app.parseWorkoutLine(line, xo || {}), opts || {});
 let a = A('LP 12@25 + 12@35 + 3x8@45');
-check('rampa: il primo set non conta', a.segCredit[0][0] < 0.15 && a.segCredit[2].every(c => approx(c, 0.9)), a.segCredit);
+check('rampa: il primo set non conta', a.segCredit[0][0] < 0.15 && a.segCredit[2].every(c => approx(c, 0.75)), a.segCredit);
 a = A('BP 12@30w + 3x10@60');
-check('w esclude il set', a.sets[0].src === 'risc' && a.sets[0].c[1] === 0 && approx(a.total[1], 2.7), a.total);
+check('w esclude il set', a.sets[0].src === 'risc' && a.sets[0].c[1] === 0 && approx(a.total[1], 2.25), a.total);
 check('pattern ignora il set escluso', app.patternForWork(app.parseWorkoutLine('BP 12@30w + 3x10@60').segments, a.segCredit) === null);
-a = A('BP 1x10@60 + 1x8@50 + 1x6@40');
-check('drop pattern', app.patternForWork(app.parseWorkoutLine('BP 1x10@60 + 1x8@50 + 1x6@40').segments, a.segCredit) === 'drop');
+const discesa = app.parseWorkoutLine('BP 1x10@60 + 1x8@50 + 1x6@40');
+check('i carichi in discesa sotto soglia non generano un drop',
+  app.patternForWork(discesa.segments, app.SFA.analyze(discesa).segCredit) === null);
+const drop = app.parseWorkoutLine('BP 1x10@60! + 1x8@50! + 1x6@40!');
+check('drop con serie allenanti', app.patternForWork(drop.segments, app.SFA.analyze(drop).segCredit) === 'drop');
 
 /* ── C. analyze: cedimento, presunzione, banda ───────────────────── */
 a = A('BP 3x10@60!!');
@@ -78,25 +81,25 @@ check('!! tutti a cedimento', a.anchored && eq(a.total, [3, 3, 3]), a.total);
 a = A('BP 10@60 + 9@60 + 8@60!');
 check('calo di ripetizioni verso il ! = tutti al limite', approx(a.total[1], 3, 1e-9), a.total);
 a = A('BP 3x10@60');
-check('senza ! il set migliore è presunto a 3 dal cedimento', approx(a.total[1], 2.7) && !a.anchored && a.sets.every(s => s.src === 'top'), a.total);
+check('senza ! il set migliore è presunto a 3 dal cedimento', approx(a.total[1], 2.25) && !a.anchored && a.sets.every(s => s.src === 'top'), a.total);
 check('banda ordinata', a.total[0] <= a.total[1] && a.total[1] <= a.total[2], a.total);
 a = A('LM 2x12@35 + 2x12@40');
-check('LM 2x12@35 + 2x12@40 = 2,94 (V9)', approx(a.total[1], 2.9406, 1e-3) && approx(a.segCredit[0][0], 0.57, 0.005), a.total);
+check('LM: le due serie di avvicinamento valgono zero', approx(a.total[1], 1.5) && a.segCredit[0].every(c => c === 0), a.total);
 check('seduta marcata: non marcato = non a cedimento', A('LM 2x12@35 + 2x12@40', { marcata: true }).total[1] < a.total[1]);
 check('un ! in più non abbassa il totale', A('LM 2x12@35 + 12@40!').total[1] >= A('LM 2x12@35 + 12@40').total[1]);
 check('una ripetizione in più non abbassa quel set',
   A('BP 10@60 + 9@60 + 9@60!').sets[2].c[1] >= A('BP 10@60 + 9@60 + 8@60!').sets[2].c[1]);
 a = A('CR 3x15');
-check('corpo libero: contano le ripetizioni', approx(a.total[1], 2.7), a.total);
+check('corpo libero: contano le ripetizioni', approx(a.total[1], 2.25), a.total);
 a = A('TRZ 8 + 6@10 + 5@10');
 check('senza peso fra set col peso: non confrontabile', a.sets[0].src === 'nc' && a.sets[0].c[1] === 0, a.sets[0]);
 a = A('HE 15@5 + 15@10! + 10@10!', { marcata: true, tara: 40 });
 const aNoTara = A('HE 15@5 + 15@10! + 10@10!', { marcata: true });
-check('tara: 5 kg contro 10 kg di zavorra non è metà carico', aNoTara.sets[0].c[1] === 0 && approx(a.sets[0].c[1], 0.8, 0.005), [aNoTara.sets[0].c[1], a.sets[0].c[1]]);
-// regressione sul diario reale: seduta del 4 ottobre, verificata contro la V9
+check('tara: 5 kg contro 10 kg di zavorra non è metà carico', aNoTara.sets[0].c[1] === 0 && approx(a.sets[0].c[1], 0.30), [aNoTara.sets[0].c[1], a.sets[0].c[1]]);
+// regressione sul diario reale: seduta del 4 ottobre con la curva Neon
 const oct = ['CC 12@20 + 12@30 + 8@40 + 6@40! + 1@50! + 4@40!', 'FP 12@13 + 12@18! + 11@18! + 5@18!',
              'LM 12@40 + 5@50! + 8@45! + 6@45!', 'BC 7@18! + 7@18! + 5@18!'];
-check('seduta del 4 ottobre = 13,94', approx(oct.reduce((t, l) => t + A(l, { marcata: true }).total[1], 0), 13.9426, 1e-3));
+check('seduta del 4 ottobre = 13,02', approx(oct.reduce((t, l) => t + A(l, { marcata: true }).total[1], 0), 13.0240, 1e-3));
 
 let r = app.SFA.forExercise(app.parseWorkoutLine('XX 3x10@60'), {});
 check('senza mappa: set contati, nessun muscolo', r.mapped === false && r.sets.length === 3 && eq(r.perMuscle, {}) && eq(r.perGroup, {}));
@@ -109,14 +112,14 @@ check('obiettivi per gruppo', eq(app.gruppoInfo('spalle').obiettivo, [8,12]) && 
   && eq(app.gruppoInfo('bicipiti').obiettivo, [6,10]));
 
 r = app.SFA.forExercise(app.parseWorkoutLine('OHP 3x8@40'), { OHP: { 'delt-ant': 1, 'delt-lat': 0.5, tricipiti: 0.5 } });
-check('spalle: capi sommati ma tetto a 1', approx(r.perGroup.spalle[1], 3 * 0.9), r.perGroup);
-check('tricipiti restano gruppo a parte', approx(r.perGroup.tricipiti[1], 3 * 0.9 * 0.5), r.perGroup);
+check('spalle: capi sommati ma tetto a 1', approx(r.perGroup.spalle[1], 3 * 0.75), r.perGroup);
+check('tricipiti restano gruppo a parte', approx(r.perGroup.tricipiti[1], 3 * 0.75 * 0.5), r.perGroup);
 
 r = app.SFA.forExercise(app.parseWorkoutLine('RDL 3x8@100'), { RDL: { glutei: 1, femorali: 1 } });
-check('posteriore: RDL vale 1 set, non 2', approx(r.perGroup.posteriore[1], 3 * 0.9), r.perGroup);
+check('posteriore: RDL vale 1 set, non 2', approx(r.perGroup.posteriore[1], 3 * 0.75), r.perGroup);
 
 r = app.SFA.forExercise(app.parseWorkoutLine('SQ 3x8@100'), { SQ: { quadricipiti: 1, glutei: 0.5 } });
-check('squat: quad pieno, posteriore mezzo', approx(r.perGroup.quadricipiti[1], 3 * 0.9) && approx(r.perGroup.posteriore[1], 3 * 0.9 * 0.5), r.perGroup);
+check('squat: quad pieno, posteriore mezzo', approx(r.perGroup.quadricipiti[1], 3 * 0.75) && approx(r.perGroup.posteriore[1], 3 * 0.75 * 0.5), r.perGroup);
 
 r = app.SFA.forExercise(app.parseWorkoutLine('LP 3x10@100'), { LP: { gambe: 1 } });
 check('legacy "gambe" resta visibile come singleton', !!r.perGroup['x:gambe'], r.perGroup);
@@ -208,22 +211,9 @@ check('safeRaw declassa #', txt2.includes('// appunto') && !txt2.includes('\n# a
 /* ── G. CONFIG v2 ────────────────────────────────────────────────── */
 check('chiave v2 attiva', app.CONFIG.MUSCLE_GROUPS === 'musclegroups_v2' && app.CONFIG.MUSCLE_GROUPS_V1 === 'musclegroups_v1');
 
-/* ── H. Scheda: la trascrizione torna coi conti della scheda ─────── */
-for (const f of app.SCHEDA.fasi) {
-  for (const sd of f.sedute) {
-    const righe = app.skRighe(sd);
-    const contate = righe.reduce((t, r) => t + app.skSerie(r), 0);
-    check('scheda ' + f.id + ' ' + sd.nome + ': serie', contate === sd.serie, contate);
-    check('scheda ' + f.id + ' ' + sd.nome + ': sigle', righe.every(r => /^[A-Z]{1,6}$/.test(r.s)), righe.map(r => r.s));
-  }
-}
-const settimana = id => app.SCHEDA.fasi.find(f => f.id === id).sedute.reduce((t, s) => t + s.serie, 0);
-check('scheda serie/sett 72 · 82 · 92', eq([settimana('f1'), settimana('f2'), settimana('f3')], [72, 82, 92]));
-check('scheda fase per data',
-  eq(['2026-11-17','2026-12-13','2026-12-14','2027-04-16','2027-08-01','2028-01-01'].map(d => app.faseDiOggi(d)),
-     ['f1','f1','f2','f3','f4','f4']));
-check('scheda riga con qualificatore', eq(app.skRiga('BP con fermo 3×8–10'), { s: 'BP', q: 'con fermo', sr: '3 × 8–10', c: '', n: '' }));
-check('scheda riga solo serie', eq(app.skRiga('DIPS con zavorra 3'), { s: 'DIPS', q: 'con zavorra', sr: '3 serie', c: '', n: '' }));
+/* ── Scheda ─────────────────────────────────────────────────────── */
+check('serie nelle quattro sedute', eq(app.SCHEDA.map(s =>
+  s.righe.reduce((tot, r) => tot + r[2], 0)), [17, 21, 16, 17]));
 
 /* ── Esito ───────────────────────────────────────────────────────── */
 const summary = failures.length

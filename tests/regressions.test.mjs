@@ -1150,34 +1150,111 @@ test('autosave commits the session and draft removal atomically before reporting
   assert.ok(vm.runInContext('_lastSavedAt instanceof Date', context), 'success timestamp should be set after commit');
 });
 
-test('the Scheda transcription adds up and opens on the phase of the calendar', () => {
-  const context = loadApp();
-  const fasi = plain(vm.runInContext(`SCHEDA.fasi.map(f => ({
-    id: f.id,
-    sedute: f.sedute.map(s => ({
-      nome: s.nome,
-      dichiarate: s.serie,
-      contate: skRighe(s).reduce((t, r) => t + skSerie(r), 0),
-      sigle: skRighe(s).map(r => r.s),
-    })),
-  }))`, context));
-
-  for (const fase of fasi) {
-    for (const seduta of fase.sedute) {
-      assert.equal(seduta.contate, seduta.dichiarate, `${fase.id} ${seduta.nome}: serie dichiarate e contate`);
-      for (const sigla of seduta.sigle) assert.match(sigla, /^[A-Z]{1,6}$/, `${fase.id} ${seduta.nome}: sigla ${sigla}`);
-    }
+test('the Neon effort curve interpolates fractional RIR and gives zero from six', () => {
+  const sfa = vm.runInContext('SFA', loadApp());
+  for (const [rir, expected] of [[0, 1], [0.5, 1], [1, 1], [2, 0.9], [3, 0.75],
+    [3.5, 0.65], [4, 0.55], [5, 0.30], [5.5, 0.15], [6, 0], [21, 0]]) {
+    assert.ok(Math.abs(sfa.E(rir) - expected) < 1e-10, `RIR ${rir} should give ${expected}`);
   }
-  const settimana = id => fasi.find(f => f.id === id).sedute.reduce((t, s) => t + s.dichiarate, 0);
-  assert.deepEqual([settimana('f1'), settimana('f2'), settimana('f3')], [72, 82, 92]);
+});
 
-  const fase = data => vm.runInContext(`faseDiOggi(${JSON.stringify(data)})`, context);
-  assert.deepEqual(
-    ['2026-11-17', '2026-12-13', '2026-12-14', '2027-04-16', '2027-08-01', '2028-01-01'].map(fase),
-    ['f1', 'f1', 'f2', 'f3', 'f4', 'f4']);
+test('unmarked ramp-ups reflect the full exercise and preserve uncertainty near the cutoff', () => {
+  const ctx = loadApp();
+  const sfa = vm.runInContext('SFA', ctx);
+  for (const line of [
+    'SQ 12@40 + 2x12@60! + 11@60!',
+    'LM 12@35 + 2x12@45! + 10@45!',
+    'BP 12@30 + 13@40! + 9@40! + 7@40! + 6@40!',
+  ]) {
+    const first = sfa.analyze(ctx.parseWorkoutLine(line)).sets[0];
+    assert.ok(first.rir[0] >= 6);
+    assert.deepEqual(plain(first.c), [0, 0, 0]);
+  }
+  const lp = ctx.parseWorkoutLine('LP 12@60 + 12@90 + 12@120 + 10@140! + 12@120!');
+  const [min, estimate, max] = sfa.analyze(lp).sets[2].c;
+  assert.equal(min, 0);
+  assert.ok(Math.abs(estimate - 0.35305) < 1e-5);
+  assert.ok(max > estimate && max <= 1);
+});
 
-  assert.deepEqual(plain(vm.runInContext(`skRiga('BP con fermo 3×8–10')`, context)),
-    { s: 'BP', q: 'con fermo', sr: '3 × 8–10', c: '', n: '' });
-  assert.deepEqual(plain(vm.runInContext(`skRiga('DIPS con zavorra 3')`, context)),
-    { s: 'DIPS', q: 'con zavorra', sr: '3 serie', c: '', n: '' });
+test('Scheda shows the four workouts and derives set counts from their rows', () => {
+  const elements = { skSedute: {}, skMeta: {} };
+  const ctx = loadApp({document: { getElementById: id => elements[id] }});
+  ctx.renderScheda();
+  const html = elements.skSedute.innerHTML;
+  assert.deepEqual([...html.matchAll(/<strong>([^<]+)<\/strong><span>(\d+) serie/g)].map(m => [m[1], +m[2]]),
+    [['Torso A', 17], ['Limbs A', 21], ['Torso B', 16], ['Limbs B', 17]]);
+  assert.match(html, /71 serie in otto giorni/);
+  assert.match(html, /Leg curl prono/);
+  assert.match(html, /Panca inclinata con manubri/);
+  assert.doesNotMatch(html, /Fase [1-4]/);
+});
+
+test('changing dates stores the outgoing text, restores drafts and rejects empty or future dates', async () => {
+  const stored = { date: '2026-02-28', raw: 'LM 3x8@40' };
+  const db = transactionalIndexedDB({ sessions_v1: [stored], draft_v1: {} });
+  const elements = {
+    logDateInput: { value: '2026-03-01' }, logInput: { value: 'SQ incompleto' },
+    heroDay: {}, heroNum: {}, heroMonth: {}, dayNext: {},
+  };
+  const ctx = loadApp({
+    indexedDB: db.indexedDB,
+    localStorage: memoryLocalStorage(),
+    document: { getElementById: id => elements[id] },
+    stored,
+  });
+  vm.runInContext(`
+    todayStr = () => '2026-03-01';
+    _activeDate = todayStr();
+    _hydrationState = 'ready';
+    _logInputDirty = true;
+    renderFileStatus = renderHeroStats = renderLogPreview = updateQaHint = () => {};
+    State.sessions = normalizeStoredSessions([stored]);
+    _durableRawByDate.set(stored.date, stored.raw);
+  `, ctx);
+  const change = value => { elements.logDateInput.value = value; ctx.handleLogDateChange(); };
+  change('2026-02-28');
+  assert.equal(elements.logInput.value, 'LM 3x8@40');
+  assert.equal(elements.heroNum.textContent, '28');
+  assert.equal(elements.dayNext.disabled, false);
+  await flushTasks();
+  assert.deepEqual(db.get('draft_v1'), { '2026-03-01': 'SQ incompleto' });
+  for (const invalid of ['', '2026-02-30', '2026-03-02']) {
+    change(invalid);
+    assert.equal(elements.logDateInput.value, '2026-02-28');
+    assert.equal(elements.logInput.value, 'LM 3x8@40');
+  }
+  change('2026-03-01');
+  assert.equal(elements.logInput.value, 'SQ incompleto');
+  assert.equal(elements.heroNum.textContent, '01');
+  assert.equal(elements.dayNext.disabled, true);
+  await flushTasks();
+  assert.equal(db.get('sessions_v1')[0].raw, stored.raw);
+});
+
+test('historical hints and records only use earlier workouts, including for an empty day', () => {
+  const els = {qaAbbr: {value:'BP'}, qaHint: {style:{}}};
+  const ctx = loadApp({document: {getElementById: id => els[id]}});
+  vm.runInContext(`
+    State.sessions = txtToSessions('# 2026-02-10\\nBP 8@80\\n\\n# 2026-02-01\\nBP 8@40').sessions;
+    _activeDate = '2026-02-05';
+    entryRowHtml = (_item, _index, isPR) => isPR ? 'NEW_RECORD' : 'NO_RECORD';
+  `, ctx);
+  ctx.updateQaHint();
+  assert.match(els.qaHint.innerHTML, /@40/);
+  const draft = ctx.parseAllLines('BP 8@60');
+  assert.match(ctx.renderPreviewEntries(draft, '2026-02-05', ''), /NEW_RECORD/);
+  assert.match(ctx.renderPreviewEntries(draft, '2026-02-11', ''), /NO_RECORD/);
+});
+
+test('the 30-day SFA average includes an initial break if the diary already covered it', () => {
+  const els = {muscleVolumeSection:{}, sfaRangeSel:{value:'30g'}};
+  const ctx = loadApp({document: {getElementById: id => els[id]}});
+  vm.runInContext(`
+    State.sessions = txtToSessions('# ' + todayStr() + '\\nBP 3x10@40!!\\n\\n# 2020-01-01\\nBP 10@20').sessions;
+    State.muscleGroups = {BP: {petto: 1}};
+  `, ctx);
+  ctx.renderSFA();
+  assert.match(els.muscleVolumeSection.innerHTML, /media su 4,3 sett/);
+  assert.match(els.muscleVolumeSection.innerHTML, /class="sfa-num">0,7</);
 });

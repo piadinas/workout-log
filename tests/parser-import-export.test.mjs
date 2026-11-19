@@ -69,7 +69,7 @@ assert.equal(sfa.sets[0].src, 'risc', 'il riscaldamento marcato w non conta negl
 assert.equal(sfa.sets[0].c[1], 0);
 assert.ok(sfa.perMuscle.petto[1] > 0);
 const grouped = SFA.forExercise(context.parseWorkoutLine('OHP 3x8@40'), { OHP: { 'delt-ant': 1, 'delt-lat': 0.5 } });
-assert.ok(Math.abs(grouped.perGroup.spalle[1] - 3 * 0.9) < 1e-9, 'i capi della spalla contano insieme, massimo 1 per set');
+assert.ok(Math.abs(grouped.perGroup.spalle[1] - 3 * 0.75) < 1e-9, 'i capi della spalla contano insieme, massimo 1 per set');
 
 // Opzioni per esercizio ("####"): la notazione del file vale per le sue righe
 const withOpts = context.txtToSessions('#### CR = inv\n\n# 2026-05-04\nCR 1@12 + 1@15\n');
