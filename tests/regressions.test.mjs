@@ -1158,6 +1158,25 @@ test('the Neon effort curve interpolates fractional RIR and gives zero from six'
   }
 });
 
+test('unmarked compounds in a marked session are presumed two reps from failure', () => {
+  const ctx = loadApp();
+  const sfa = vm.runInContext('SFA', ctx);
+  const near = (a, b) => Math.abs(a - b) < 1e-9;
+  // Fondamentale chiuso a 1–2 dal limite senza "!", in una seduta con "!" altrove
+  const bp = sfa.analyze(ctx.parseWorkoutLine('BP 3x7@45'), { marcata: true });
+  for (const s of bp.sets) assert.ok(near(s.c[1], 0.9) && near(s.c[0], 0.55) && near(s.c[2], 1), plain(s.c));
+  // Seduta senza nessun "!" (lo storico prima del 21/8): resta la stima prudente
+  const old = sfa.analyze(ctx.parseWorkoutLine('BP 3x7@45'), { marcata: false });
+  for (const s of old.sets) assert.ok(near(s.c[1], 0.75), plain(s.c));
+  // Il riscaldamento non scritto con w continua a valere zero
+  const ramp = sfa.analyze(ctx.parseWorkoutLine('SQ 8@32.5 + 4@45 + 2@55 + 3x7@65'), { marcata: true });
+  assert.deepEqual(plain(ramp.sets.slice(0, 3).map(s => s.c[1])), [0, 0, 0]);
+  assert.ok(near(ramp.total[1], 2.7));
+  // Marcare l'ultima serie non abbassa mai il totale
+  const marked = sfa.analyze(ctx.parseWorkoutLine('BP 3x7@45!'), { marcata: true });
+  assert.ok(marked.total[1] >= bp.total[1]);
+});
+
 test('unmarked ramp-ups reflect the full exercise and preserve uncertainty near the cutoff', () => {
   const ctx = loadApp();
   const sfa = vm.runInContext('SFA', ctx);
@@ -1183,8 +1202,10 @@ test('Scheda shows the four workouts and derives set counts from their rows', ()
   ctx.renderScheda();
   const html = elements.skSedute.innerHTML;
   assert.deepEqual([...html.matchAll(/<strong>([^<]+)<\/strong><span>(\d+) serie/g)].map(m => [m[1], +m[2]]),
-    [['Torso A', 17], ['Limbs A', 21], ['Torso B', 16], ['Limbs B', 17]]);
-  assert.match(html, /71 serie in otto giorni/);
+    [['Anteriore A', 16], ['Posteriore A', 16], ['Anteriore B', 16], ['Posteriore B', 16]]);
+  assert.match(html, /64 serie in otto giorni/);
+  assert.match(html, /<b class="sk-s">CRZ<\/b>/);
+  assert.doesNotMatch(html, /<b class="sk-s">CR<\/b>/, 'il crunch con peso non va registrato come CR (inv)');
   assert.match(html, /Leg curl prono/);
   assert.match(html, /Panca inclinata con manubri/);
   assert.doesNotMatch(html, /Fase [1-4]/);

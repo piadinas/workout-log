@@ -1484,8 +1484,12 @@ const SFA = (() => {
   const affatica = rir => Math.max(0, Math.min(1, 1 - rir / 5));
   const BANDA_CARICO = [0.7, 1, 1.4];                 // incertezza in più fra carichi diversi
   // margine presunto del set migliore quando l'esercizio non ha nessun "!"  [min, stima, max]
-  const PRIOR_NEUTRO    = [1, 3, 6];                  // seduta senza nessun "!": non so se marcavi
-  const PRIOR_ABITUDINE = [2, 3.5, 6];                // seduta con dei "!": non marcato = non a cedimento
+  //   NEUTRO    seduta senza nessun "!": non so se marcavi (le sedute prima del 21/8).
+  //   ABITUDINE seduta con dei "!": dal 21/11 i fondamentali si chiudono di proposito a
+  //             1–2 ripetizioni dal limite senza "!", e il resto ha "!" sull'ultima serie.
+  //             Con la curva Neon il vecchio 3,5 valeva 0,65 a serie; 2 vale 0,90.
+  const PRIOR_NEUTRO    = [1, 3, 6];
+  const PRIOR_ABITUDINE = [1, 2, 4];
   const SCALA_MIN = 16;                               // la scala delle barre non scende sotto 16 SFA/sett
 
   const lerp = (tab, x) => {
@@ -3730,53 +3734,57 @@ function renderSFA() {
 }
 
 /* ───────────────────────────────────────────────────────────────────
-   15b. Scheda di allenamento del 19 novembre 2026
+   15b. Scheda di allenamento del 21 novembre 2026
+   Fase 1 della scheda Anteriore/Posteriore di Carbon (20/11), un "re" per
+   seduta. Carichi di partenza ricontrollati sul diario al 19/11.
    ─────────────────────────────────────────────────────────────────── */
 // Ogni riga indica sigla, esercizio, serie, ripetizioni, carico, recupero e nota.
 const SCHEDA = [
-  { nome: 'Torso A', durata: '51–64 min', righe: [
-    ["BP", "Panca piana", 3, "6–8", "45 kg", "3′", "A 8–8–8 passa a 47,5 kg."],
-    ["TBR", "Rematore T-bar", 3, "8–12", "32,5–35 kg", "2′30″", "Gomiti a 45–60° dal busto."],
-    ["DIPS", "Parallele", 3, "6–9", "Corpo libero", "2′30″", "Usa assistenza sotto 6 ripetizioni. A 9–9–9 aggiungi 2,5 kg."],
-    ["LM", "Lat machine", 3, "8–12", "45–50 kg", "2′30″", "A 12–12–12 con 45 kg passa a 50 kg."],
-    ["AL", "Alzate laterali al cavo basso", 3, "12–20", "10 kg per lato", "1′30″", "Carico indicato sul pacco pesi."],
-    ["BR", "Butterfly reverse", 2, "12–20", "20 kg", "1′30″", "Movimento controllato."],
+  { nome: 'Anteriore A', durata: '48–50 min', righe: [
+    ["BP", "Panca piana", 3, "6–8", "45 kg", "3′", "Pin di sicurezza 2 cm sotto il petto. A 8–8–8 passa a 47,5 kg."],
+    ["LP", "Leg press", 3, "10–12", "130–135 kg", "2′30″", "Discesa profonda senza staccare il bacino."],
+    ["DIPS", "Parallele", 3, "6–9", "Corpo libero", "2′30″", "Sotto 6 ripetizioni usa l’assistenza. A 9–9–9 aggiungi 2,5 kg."],
+    ["AL", "Alzate laterali al cavo basso", 3, "12–20", "10 kg", "1′30″", "Peso del pacco."],
+    ["PDT", "Pushdown ai cavi", 2, "10–15", "45 kg", "1′30″", "Gomiti fermi ai fianchi."],
+    ["CRZ", "Crunch al cavo o con disco", 2, "10–15", "Da tarare", "1′30″", "Sigla nuova: aggiungila in Nomi con addome. Con CR il numero dopo @ verrebbe letto come ripetizioni."],
   ] },
-  { nome: 'Limbs A', durata: '51–66 min', righe: [
-    ["SQ", "Squat con bilanciere", 3, "6–8", "65–67,5 kg", "3′", "Conserva 1–2 ripetizioni di margine."],
-    ["LC", "Leg curl prono", 3, "10–15", "25–30 kg", "1′30″–2′", "Bacino sul cuscino. Sull’ultima serie puoi aggiungere 2–3 parziali in allungamento."],
-    ["HE", "Hyperextension", 2, "10–15", "15 kg di zavorra", "1′30″", "Tara di riferimento della scheda 45 kg."],
-    ["LE", "Leg extension", 2, "10–15", "45–50 kg", "1′30″", ""],
-    ["PS", "Panca Scott con barra EZ", 3, "8–12", "12,5 kg di dischi", "1′30″", "Aggiungi gli 8 kg della barra per il carico totale."],
-    ["FP", "French press su inclinata", 3, "8–12", "18 kg totali", "1′30″", "Panca a 30–45°, barra dietro la testa."],
-    ["POLP", "Calf a gamba tesa", 3, "10–15", "35 kg", "1′30″", "In piedi o alla pressa, con un fermo di 1–2 secondi in basso."],
-    ["CR", "Crunch con sovraccarico", 2, "10–15", "Cavo o disco", "1′30″", "Se CR usa la notazione inversa, registra il crunch con peso con una sigla dedicata, ad esempio CRZ."],
+  { nome: 'Posteriore A', durata: '46–48 min', righe: [
+    ["RDL", "Stacco rumeno", 3, "8–10", "55 kg", "3′", "+5 kg quando chiudi 10–10–10 con tecnica pulita. Se tirano collo o trapezio, torna al carico della volta prima. Fascette oltre 75 kg."],
+    ["LM", "Lat machine avanti", 3, "8–12", "50 kg", "2′30″", "A 12–12–12 passa a 55 kg."],
+    ["TBR", "Rematore T-bar", 2, "8–12", "32,5 kg", "2′30″", "Gomiti a 45–60° dal busto."],
+    ["PS", "Panca Scott con barra EZ", 3, "8–12", "10 kg di dischi", "1′30″", "Più gli 8 kg della barra. Discesa lenta e completa. A 12–12–12 passa a 12,5 kg."],
+    ["BR", "Butterfly reverse", 2, "12–20", "20 kg", "1′30″", "Spalle basse."],
+    ["POLP", "Calf a gamba tesa", 3, "10–15", "35 kg", "1′30″", "Fermo di 1,5–2 secondi in basso."],
   ] },
-  { nome: 'Torso B', durata: '48–60 min', righe: [
-    ["OHP", "Spinte sopra la testa", 3, "8–12", "24 kg (12+12)", "2′30″", "Panca a 75–80°. A 12–12–12 passa a 14+14 kg. Con bilanciere usa 3 × 6–8 a 25 kg."],
-    ["TR", "Trazioni prone", 3, "3–4 / 6–8 / 6–8", "Libere e assistite", "2′30″", "Prima serie a corpo libero con 1 RIR, le altre due con assistenza."],
-    ["IPM", "Panca inclinata con manubri", 3, "8–12", "28 kg (14+14)", "2′30″", "Panca a 30°."],
-    ["TBR", "Rematore T-bar", 2, "8–12", "32,5–35 kg", "2′30″", "Presa stretta e neutra, se disponibile."],
-    ["AL", "Alzate laterali al cavo basso", 3, "12–20", "10 kg per lato", "1′30″", "Carico indicato sul pacco pesi."],
+  { nome: 'Anteriore B', durata: '47–49 min', righe: [
+    ["SQ", "Squat con bilanciere", 3, "6–8", "65 kg", "3′", "Pin di sicurezza. A 8–8–8 passa a 67,5 kg."],
+    ["OHP", "Spinte con manubri su panca 75–80°", 3, "8–12", "24 kg (12+12)", "2′30″", "Schiena appoggiata. A 12–12–12 passa a 28 kg (14+14)."],
+    ["LE", "Leg extension", 2, "10–15", "50 kg", "1′30″", "Fa anche da pausa per spalle e tricipiti prima della panca inclinata."],
+    ["IPM", "Panca inclinata con manubri", 3, "8–12", "32 kg (16+16)", "2′30″", "Panca a 30°. A 12–12–12 passa a 36 kg (18+18)."],
+    ["AL", "Alzate laterali al cavo basso", 3, "12–20", "10 kg", "1′30″", "Peso del pacco."],
+    ["FP", "French press su inclinata", 2, "8–12", "18 kg totali", "1′30″", "Panca a 30–45°, barra dietro la testa."],
+  ] },
+  { nome: 'Posteriore B', durata: '42–45 min', righe: [
+    ["TR", "Trazioni prone", 3, "3–4 / 6–8 / 6–8", "Libere e assistite", "2′30″", "Primo esercizio. Serie 1 libera a una ripetizione dal limite, serie 2 e 3 assistite."],
+    ["LC", "Leg curl prono", 3, "10–15", "25–30 kg", "1′45″", "Bacino sul cuscino. Dopo l’ultima serie puoi aggiungere 2–3 parziali."],
+    ["HE", "Hyperextension 45°", 2, "10–15", "15 kg di zavorra", "1′30″", "Cuscino sotto le creste iliache, dorso morbido: tira di glutei e femorali."],
+    ["RS", "Rematore seduto", 2, "8–12", "40 kg", "2′30″", ""],
+    ["BC", "Curl con manubri su inclinata", 2, "8–12", "18–20 kg totali", "1′30″", "Panca a 45–60°, gomiti dietro il busto."],
     ["BR", "Butterfly reverse", 2, "12–20", "20 kg", "1′30″", ""],
-  ] },
-  { nome: 'Limbs B', durata: '48–62 min', righe: [
-    ["RDL", "Stacco rumeno", 3, "8–10", "55–60 kg", "3′", "Aumenta di 5 kg quando completi il range con tecnica stabile."],
-    ["LP", "Leg press", 3, "10–12", "130 kg", "2′30″", "Piedi medio-bassi, discesa controllata."],
-    ["BC", "Curl con manubri su inclinata", 3, "8–12", "18–20 kg totali", "1′30″", "Panca a 45–60°."],
-    ["PDT", "Pushdown ai cavi", 2, "10–15", "45 kg", "1′30″", "Mantieni fermi i gomiti."],
-    ["POLP", "Calf a gamba tesa", 3, "10–15", "35 kg", "1′30″", "Fermo di 1–2 secondi in basso."],
-    ["CR", "Crunch con sovraccarico", 3, "10–15", "Cavo o disco", "1′30″", "Stessa variante di Limbs A."],
+    ["POLP", "Calf a gamba tesa", 2, "10–15", "35 kg", "1′30″", "Fermo in basso."],
   ] },
 ];
+
+// Fondamentali: si chiudono a 1–2 ripetizioni dal limite, senza "!".
+const SCHEDA_FONDAMENTALI = ['BP', 'SQ', 'RDL', 'OHP', 'DIPS', 'TR'];
 
 function renderScheda() {
   const host = document.getElementById('skSedute');
   if (host.childElementCount) return;
-  document.getElementById('skMeta').textContent = '19 novembre – 8 dicembre 2026';
+  document.getElementById('skMeta').textContent = '21 novembre – 8 dicembre 2026';
   const totals = SCHEDA.map(s => s.righe.reduce((sum, row) => sum + row[2], 0));
   const serie = totals.reduce((sum, n) => sum + n, 0);
-  host.innerHTML = `<p class="sk-meta">Alterna un giorno di allenamento e uno di riposo. Se salti un giorno, riprendi dalla seduta successiva. ${serie} serie in otto giorni.</p>`
+  host.innerHTML = `<p class="sk-meta">Un giorno sì e uno no, sempre in quest’ordine. Si parte sabato 21 da Anteriore A. Se salti un giorno, riprendi dalla seduta successiva. ${serie} serie in otto giorni. Dal 9 al 13 dicembre pausa.</p>`
     + SCHEDA.map((s, i) => `<details class="sk-session"${i === 0 ? ' open' : ''}>
       <summary class="sk-head"><strong>${escapeHTML(s.nome)}</strong><span>${totals[i]} serie · ${escapeHTML(s.durata)}</span></summary>
       ${s.righe.map(([sigla, nome, serie, rip, carico, recupero, nota]) => `<div class="sk-ex">
@@ -3786,10 +3794,12 @@ function renderScheda() {
         ${nota ? `<div class="sk-n">${escapeHTML(nota)}</div>` : ''}
       </div>`).join('')}
     </details>`).join('')
-    + `<details class="help sk-fold"><summary>Progressione e recupero</summary><div class="help-body">
-      <div>Quando raggiungi il tetto di ripetizioni in tutte le serie, aumenta il carico alla seduta successiva. Usa incrementi di 2,5 kg su bilanciere ed EZ e di 5 kg su pressa, stacco rumeno e lat machine.</div>
-      <div>Tieni 1–2 ripetizioni in riserva (RIR) nelle prime serie. Sui fondamentali conserva questo margine anche nelle successive. Segna <code>!</code> se arrivi a cedimento nell’ultima serie.</div>
-      <div>Se hai solo 25 minuti, fai i primi due esercizi della seduta. Dal 9 al 13 dicembre è prevista una pausa.</div>
+    + `<details class="help sk-fold"><summary>Quanto spingere, progressione e riscaldamento</summary><div class="help-body">
+      <div><b>Fondamentali</b> (${SCHEDA_FONDAMENTALI.join(', ')}): tutte le serie a 1–2 ripetizioni dal limite, senza <code>!</code>. L’app le conta come serie a 2 dal limite.</div>
+      <div><b>Tutto il resto</b>: prime serie a 1–2 dal limite, <code>!</code> sull’ultima se arrivi davvero al limite.</div>
+      <div><b>Progressione</b>: stesso carico su tutte le serie. Quando tutte arrivano al tetto del range, alla seduta dopo sali: 2,5 kg su bilanciere, EZ e zavorre, il manubrio successivo, 5 kg su pressa, stacco rumeno e macchine.</div>
+      <div><b>Riscaldamento</b>: sul primo esercizio 8 ripetizioni al 50% del carico, 4 al 70% e 2 all’85%; sugli altri multiarticolari una serie da 5 al 70%. Non serve scriverli: se li scrivi, contano zero da soli.</div>
+      <div><b>Giornata storta</b>: fai i primi due esercizi della seduta ed esci. Conta come seduta.</div>
     </div></details>`;
 }
 

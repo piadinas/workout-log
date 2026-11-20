@@ -85,7 +85,9 @@ check('senza ! il set migliore è presunto a 3 dal cedimento', approx(a.total[1]
 check('banda ordinata', a.total[0] <= a.total[1] && a.total[1] <= a.total[2], a.total);
 a = A('LM 2x12@35 + 2x12@40');
 check('LM: le due serie di avvicinamento valgono zero', approx(a.total[1], 1.5) && a.segCredit[0].every(c => c === 0), a.total);
-check('seduta marcata: non marcato = non a cedimento', A('LM 2x12@35 + 2x12@40', { marcata: true }).total[1] < a.total[1]);
+// Dal 21/11 nelle sedute con "!" i fondamentali si chiudono a 1–2 dal limite senza "!": presunti a 2
+check('seduta marcata: non marcato = a 2 dal limite', approx(A('LM 2x12@35 + 2x12@40', { marcata: true }).total[1], 1.8) &&
+  A('LM 2x12@35 + 2x12@40', { marcata: true }).total[1] > a.total[1]);
 check('un ! in più non abbassa il totale', A('LM 2x12@35 + 12@40!').total[1] >= A('LM 2x12@35 + 12@40').total[1]);
 check('una ripetizione in più non abbassa quel set',
   A('BP 10@60 + 9@60 + 9@60!').sets[2].c[1] >= A('BP 10@60 + 9@60 + 8@60!').sets[2].c[1]);
@@ -213,7 +215,7 @@ check('chiave v2 attiva', app.CONFIG.MUSCLE_GROUPS === 'musclegroups_v2' && app.
 
 /* ── Scheda ─────────────────────────────────────────────────────── */
 check('serie nelle quattro sedute', eq(app.SCHEDA.map(s =>
-  s.righe.reduce((tot, r) => tot + r[2], 0)), [17, 21, 16, 17]));
+  s.righe.reduce((tot, r) => tot + r[2], 0)), [16, 16, 16, 16]));
 
 /* ── Esito ───────────────────────────────────────────────────────── */
 const summary = failures.length

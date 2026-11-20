@@ -1,4 +1,4 @@
-const CACHE = 'ledger-workout-v14-sfa-neon';
+const CACHE = 'ledger-workout-v15-ant-post';
 const LEGACY_CACHES = new Set([
   'workout-v8-daylight',
   'workout-v7-debug-fixes',

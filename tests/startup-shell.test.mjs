@@ -52,5 +52,5 @@ test('the loader yields a render opportunity before appending app.js', () => {
 test('the service worker precaches both halves of the application shell', () => {
   const worker = fs.readFileSync(new URL('../sw.js', import.meta.url), 'utf8');
   assert.match(worker, /new URL\('app\.js', SCOPE_URL\)\.href/);
-  assert.match(worker, /ledger-workout-v14-sfa-neon/);
+  assert.match(worker, /ledger-workout-v15-ant-post/);
 });
